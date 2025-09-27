@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Edit, Trash2, Download, Filter, Table } from 'lucide-react';
+import { Plus, FileText, Edit, Trash2, Download, Filter, Table, Brush } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExcelEditor } from '@/components/ExcelEditor';
+import { DrawingCanvas } from '@/components/DrawingCanvas';
+import { testReportSchema, type TestReportFormData } from '@/lib/validationSchemas';
 
 interface Project {
   id: string;
@@ -72,6 +74,8 @@ export default function TestReports() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showExcelEditor, setShowExcelEditor] = useState(false);
   const [selectedReportForEditor, setSelectedReportForEditor] = useState<string | null>(null);
+  const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const { profile } = useAuth();
   const { toast } = useToast();
 
@@ -140,13 +144,32 @@ export default function TestReports() {
     e.preventDefault();
     if (!profile?.company_id) return;
 
+    // Validate form data
+    const validation = testReportSchema.safeParse(formData);
+    if (!validation.success) {
+      const errors: Record<string, string> = {};
+      validation.error.issues.forEach((issue) => {
+        const path = issue.path.join('.');
+        errors[path] = issue.message;
+      });
+      setValidationErrors(errors);
+      toast({
+        title: "Validation Error",
+        description: "Please correct the errors in the form",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setValidationErrors({});
+
     try {
       const reportData = {
-        ...formData,
-        project_id: formData.project_id === 'none' ? null : formData.project_id,
+        ...validation.data,
+        project_id: validation.data.project_id === 'none' ? null : validation.data.project_id,
         company_id: profile.company_id,
         created_by: profile.user_id,
-        results: formData.results || {}
+        results: validation.data.results || {}
       };
 
       let error;
@@ -171,9 +194,10 @@ export default function TestReports() {
       resetForm();
       fetchReports();
     } catch (error: any) {
+      console.error('Error saving report:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to save test report",
         variant: "destructive",
       });
     }
@@ -215,6 +239,7 @@ export default function TestReports() {
       notes: '',
       results: {}
     });
+    setValidationErrors({});
     setEditingReport(null);
     setIsCreateOpen(false);
   };
@@ -244,6 +269,13 @@ export default function TestReports() {
     toast({
       title: "Excel data saved",
       description: "Test report spreadsheet data has been saved successfully.",
+    });
+  };
+
+  const handleDrawingSave = (imageData: string) => {
+    toast({
+      title: "Drawing saved",
+      description: "Your drawing has been saved to the test report.",
     });
   };
 
@@ -312,7 +344,11 @@ export default function TestReports() {
                     onChange={(e) => setFormData(prev => ({...prev, report_number: e.target.value}))}
                     placeholder="TR-001"
                     required
+                    className={validationErrors['report_number'] ? 'border-red-500' : ''}
                   />
+                  {validationErrors['report_number'] && (
+                    <p className="text-sm text-red-500 mt-1">{validationErrors['report_number']}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="test_date">Test Date *</Label>
@@ -322,7 +358,11 @@ export default function TestReports() {
                     value={formData.test_date}
                     onChange={(e) => setFormData(prev => ({...prev, test_date: e.target.value}))}
                     required
+                    className={validationErrors['test_date'] ? 'border-red-500' : ''}
                   />
+                  {validationErrors['test_date'] && (
+                    <p className="text-sm text-red-500 mt-1">{validationErrors['test_date']}</p>
+                  )}
                 </div>
               </div>
 
@@ -440,6 +480,31 @@ export default function TestReports() {
             </div>
           </DialogContent>
         </Dialog>
+        
+        <Dialog open={showDrawingCanvas} onOpenChange={setShowDrawingCanvas}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full sm:w-auto">
+              <Brush className="h-4 w-4 mr-2" />
+              Drawing Canvas
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Drawing Canvas</DialogTitle>
+              <DialogDescription>
+                Create technical drawings, sketches, and annotations for your test reports
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4">
+              <DrawingCanvas 
+                reportId={selectedReportForEditor || undefined}
+                onSave={handleDrawingSave}
+                width={800}
+                height={500}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       </div>
 
@@ -503,6 +568,18 @@ export default function TestReports() {
                         title="Excel Editor"
                       >
                         <Table className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedReportForEditor(report.id);
+                          setShowDrawingCanvas(true);
+                        }}
+                        className="h-8 w-8 p-0"
+                        title="Drawing Canvas"
+                      >
+                        <Brush className="h-3 w-3" />
                       </Button>
                       <Button
                         variant="outline"
