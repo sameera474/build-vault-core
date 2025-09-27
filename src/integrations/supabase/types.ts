@@ -435,6 +435,69 @@ export type Database = {
         }
         Relationships: []
       }
+      test_report_templates: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          custom_material: string | null
+          id: string
+          material: Database["public"]["Enums"]["material_enum"]
+          name: string
+          preview_json: Json | null
+          road_class: string | null
+          rules_json: Json | null
+          schema_json: Json
+          standard: string | null
+          status: string
+          test_type: string
+          units: string | null
+          updated_at: string | null
+          version: number
+          visibility_roles: string[] | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          custom_material?: string | null
+          id?: string
+          material: Database["public"]["Enums"]["material_enum"]
+          name: string
+          preview_json?: Json | null
+          road_class?: string | null
+          rules_json?: Json | null
+          schema_json: Json
+          standard?: string | null
+          status?: string
+          test_type: string
+          units?: string | null
+          updated_at?: string | null
+          version?: number
+          visibility_roles?: string[] | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          custom_material?: string | null
+          id?: string
+          material?: Database["public"]["Enums"]["material_enum"]
+          name?: string
+          preview_json?: Json | null
+          road_class?: string | null
+          rules_json?: Json | null
+          schema_json?: Json
+          standard?: string | null
+          status?: string
+          test_type?: string
+          units?: string | null
+          updated_at?: string | null
+          version?: number
+          visibility_roles?: string[] | null
+        }
+        Relationships: []
+      }
       test_reports: {
         Row: {
           chainage_from: string | null
@@ -459,9 +522,11 @@ export type Database = {
           road_name: string | null
           road_offset: string | null
           side: Database["public"]["Enums"]["side_enum"] | null
+          standard: string | null
           status: Database["public"]["Enums"]["report_status_enum"] | null
           summary_json: Json | null
           technician_name: string | null
+          template_id: string | null
           test_date: string
           test_type: string
           updated_at: string
@@ -489,9 +554,11 @@ export type Database = {
           road_name?: string | null
           road_offset?: string | null
           side?: Database["public"]["Enums"]["side_enum"] | null
+          standard?: string | null
           status?: Database["public"]["Enums"]["report_status_enum"] | null
           summary_json?: Json | null
           technician_name?: string | null
+          template_id?: string | null
           test_date: string
           test_type: string
           updated_at?: string
@@ -519,9 +586,11 @@ export type Database = {
           road_name?: string | null
           road_offset?: string | null
           side?: Database["public"]["Enums"]["side_enum"] | null
+          standard?: string | null
           status?: Database["public"]["Enums"]["report_status_enum"] | null
           summary_json?: Json | null
           technician_name?: string | null
+          template_id?: string | null
           test_date?: string
           test_type?: string
           updated_at?: string
@@ -532,6 +601,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_reports_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "test_report_templates"
             referencedColumns: ["id"]
           },
         ]
