@@ -23,6 +23,7 @@ import Dashboard from "./pages/Dashboard";
 import TestReports from "./pages/TestReports";
 import MonthlySummaries from "./pages/MonthlySummaries";
 import ChainageBarChart from "./pages/ChainageBarChart";
+import Approvals from "./pages/Approvals";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -90,6 +91,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <ChainageBarChart />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/approvals" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Approvals />
               </AppLayout>
             </ProtectedRoute>
           } />
