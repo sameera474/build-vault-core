@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart as RechartsLineChart, Line } from 'recharts';
+import * as XLSX from 'xlsx';
 
 interface Cell {
   value: string;
@@ -496,10 +497,26 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
     }
   };
 
-  const importCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const importFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (fileExtension === 'csv') {
+      importCSV(file);
+    } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+      importExcel(file);
+    } else {
+      toast({
+        title: "Error",
+        description: "Unsupported file format. Please use CSV or Excel files.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const importCSV = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
@@ -529,6 +546,52 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
       });
     };
     reader.readAsText(file);
+  };
+
+  const importExcel = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Get the first worksheet
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Convert to array of arrays
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as any[][];
+        
+        const newCells: { [key: string]: Cell } = {};
+        rows.forEach((row, rowIndex) => {
+          row.forEach((cellValue, colIndex) => {
+            if (cellValue !== '' && colIndex < COLS && rowIndex < ROWS) {
+              const cellKey = `${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
+              newCells[cellKey] = {
+                value: String(cellValue),
+                type: isNaN(Number(cellValue)) ? 'text' : 'number'
+              };
+            }
+          });
+        });
+        
+        setCells(prev => ({ ...prev, ...newCells }));
+        setShowImportDialog(false);
+        
+        toast({
+          title: "Success",
+          description: "Excel file imported successfully",
+        });
+      } catch (error) {
+        console.error('Error importing Excel file:', error);
+        toast({
+          title: "Error",
+          description: "Failed to import Excel file. Please check the file format.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const exportToCSV = () => {
@@ -715,14 +778,17 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="csvImport">Import CSV File</Label>
+                <Label htmlFor="fileImport">Import File</Label>
                 <Input
-                  id="csvImport"
+                  id="fileImport"
                   type="file"
-                  accept=".csv"
-                  onChange={importCSV}
+                  accept=".csv,.xlsx,.xls"
+                  onChange={importFile}
                   className="cursor-pointer"
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Supports CSV and Excel (.xlsx, .xls) files
+                </p>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowImportDialog(false)}>
