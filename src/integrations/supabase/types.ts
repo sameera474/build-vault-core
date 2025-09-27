@@ -14,6 +14,115 @@ export type Database = {
   }
   public: {
     Tables: {
+      chainage_points: {
+        Row: {
+          chainage: number
+          company_id: string
+          compliance_status: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          project_id: string | null
+          specification_max: number | null
+          specification_min: number | null
+          technician_name: string | null
+          test_date: string
+          test_type: string
+          test_value: number
+          updated_at: string
+        }
+        Insert: {
+          chainage: number
+          company_id: string
+          compliance_status?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          project_id?: string | null
+          specification_max?: number | null
+          specification_min?: number | null
+          technician_name?: string | null
+          test_date: string
+          test_type: string
+          test_value: number
+          updated_at?: string
+        }
+        Update: {
+          chainage?: number
+          company_id?: string
+          compliance_status?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          project_id?: string | null
+          specification_max?: number | null
+          specification_min?: number | null
+          technician_name?: string | null
+          test_date?: string
+          test_type?: string
+          test_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chainage_points_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_subscriptions: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan_id: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_submissions: {
         Row: {
           created_at: string
@@ -45,6 +154,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          is_super_admin: boolean | null
           name: string | null
           role: string
           user_id: string
@@ -52,6 +162,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          is_super_admin?: boolean | null
           name?: string | null
           role?: string
           user_id: string
@@ -59,6 +170,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          is_super_admin?: boolean | null
           name?: string | null
           role?: string
           user_id?: string
@@ -107,6 +219,96 @@ export type Database = {
         }
         Relationships: []
       }
+      spreadsheet_data: {
+        Row: {
+          cell_data: Json
+          charts: Json | null
+          created_at: string
+          formulas: Json | null
+          id: string
+          report_id: string | null
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cell_data?: Json
+          charts?: Json | null
+          created_at?: string
+          formulas?: Json | null
+          id?: string
+          report_id?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cell_data?: Json
+          charts?: Json | null
+          created_at?: string
+          formulas?: Json | null
+          id?: string
+          report_id?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spreadsheet_data_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "test_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spreadsheet_data_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean | null
+          max_reports: number | null
+          max_storage_gb: number | null
+          max_users: number | null
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean | null
+          max_reports?: number | null
+          max_storage_gb?: number | null
+          max_users?: number | null
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean | null
+          max_reports?: number | null
+          max_storage_gb?: number | null
+          max_users?: number | null
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+        }
+        Relationships: []
+      }
       team_invitations: {
         Row: {
           accepted_at: string | null
@@ -140,6 +342,51 @@ export type Database = {
           invitation_token?: string
           invited_by?: string | null
           role?: string
+        }
+        Relationships: []
+      }
+      templates: {
+        Row: {
+          calculations: Json | null
+          charts: Json | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fields: Json
+          id: string
+          is_default: boolean | null
+          name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          calculations?: Json | null
+          charts?: Json | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_default?: boolean | null
+          name: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          calculations?: Json | null
+          charts?: Json | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          template_type?: string
+          updated_at?: string
         }
         Relationships: []
       }
