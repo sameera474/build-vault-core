@@ -189,19 +189,19 @@ export default function CreateReportWizard({ open, onClose }: CreateReportWizard
       const reportData = {
         company_id: profile.company_id,
         project_id: wizardData.projectId,
-        material: wizardData.material as any,
+        material: wizardData.material as 'soil' | 'concrete' | 'aggregates' | 'asphalt' | 'custom',
         custom_material: wizardData.material === 'custom' ? wizardData.customMaterial : null,
         road_name: wizardData.roadName,
         chainage_from: wizardData.chainageFrom,
         chainage_to: wizardData.chainageTo,
-        side: wizardData.side,
+        side: wizardData.side as 'left' | 'right' | 'middle',
         laboratory_test_no: wizardData.laboratoryTestNo,
         covered_chainage: wizardData.coveredChainage,
         road_offset: wizardData.roadOffset,
         test_type: wizardData.testType,
         report_number: `RPT-${Date.now()}`, // Generate unique report number
         test_date: new Date().toISOString().split('T')[0],
-        status: 'draft',
+        status: 'draft' as 'draft' | 'submitted' | 'approved' | 'rejected',
         created_by: profile.user_id
       };
 
