@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Save, Download, Upload, Calculator, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon, Plus, X, Copy, Clipboard, Undo, Redo, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, FileText, Type, Palette, MoreVertical, Table as TableIcon } from 'lucide-react';
+import { Save, Download, Upload, Calculator, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon, Plus, X, Copy, Clipboard, Undo, Redo, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, FileText, Type, Palette, MoreVertical, Table as TableIcon, FolderOpen, Import } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,7 +40,9 @@ interface Template {
   id: string;
   name: string;
   description?: string;
+  category?: string;
   fields: any;
+  calculations?: any;
   created_at: string;
 }
 
@@ -60,6 +62,9 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
   const [showChartDialog, setShowChartDialog] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  const [templateCategory, setTemplateCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [clipboard, setClipboard] = useState<Record<string, Cell>>({});
   const [history, setHistory] = useState<Record<string, Cell>[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -457,6 +462,62 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
     }
   };
 
+  const importCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = text.split('\n').map(row => row.split(','));
+      
+      const newCells: { [key: string]: Cell } = {};
+      rows.forEach((row, rowIndex) => {
+        row.forEach((cellValue, colIndex) => {
+          if (colIndex < COLS && rowIndex < ROWS) {
+            const cellKey = `${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
+            const cleanValue = cellValue.trim().replace(/^"(.*)"$/, '$1');
+            if (cleanValue) {
+              newCells[cellKey] = {
+                value: cleanValue,
+                type: isNaN(Number(cleanValue)) ? 'text' : 'number'
+              };
+            }
+          }
+        });
+      });
+
+      setCells(prev => ({ ...prev, ...newCells }));
+      setShowImportDialog(false);
+      toast({
+        title: "Success",
+        description: "CSV imported successfully",
+      });
+    };
+    reader.readAsText(file);
+  };
+
+  const exportToCSV = () => {
+    const maxRow = Math.max(...Object.keys(cells).map(key => parseInt(key.slice(1))), 1);
+    const maxCol = Math.max(...Object.keys(cells).map(key => key.charCodeAt(0) - 64), 1);
+    
+    const csvContent = Array.from({ length: maxRow }, (_, rowIndex) => {
+      return Array.from({ length: maxCol }, (_, colIndex) => {
+        const cellKey = `${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
+        const cellValue = cells[cellKey]?.value || '';
+        return `"${cellValue.replace(/"/g, '""')}"`;
+      }).join(',');
+    }).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `test-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const createChart = (type: 'bar' | 'pie' | 'line', dataRange: string, title: string) => {
     const chartData = [];
     const [start, end] = dataRange.split(':');
@@ -486,29 +547,6 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
     setShowChartDialog(false);
   };
 
-  const exportToCSV = () => {
-    const rows: string[][] = [];
-    const maxRow = Math.max(10, Math.max(...Object.keys(cells).map(ref => parseCell(ref).row)));
-    const maxCol = Math.max(5, Math.max(...Object.keys(cells).map(ref => parseCell(ref).col)));
-
-    for (let row = 0; row <= maxRow; row++) {
-      const csvRow: string[] = [];
-      for (let col = 0; col <= maxCol; col++) {
-        const cellRef = getCellRef(row, col);
-        csvRow.push(cells[cellRef]?.value || '');
-      }
-      rows.push(csvRow);
-    }
-
-    const csvContent = rows.map(row => row.join(',')).join('\\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('href', url);
-    a.setAttribute('download', 'spreadsheet.csv');
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
 
   const renderToolbar = () => (
     <div className="border-b bg-white p-2 space-y-2">
@@ -575,32 +613,92 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
         <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
           <DialogTrigger asChild>
             <Button size="sm" variant="ghost">
-              <FileText className="h-4 w-4 mr-1" />
+              <FolderOpen className="h-4 w-4 mr-1" />
               Templates
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl bg-white">
+          <DialogContent className="max-w-4xl bg-white">
             <DialogHeader>
               <DialogTitle>Select Template</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-              {templates.map((template) => (
-                <div key={template.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
-                     onClick={() => {
-                       loadTemplate(template.id);
-                       setShowTemplateDialog(false);
-                     }}>
-                  <h3 className="font-medium">{template.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{template.description}</p>
-                  <Badge variant="secondary" className="mt-2">
-                    {new Date(template.created_at).toLocaleDateString()}
-                  </Badge>
-                </div>
-              ))}
+            <div className="space-y-4">
+              <div>
+                <Label>Filter by Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All categories" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="concrete">Concrete Testing</SelectItem>
+                    <SelectItem value="soil">Soil Testing</SelectItem>
+                    <SelectItem value="steel">Steel Testing</SelectItem>
+                    <SelectItem value="asphalt">Asphalt Testing</SelectItem>
+                    <SelectItem value="general">General Reports</SelectItem>
+                    <SelectItem value="custom">Custom Templates</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                {templates
+                  .filter(template => !selectedCategory || template.calculations?.category === selectedCategory)
+                  .map((template) => (
+                  <div key={template.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                       onClick={() => {
+                         loadTemplate(template.id);
+                         setShowTemplateDialog(false);
+                       }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium truncate">{template.name}</h3>
+                      <Badge variant="outline" className="text-xs">
+                        {template.calculations?.category || 'General'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{template.description}</p>
+                    <Badge variant="secondary" className="mt-2">
+                      {new Date(template.created_at).toLocaleDateString()}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
         
+        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="ghost">
+              <Import className="h-4 w-4 mr-1" />
+              Import
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-white">
+            <DialogHeader>
+              <DialogTitle>Import Data</DialogTitle>
+              <DialogDescription>
+                Import data from CSV files or existing test reports
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="csvImport">Import CSV File</Label>
+                <Input
+                  id="csvImport"
+                  type="file"
+                  accept=".csv"
+                  onChange={importCSV}
+                  className="cursor-pointer"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowImportDialog(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
           <DialogTrigger asChild>
             <Button size="sm" variant="ghost">
@@ -621,6 +719,22 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
                   onChange={(e) => setTemplateName(e.target.value)}
                   placeholder="Enter template name"
                 />
+              </div>
+              <div>
+                <Label htmlFor="templateCategory">Category</Label>
+                <Select value={templateCategory} onValueChange={setTemplateCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    <SelectItem value="concrete">Concrete Testing</SelectItem>
+                    <SelectItem value="soil">Soil Testing</SelectItem>
+                    <SelectItem value="steel">Steel Testing</SelectItem>
+                    <SelectItem value="asphalt">Asphalt Testing</SelectItem>
+                    <SelectItem value="general">General Reports</SelectItem>
+                    <SelectItem value="custom">Custom Templates</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="templateDescription">Description (Optional)</Label>

@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExcelEditor } from '@/components/ExcelEditor';
 import { DrawingCanvas } from '@/components/DrawingCanvas';
+import { TemplateSelector } from '@/components/TemplateSelector';
 import { testReportSchema, type TestReportFormData } from '@/lib/validationSchemas';
 
 interface Project {
@@ -75,6 +76,8 @@ export default function TestReports() {
   const [showExcelEditor, setShowExcelEditor] = useState(false);
   const [selectedReportForEditor, setSelectedReportForEditor] = useState<string | null>(null);
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -318,12 +321,20 @@ export default function TestReports() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            onClick={() => {
+              setEditingReport(null);
+              setShowTemplateSelector(true);
+            }} 
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Report
+          </Button>
+          
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => setEditingReport(null)} className="w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                New Report
-              </Button>
+              <div></div>
             </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
