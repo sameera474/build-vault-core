@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Edit, Trash2, Download, Filter } from 'lucide-react';
+import { Plus, FileText, Edit, Trash2, Download, Filter, Table } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { ExcelEditor } from '@/components/ExcelEditor';
 
 interface Project {
   id: string;
@@ -69,6 +70,8 @@ export default function TestReports() {
   const [editingReport, setEditingReport] = useState<TestReport | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showExcelEditor, setShowExcelEditor] = useState(false);
+  const [selectedReportForEditor, setSelectedReportForEditor] = useState<string | null>(null);
   const { profile } = useAuth();
   const { toast } = useToast();
 
@@ -232,6 +235,18 @@ export default function TestReports() {
     setIsCreateOpen(true);
   };
 
+  const openExcelEditor = (reportId: string) => {
+    setSelectedReportForEditor(reportId);
+    setShowExcelEditor(true);
+  };
+
+  const handleExcelEditorSave = (data: any) => {
+    toast({
+      title: "Excel data saved",
+      description: "Test report spreadsheet data has been saved successfully.",
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = complianceStatuses.find(s => s.value === status);
     return statusConfig ? (
@@ -270,13 +285,14 @@ export default function TestReports() {
             Manage construction materials testing reports and results
           </p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingReport(null)} className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              New Report
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingReport(null)} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                New Report
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -401,6 +417,30 @@ export default function TestReports() {
             </form>
           </DialogContent>
         </Dialog>
+        
+        <Dialog open={showExcelEditor} onOpenChange={setShowExcelEditor}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full sm:w-auto">
+              <Table className="h-4 w-4 mr-2" />
+              Excel Editor
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Excel-like Test Report Editor</DialogTitle>
+              <DialogDescription>
+                Create detailed test reports with spreadsheet functionality, formulas, and charts
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4">
+              <ExcelEditor 
+                reportId={selectedReportForEditor || undefined}
+                onSave={handleExcelEditorSave}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
       </div>
 
       {/* Mobile-Optimized Filters */}
@@ -451,14 +491,25 @@ export default function TestReports() {
                         size="sm"
                         onClick={() => openEditDialog(report)}
                         className="h-8 w-8 p-0"
+                        title="Edit Report"
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => openExcelEditor(report.id)}
+                        className="h-8 w-8 p-0"
+                        title="Excel Editor"
+                      >
+                        <Table className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => deleteReport(report.id)}
                         className="h-8 w-8 p-0"
+                        title="Delete Report"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
