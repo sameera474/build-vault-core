@@ -35,6 +35,7 @@ const navigationItems = [
   { title: "Chainage Charts", url: "/barchart", icon: BarChart3 },
   { title: "Approvals", url: "/approvals", icon: FileText },
   { title: "Documents", url: "/documents", icon: FileText },
+  { title: "Team", url: "/team", icon: UsersIcon },
   { title: "Projects", url: "/projects", icon: UsersIcon, disabled: true },
   { title: "Templates", url: "/templates", icon: FileText, disabled: true },
 ];
