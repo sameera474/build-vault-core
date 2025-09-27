@@ -1,5 +1,6 @@
-import { BarChart3, FileText, Users, CheckCircle } from 'lucide-react';
+import { BarChart3, FileText, Users, CheckCircle, Upload } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileUpload } from '@/components/FileUpload';
 import { useAuth } from '@/contexts/AuthContext';
 
 const stats = [
@@ -68,8 +69,8 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Coming Soon Section */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Coming Soon & File Upload Section */}
+      <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle>Testing Main Features</CardTitle>
@@ -114,6 +115,44 @@ export default function Dashboard() {
                 </span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* File Upload Component */}
+        <FileUpload 
+          bucket="documents" 
+          accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls" 
+          maxSize={10}
+        />
+      </div>
+
+      {/* Avatar Upload Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <FileUpload 
+          bucket="avatars" 
+          accept="image/*" 
+          maxSize={2}
+        />
+        
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-primary" />
+              File Storage Features
+            </CardTitle>
+            <CardDescription>
+              Your file storage capabilities
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>✅ Document uploads (private)</li>
+              <li>✅ Avatar/image uploads (public)</li>
+              <li>✅ Secure file access</li>
+              <li>✅ File management</li>
+              <li>⏳ Batch operations (coming soon)</li>
+              <li>⏳ File sharing (coming soon)</li>
+            </ul>
           </CardContent>
         </Card>
       </div>
