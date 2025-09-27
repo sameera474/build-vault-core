@@ -169,7 +169,7 @@ export default function TestReports() {
     try {
       const reportData = {
         ...validation.data,
-        project_id: validation.data.project_id === 'none' ? null : validation.data.project_id,
+        project_id: validation.data.project_id === 'none' || validation.data.project_id === '' ? null : validation.data.project_id,
         company_id: profile.company_id,
         created_by: profile.user_id,
         results: validation.data.results || {}
