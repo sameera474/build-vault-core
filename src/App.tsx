@@ -22,6 +22,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import TestReports from "./pages/TestReports";
 import MonthlySummaries from "./pages/MonthlySummaries";
+import ChainageBarChart from "./pages/ChainageBarChart";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -73,6 +74,22 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <MonthlySummaries />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/barchart" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ChainageBarChart />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/barchart/:projectId" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ChainageBarChart />
               </AppLayout>
             </ProtectedRoute>
           } />
