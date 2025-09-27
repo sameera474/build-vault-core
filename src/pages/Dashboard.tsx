@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { FileUpload } from '@/components/FileUpload';
 import { useAuth } from '@/contexts/AuthContext';
+import { TeamManagement } from '@/components/TeamManagement';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardStats {
@@ -336,6 +337,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Team Management Section */}
+      <TeamManagement />
     </div>
   );
 }
