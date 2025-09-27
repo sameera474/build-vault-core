@@ -114,14 +114,6 @@ const App = () => (
             </ProtectedRoute>
           } />
 
-          <Route path="/template" element={
-            <ProtectedRoute>
-              <AppLayout>
-                <Templates />
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-
           <Route path="/monthly-summaries" element={
             <ProtectedRoute>
               <AppLayout>
