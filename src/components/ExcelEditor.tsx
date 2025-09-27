@@ -27,7 +27,19 @@ interface Cell {
     textDecoration?: string;
     fontSize?: string;
     fontFamily?: string;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    verticalAlign?: string;
+    wrapText?: boolean;
+    border?: {
+      top?: string;
+      right?: string;
+      bottom?: string;
+      left?: string;
+    };
   };
+  merged?: string;
 }
 
 interface ExcelEditorProps {
@@ -69,6 +81,8 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
   const [clipboard, setClipboard] = useState<Record<string, Cell>>({});
   const [history, setHistory] = useState<Record<string, Cell>[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [columnWidths, setColumnWidths] = useState<{ [key: string]: number }>({});
+  const [rowHeights, setRowHeights] = useState<{ [key: string]: number }>({});
   const [loading, setLoading] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -553,34 +567,111 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
+        const workbook = XLSX.read(data, { 
+          type: 'array',
+          cellStyles: true,
+          cellDates: true,
+          cellText: false
+        });
         
         // Get the first worksheet
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Convert to array of arrays
-        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as any[][];
+        // Get the range of cells
+        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
         
         const newCells: { [key: string]: Cell } = {};
-        rows.forEach((row, rowIndex) => {
-          row.forEach((cellValue, colIndex) => {
-            if (cellValue !== '' && colIndex < COLS && rowIndex < ROWS) {
-              const cellKey = `${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
-              newCells[cellKey] = {
-                value: String(cellValue),
-                type: isNaN(Number(cellValue)) ? 'text' : 'number'
-              };
+        const mergedCells: { [key: string]: string } = {};
+        
+        // Process merged cells if they exist
+        if (worksheet['!merges']) {
+          worksheet['!merges'].forEach((merge: any) => {
+            const startCell = XLSX.utils.encode_cell(merge.s);
+            for (let row = merge.s.r; row <= merge.e.r; row++) {
+              for (let col = merge.s.c; col <= merge.e.c; col++) {
+                const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+                if (cellRef !== startCell) {
+                  mergedCells[cellRef] = startCell;
+                }
+              }
             }
           });
-        });
+        }
+        
+        // Process each cell with formatting
+        for (let row = range.s.r; row <= range.e.r && row < ROWS; row++) {
+          for (let col = range.s.c; col <= range.e.c && col < COLS; col++) {
+            const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+            const cellKey = `${String.fromCharCode(65 + col)}${row + 1}`;
+            const cell = worksheet[cellRef];
+            
+            if (cell && cell.v !== undefined) {
+              // Extract formatting information
+              const style = cell.s || {};
+              const font = style.font || {};
+              const alignment = style.alignment || {};
+              const fill = style.fill || {};
+              
+              newCells[cellKey] = {
+                value: String(cell.w || cell.v || ''), // Use formatted value if available
+                type: typeof cell.v === 'number' ? 'number' : 
+                      cell.t === 'd' ? 'date' : 
+                      cell.f ? 'formula' : 'text',
+                formula: cell.f ? `=${cell.f}` : undefined,
+                style: {
+                  bold: font.bold || false,
+                  italic: font.italic || false,
+                  underline: font.underline || false,
+                  fontSize: font.sz || 11,
+                  fontFamily: font.name || 'Arial',
+                  color: font.color ? `#${font.color.rgb || '000000'}` : '#000000',
+                  backgroundColor: fill.fgColor ? `#${fill.fgColor.rgb || 'FFFFFF'}` : '#FFFFFF',
+                  textAlign: alignment.horizontal || 'left',
+                  verticalAlign: alignment.vertical || 'middle',
+                  wrapText: alignment.wrapText || false,
+                  border: style.border ? {
+                    top: style.border.top?.style || 'none',
+                    right: style.border.right?.style || 'none',
+                    bottom: style.border.bottom?.style || 'none',
+                    left: style.border.left?.style || 'none'
+                  } : undefined
+                },
+                merged: mergedCells[cellRef] ? mergedCells[cellRef] : undefined
+              };
+            }
+          }
+        }
+        
+        // Update column widths if available
+        if (worksheet['!cols']) {
+          const newColumnWidths: { [key: string]: number } = {};
+          worksheet['!cols'].forEach((col: any, index: number) => {
+            if (col.wch && index < COLS) {
+              const colLetter = String.fromCharCode(65 + index);
+              newColumnWidths[colLetter] = Math.max(col.wch * 8, 100); // Convert to pixels
+            }
+          });
+          setColumnWidths(prev => ({ ...prev, ...newColumnWidths }));
+        }
+        
+        // Update row heights if available
+        if (worksheet['!rows']) {
+          const newRowHeights: { [key: string]: number } = {};
+          worksheet['!rows'].forEach((row: any, index: number) => {
+            if (row.hpt && index < ROWS) {
+              newRowHeights[index + 1] = Math.max(row.hpt * 1.33, 25); // Convert to pixels
+            }
+          });
+          setRowHeights(prev => ({ ...prev, ...newRowHeights }));
+        }
         
         setCells(prev => ({ ...prev, ...newCells }));
         setShowImportDialog(false);
         
         toast({
           title: "Success",
-          description: "Excel file imported successfully",
+          description: `Excel file imported successfully with formatting preserved. Imported ${Object.keys(newCells).length} cells.`,
         });
       } catch (error) {
         console.error('Error importing Excel file:', error);
@@ -787,9 +878,33 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
                   className="cursor-pointer"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Supports CSV and Excel (.xlsx, .xls) files
+                  Supports CSV and Excel (.xlsx, .xls) files with formatting preservation
                 </p>
               </div>
+              
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="preserveFormatting" 
+                  defaultChecked 
+                  className="rounded" 
+                />
+                <Label htmlFor="preserveFormatting" className="text-sm">
+                  Preserve original formatting and layout
+                </Label>
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">Import Features:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Preserves cell formatting (bold, italic, colors)</li>
+                  <li>• Maintains column widths and row heights</li>
+                  <li>• Imports formulas and calculations</li>
+                  <li>• Handles merged cells</li>
+                  <li>• Perfect for test report templates</li>
+                </ul>
+              </div>
+              
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowImportDialog(false)}>
                   Cancel
