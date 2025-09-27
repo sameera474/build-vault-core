@@ -391,14 +391,37 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
 
     setLoading(true);
     try {
+      // First, ensure we have a valid report_id by creating or updating the test report
+      let currentReportId = reportId;
+      
+      if (!currentReportId) {
+        // Create a new test report first
+        const { data: newReport, error: reportError } = await supabase
+          .from('test_reports')
+          .insert({
+            report_number: `TR-${Date.now()}`,
+            test_type: 'Excel Report',
+            test_date: new Date().toISOString().split('T')[0],
+            company_id: profile.company_id,
+            created_by: profile.user_id,
+            compliance_status: 'pending'
+          })
+          .select()
+          .single();
+
+        if (reportError) throw reportError;
+        currentReportId = newReport.id;
+      }
+
+      // Now save the spreadsheet data with the valid report_id
       const { error } = await supabase
         .from('spreadsheet_data')
         .upsert({
-          report_id: reportId,
+          report_id: currentReportId,
           template_id: templateId,
           cell_data: cells as any,
           charts: charts as any
-        } as any);
+        });
 
       if (error) throw error;
 
@@ -430,6 +453,15 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
       return;
     }
 
+    if (!profile?.company_id) {
+      toast({
+        title: "Error",
+        description: "Unable to save template - missing profile information",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('templates')
@@ -438,8 +470,10 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
           description: templateDescription,
           template_type: 'spreadsheet',
           fields: cells as any,
-          company_id: profile?.company_id
-        } as any);
+          charts: charts as any,
+          company_id: profile.company_id,
+          created_by: profile.user_id
+        });
 
       if (error) throw error;
 
