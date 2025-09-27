@@ -21,6 +21,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 // Protected pages
 import Dashboard from "./pages/Dashboard";
 import TestReports from "./pages/TestReports";
+import MonthlySummaries from "./pages/MonthlySummaries";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -64,6 +65,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <TestReports />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/monthly-summaries" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MonthlySummaries />
               </AppLayout>
             </ProtectedRoute>
           } />

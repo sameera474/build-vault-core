@@ -31,6 +31,7 @@ interface AppLayoutProps {
 const navigationItems = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
   { title: "Test Reports", url: "/test-reports", icon: FileText },
+  { title: "Monthly Summaries", url: "/monthly-summaries", icon: BarChart3 },
   { title: "Projects", url: "/projects", icon: UsersIcon, disabled: true },
   { title: "Templates", url: "/templates", icon: FileText, disabled: true },
 ];
