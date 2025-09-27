@@ -81,6 +81,14 @@ const App = () => (
             </ProtectedRoute>
           } />
 
+          <Route path="/test-reports/:id" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ReportEditor />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
           <Route path="/test-reports/:id/edit" element={
             <ProtectedRoute>
               <AppLayout>
