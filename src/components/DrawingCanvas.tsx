@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Circle, Rect, FabricText } from "fabric";
+import { Canvas as FabricCanvas, Circle, Rect, FabricText, PencilBrush } from "fabric";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -48,9 +48,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       backgroundColor: "#ffffff",
     });
 
-    // Initialize the freeDrawingBrush right after canvas creation
-    canvas.freeDrawingBrush.color = activeColor;
-    canvas.freeDrawingBrush.width = brushWidth;
+    // Initialize the freeDrawingBrush for Fabric.js v6
+    const brush = new PencilBrush(canvas);
+    brush.color = activeColor;
+    brush.width = brushWidth;
+    canvas.freeDrawingBrush = brush;
 
     setFabricCanvas(canvas);
     toast({
@@ -61,22 +63,21 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     return () => {
       canvas.dispose();
     };
-  }, [width, height]);
+  }, [width, height]); // Remove activeColor and brushWidth from dependencies
 
   useEffect(() => {
     if (!fabricCanvas) return;
 
-    fabricCanvas.isDrawingMode = activeTool === "draw";
+    fabricCanvas.isDrawingMode = activeTool === "draw" || activeTool === "eraser";
     
-    if (activeTool === "draw" && fabricCanvas.freeDrawingBrush) {
-      fabricCanvas.freeDrawingBrush.color = activeColor;
-      fabricCanvas.freeDrawingBrush.width = brushWidth;
-    }
-
-    if (activeTool === "eraser" && fabricCanvas.freeDrawingBrush) {
-      fabricCanvas.freeDrawingBrush.color = "#ffffff";
-      fabricCanvas.freeDrawingBrush.width = brushWidth * 2;
-      fabricCanvas.isDrawingMode = true;
+    if (fabricCanvas.freeDrawingBrush) {
+      if (activeTool === "eraser") {
+        fabricCanvas.freeDrawingBrush.color = "#ffffff";
+        fabricCanvas.freeDrawingBrush.width = brushWidth * 2;
+      } else if (activeTool === "draw") {
+        fabricCanvas.freeDrawingBrush.color = activeColor;
+        fabricCanvas.freeDrawingBrush.width = brushWidth;
+      }
     }
   }, [activeTool, activeColor, brushWidth, fabricCanvas]);
 
@@ -185,8 +186,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     
     const activeObjects = fabricCanvas.getActiveObjects();
     if (activeObjects.length) {
-      fabricCanvas.remove(...activeObjects);
+      activeObjects.forEach(obj => fabricCanvas.remove(obj));
       fabricCanvas.discardActiveObject();
+      fabricCanvas.renderAll();
     }
   };
 
