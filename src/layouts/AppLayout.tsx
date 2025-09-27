@@ -34,6 +34,7 @@ const navigationItems = [
   { title: "Monthly Summaries", url: "/monthly-summaries", icon: BarChart3 },
   { title: "Chainage Charts", url: "/barchart", icon: BarChart3 },
   { title: "Approvals", url: "/approvals", icon: FileText },
+  { title: "Documents", url: "/documents", icon: FileText },
   { title: "Projects", url: "/projects", icon: UsersIcon, disabled: true },
   { title: "Templates", url: "/templates", icon: FileText, disabled: true },
 ];

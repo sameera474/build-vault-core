@@ -24,6 +24,7 @@ import TestReports from "./pages/TestReports";
 import MonthlySummaries from "./pages/MonthlySummaries";
 import ChainageBarChart from "./pages/ChainageBarChart";
 import Approvals from "./pages/Approvals";
+import Documents from "./pages/Documents";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -99,6 +100,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Approvals />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/documents" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Documents />
               </AppLayout>
             </ProtectedRoute>
           } />
