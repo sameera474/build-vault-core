@@ -81,10 +81,18 @@ const App = () => (
             </ProtectedRoute>
           } />
 
+          <Route path="/test-reports/new" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <TestReports />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
           <Route path="/test-reports/:id" element={
             <ProtectedRoute>
               <AppLayout>
-                <ReportEditor />
+                <EnhancedReportEditor />
               </AppLayout>
             </ProtectedRoute>
           } />
@@ -92,7 +100,23 @@ const App = () => (
           <Route path="/test-reports/:id/edit" element={
             <ProtectedRoute>
               <AppLayout>
-                <ReportEditor />
+                <EnhancedReportEditor />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/templates" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Templates />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/template" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Templates />
               </AppLayout>
             </ProtectedRoute>
           } />
