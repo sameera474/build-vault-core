@@ -21,6 +21,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 // Protected pages
 import Dashboard from "./pages/Dashboard";
 import TestReports from "./pages/TestReports";
+import ReportEditor from "./components/ReportEditor";
 import MonthlySummaries from "./pages/MonthlySummaries";
 import ChainageBarChart from "./pages/ChainageBarChart";
 import Approvals from "./pages/Approvals";
@@ -76,6 +77,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <TestReports />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/test-reports/:id/edit" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ReportEditor />
               </AppLayout>
             </ProtectedRoute>
           } />
