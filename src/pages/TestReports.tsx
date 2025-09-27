@@ -1,116 +1,112 @@
-import { useState, useEffect } from 'react';
-import { Plus, FileText, Edit, Trash2, Download, Filter, Table, Brush } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { ExcelEditor } from '@/components/ExcelEditor';
-import { DrawingCanvas } from '@/components/DrawingCanvas';
-import { TemplateSelector } from '@/components/TemplateSelector';
-import { testReportSchema, type TestReportFormData } from '@/lib/validationSchemas';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import CreateReportWizard from '@/components/CreateReportWizard';
+import FlowDiagram from '@/components/FlowDiagram';
 
 interface Project {
   id: string;
   name: string;
+  description?: string;
 }
 
 interface TestReport {
   id: string;
   report_number: string;
-  test_type: string;
-  material_type: string;
-  test_date: string;
-  technician_name: string;
-  compliance_status: string;
-  results: any;
-  notes: string;
   project_id: string;
-  project?: { name: string };
+  material: string;
+  custom_material: string;
+  road_name: string;
+  chainage_from: string;
+  chainage_to: string;
+  side: string;
+  laboratory_test_no: string;
+  covered_chainage: string;
+  road_offset: string;
+  test_type: string;
+  status: string;
+  compliance_status: string;
+  test_date: string;
   created_at: string;
+  projects?: {
+    name: string;
+  };
 }
 
-const testTypes = [
-  'Concrete Compression',
-  'Steel Tensile',
-  'Soil Compaction',
-  'Asphalt Marshall',
-  'Aggregate Gradation',
-  'Rebar Testing',
-  'Concrete Slump',
-  'CBR Test',
-  'Other'
-];
-
-const materialTypes = [
-  'Concrete',
-  'Steel',
-  'Soil',
-  'Asphalt',
-  'Aggregate',
-  'Rebar',
-  'Other'
-];
-
-const complianceStatuses = [
-  { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'pass', label: 'Pass', color: 'bg-green-100 text-green-800' },
-  { value: 'fail', label: 'Fail', color: 'bg-red-100 text-red-800' },
-  { value: 'review_required', label: 'Review Required', color: 'bg-orange-100 text-orange-800' }
-];
-
 export default function TestReports() {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
   const [reports, setReports] = useState<TestReport[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingReport, setEditingReport] = useState<TestReport | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showExcelEditor, setShowExcelEditor] = useState(false);
-  const [selectedReportForEditor, setSelectedReportForEditor] = useState<string | null>(null);
-  const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const { profile } = useAuth();
-  const { toast } = useToast();
-
-  const [formData, setFormData] = useState({
-    report_number: '',
-    test_type: '',
-    material_type: '',
-    test_date: '',
-    technician_name: '',
-    compliance_status: 'pending',
-    project_id: 'none',
-    notes: '',
-    results: {}
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    search: '',
+    project: '',
+    material: '',
+    testType: '',
+    status: '',
+    dateFrom: '',
+    dateTo: '',
   });
 
   useEffect(() => {
-    fetchReports();
-    fetchProjects();
-  }, [profile?.company_id]);
+    if (profile?.company_id) {
+      fetchReports();
+      fetchProjects();
+    }
+  }, [profile?.company_id, filters]);
 
   const fetchReports = async () => {
     if (!profile?.company_id) return;
-
+    
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('test_reports')
         .select(`
           *,
-          projects (name)
+          projects (
+            name
+          )
         `)
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
+
+      // Apply filters
+      if (filters.search) {
+        query = query.or(`report_number.ilike.%${filters.search}%,road_name.ilike.%${filters.search}%`);
+      }
+      if (filters.project) {
+        query = query.eq('project_id', filters.project);
+      }
+      if (filters.material) {
+        query = query.eq('material', filters.material as any);
+      }
+      if (filters.testType) {
+        query = query.eq('test_type', filters.testType);
+      }
+      if (filters.status) {
+        query = query.eq('status', filters.status as any);
+      }
+      if (filters.dateFrom) {
+        query = query.gte('test_date', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        query = query.lte('test_date', filters.dateTo);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setReports(data || []);
@@ -128,527 +124,423 @@ export default function TestReports() {
 
   const fetchProjects = async () => {
     if (!profile?.company_id) return;
+    
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id, name, description')
+      .eq('company_id', profile.company_id);
 
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('id, name')
-        .eq('company_id', profile.company_id)
-        .eq('status', 'active');
-
-      if (error) throw error;
-      setProjects(data || []);
-    } catch (error) {
+    if (error) {
       console.error('Error fetching projects:', error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile?.company_id) return;
-
-    // Validate form data
-    const validation = testReportSchema.safeParse(formData);
-    if (!validation.success) {
-      const errors: Record<string, string> = {};
-      validation.error.issues.forEach((issue) => {
-        const path = issue.path.join('.');
-        errors[path] = issue.message;
-      });
-      setValidationErrors(errors);
-      toast({
-        title: "Validation Error",
-        description: "Please correct the errors in the form",
-        variant: "destructive",
-      });
       return;
     }
 
-    setValidationErrors({});
-
-    try {
-      const reportData = {
-        ...validation.data,
-        project_id: validation.data.project_id === 'none' || validation.data.project_id === '' ? null : validation.data.project_id,
-        company_id: profile.company_id,
-        created_by: profile.user_id,
-        results: validation.data.results || {}
-      };
-
-      let error;
-      if (editingReport) {
-        ({ error } = await supabase
-          .from('test_reports')
-          .update(reportData)
-          .eq('id', editingReport.id));
-      } else {
-        ({ error } = await supabase
-          .from('test_reports')
-          .insert([reportData]));
-      }
-
-      if (error) throw error;
-
-      toast({
-        title: editingReport ? "Report updated" : "Report created",
-        description: `Test report ${formData.report_number} has been ${editingReport ? 'updated' : 'created'} successfully.`,
-      });
-
-      resetForm();
-      fetchReports();
-    } catch (error: any) {
-      console.error('Error saving report:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save test report",
-        variant: "destructive",
-      });
-    }
+    setProjects(data || []);
   };
 
-  const deleteReport = async (reportId: string) => {
+  const handleSubmitForApproval = async (reportId: string) => {
     try {
       const { error } = await supabase
         .from('test_reports')
-        .delete()
+        .update({ status: 'submitted' })
         .eq('id', reportId);
 
       if (error) throw error;
 
       toast({
-        title: "Report deleted",
-        description: "Test report has been removed successfully.",
+        title: "Success",
+        description: "Report submitted for approval",
       });
-
       fetchReports();
-    } catch (error: any) {
+    } catch (error) {
+      console.error('Error submitting report:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to submit report",
         variant: "destructive",
       });
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      report_number: '',
-      test_type: '',
-      material_type: '',
-      test_date: '',
-      technician_name: '',
-      compliance_status: 'pending',
-      project_id: 'none',
-      notes: '',
-      results: {}
-    });
-    setValidationErrors({});
-    setEditingReport(null);
-    setIsCreateOpen(false);
+  const handleApprove = async (reportId: string) => {
+    try {
+      const { error } = await supabase
+        .from('test_reports')
+        .update({ 
+          status: 'approved',
+          compliance_status: 'approved'
+        })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Report approved successfully",
+      });
+      fetchReports();
+    } catch (error) {
+      console.error('Error approving report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve report",
+        variant: "destructive",
+      });
+    }
   };
 
-  const openEditDialog = (report: TestReport) => {
-    setFormData({
-      report_number: report.report_number,
-      test_type: report.test_type,
-      material_type: report.material_type || '',
-      test_date: report.test_date,
-      technician_name: report.technician_name || '',
-      compliance_status: report.compliance_status,
-      project_id: report.project_id || '',
-      notes: report.notes || '',
-      results: report.results || {}
-    });
-    setEditingReport(report);
-    setIsCreateOpen(true);
-  };
+  const handleReject = async (reportId: string) => {
+    try {
+      const { error } = await supabase
+        .from('test_reports')
+        .update({ 
+          status: 'rejected',
+          compliance_status: 'rejected'
+        })
+        .eq('id', reportId);
 
-  const openExcelEditor = (reportId: string) => {
-    setSelectedReportForEditor(reportId);
-    setShowExcelEditor(true);
-  };
+      if (error) throw error;
 
-  const handleExcelEditorSave = (data: any) => {
-    toast({
-      title: "Excel data saved",
-      description: "Test report spreadsheet data has been saved successfully.",
-    });
-  };
-
-  const handleDrawingSave = (imageData: string) => {
-    toast({
-      title: "Drawing saved",
-      description: "Your drawing has been saved to the test report.",
-    });
+      toast({
+        title: "Success",
+        description: "Report rejected",
+      });
+      fetchReports();
+    } catch (error) {
+      console.error('Error rejecting report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject report",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = complianceStatuses.find(s => s.value === status);
-    return statusConfig ? (
-      <Badge className={statusConfig.color}>
-        {statusConfig.label}
-      </Badge>
-    ) : (
-      <Badge variant="secondary">{status}</Badge>
-    );
+    switch (status) {
+      case 'draft':
+        return <Badge variant="secondary">Draft</Badge>;
+      case 'submitted':
+        return <Badge variant="default">Submitted</Badge>;
+      case 'approved':
+        return <Badge variant="default" className="bg-green-600">Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
   };
-
-  const filteredReports = reports.filter(report => {
-    const matchesStatus = filterStatus === 'all' || report.compliance_status === filterStatus;
-    const matchesSearch = searchTerm === '' || 
-      report.report_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.test_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.technician_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesStatus && matchesSearch;
-  });
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading reports...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Test Reports</h1>
-          <p className="text-muted-foreground">
-            Manage construction materials testing reports and results
-          </p>
-        </div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Test Reports</h1>
         <div className="flex gap-2">
-          <Button 
-            onClick={() => {
-              setEditingReport(null);
-              setShowTemplateSelector(true);
-            }} 
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Report
-          </Button>
-          
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <div></div>
-            </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingReport ? 'Edit Test Report' : 'Create New Test Report'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingReport ? 'Update the test report details' : 'Add a new construction materials test report'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="report_number">Report Number *</Label>
-                  <Input
-                    id="report_number"
-                    value={formData.report_number}
-                    onChange={(e) => setFormData(prev => ({...prev, report_number: e.target.value}))}
-                    placeholder="TR-001"
-                    required
-                    className={validationErrors['report_number'] ? 'border-red-500' : ''}
-                  />
-                  {validationErrors['report_number'] && (
-                    <p className="text-sm text-red-500 mt-1">{validationErrors['report_number']}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="test_date">Test Date *</Label>
-                  <Input
-                    id="test_date"
-                    type="date"
-                    value={formData.test_date}
-                    onChange={(e) => setFormData(prev => ({...prev, test_date: e.target.value}))}
-                    required
-                    className={validationErrors['test_date'] ? 'border-red-500' : ''}
-                  />
-                  {validationErrors['test_date'] && (
-                    <p className="text-sm text-red-500 mt-1">{validationErrors['test_date']}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="test_type">Test Type *</Label>
-                  <Select value={formData.test_type} onValueChange={(value) => setFormData(prev => ({...prev, test_type: value}))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select test type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {testTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="material_type">Material Type</Label>
-                  <Select value={formData.material_type} onValueChange={(value) => setFormData(prev => ({...prev, material_type: value}))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materialTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="technician_name">Technician Name</Label>
-                  <Input
-                    id="technician_name"
-                    value={formData.technician_name}
-                    onChange={(e) => setFormData(prev => ({...prev, technician_name: e.target.value}))}
-                    placeholder="John Doe"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="compliance_status">Compliance Status</Label>
-                  <Select value={formData.compliance_status} onValueChange={(value) => setFormData(prev => ({...prev, compliance_status: value}))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {complianceStatuses.map(status => (
-                        <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="project_id">Project</Label>
-                <Select value={formData.project_id} onValueChange={(value) => setFormData(prev => ({...prev, project_id: value}))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Project</SelectItem>
-                    {projects.map(project => (
-                      <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({...prev, notes: e.target.value}))}
-                  placeholder="Additional observations, comments, or test conditions..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={resetForm} className="w-full sm:w-auto">
-                  Cancel
-                </Button>
-                <Button type="submit" className="w-full sm:w-auto">
-                  {editingReport ? 'Update Report' : 'Create Report'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-        
-        <Dialog open={showExcelEditor} onOpenChange={setShowExcelEditor}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-auto">
-              <Table className="h-4 w-4 mr-2" />
-              Excel Editor
+          {projects.length === 0 ? (
+            <Button onClick={() => navigate('/projects')}>
+              <FolderPlus className="h-4 w-4 mr-2" />
+              Create Project First
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Excel-like Test Report Editor</DialogTitle>
-              <DialogDescription>
-                Create detailed test reports with spreadsheet functionality, formulas, and charts
-              </DialogDescription>
-            </DialogHeader>
-            <div className="mt-4">
-              <ExcelEditor 
-                reportId={selectedReportForEditor || undefined}
-                onSave={handleExcelEditorSave}
-                onClose={() => setShowExcelEditor(false)}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-        
-        <Dialog open={showDrawingCanvas} onOpenChange={setShowDrawingCanvas}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-auto">
-              <Brush className="h-4 w-4 mr-2" />
-              Drawing Canvas
+          ) : (
+            <Button onClick={() => setIsWizardOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Test Report
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Drawing Canvas</DialogTitle>
-              <DialogDescription>
-                Create technical drawings, sketches, and annotations for your test reports
-              </DialogDescription>
-            </DialogHeader>
-            <div className="mt-4">
-              <DrawingCanvas 
-                reportId={selectedReportForEditor || undefined}
-                onSave={handleDrawingSave}
-                width={800}
-                height={500}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-      </div>
-
-      {/* Mobile-Optimized Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="relative">
-          <Input
-            placeholder="Search reports..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full"
-          />
+          )}
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {complianceStatuses.map(status => (
-              <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
-      {/* Mobile-Optimized Reports Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredReports.length > 0 ? (
-          filteredReports.map((report) => (
-            <Card key={report.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <CardTitle className="text-lg truncate">{report.report_number}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {report.test_type}
-                    </CardDescription>
-                    <CardDescription className="text-xs">
-                      {new Date(report.test_date).toLocaleDateString()}
-                      {report.project && ` • ${report.project.name}`}
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-col gap-2 ml-2">
-                    {getStatusBadge(report.compliance_status)}
-                    <div className="flex gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(report)}
-                        className="h-8 w-8 p-0"
-                        title="Edit Report"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openExcelEditor(report.id)}
-                        className="h-8 w-8 p-0"
-                        title="Excel Editor"
-                      >
-                        <Table className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedReportForEditor(report.id);
-                          setShowDrawingCanvas(true);
-                        }}
-                        className="h-8 w-8 p-0"
-                        title="Drawing Canvas"
-                      >
-                        <Brush className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteReport(report.id)}
-                        className="h-8 w-8 p-0"
-                        title="Delete Report"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+      {projects.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FolderPlus className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold">No Projects Found</h3>
+            <p className="text-muted-foreground mt-2 text-center">
+              You need to create a project before you can create test reports.
+            </p>
+            <Button onClick={() => navigate('/projects')} className="mt-4">
+              <FolderPlus className="h-4 w-4 mr-2" />
+              Create Your First Project
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Tabs defaultValue="reports" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
+              <TabsTrigger value="flow">Process Flow</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="flow">
+              <FlowDiagram />
+            </TabsContent>
+
+            <TabsContent value="reports">
+              <div className="space-y-6">
+                {/* Filters */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Filter className="h-5 w-5" />
+                      Filters
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      <div>
+                        <Label htmlFor="search">Search</Label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="search"
+                            placeholder="Search reports..."
+                            value={filters.search}
+                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                            className="pl-9"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="project">Project</Label>
+                        <Select
+                          value={filters.project}
+                          onValueChange={(value) => setFilters(prev => ({ ...prev, project: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All projects" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">All projects</SelectItem>
+                            {projects.map(project => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {project.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="material">Material</Label>
+                        <Select
+                          value={filters.material}
+                          onValueChange={(value) => setFilters(prev => ({ ...prev, material: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All materials" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">All materials</SelectItem>
+                            <SelectItem value="soil">Soil</SelectItem>
+                            <SelectItem value="concrete">Concrete</SelectItem>
+                            <SelectItem value="aggregates">Aggregates</SelectItem>
+                            <SelectItem value="asphalt">Asphalt</SelectItem>
+                            <SelectItem value="custom">Custom</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="status">Status</Label>
+                        <Select
+                          value={filters.status}
+                          onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All statuses" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">All statuses</SelectItem>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="submitted">Submitted</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="dateFrom">Date From</Label>
+                        <Input
+                          id="dateFrom"
+                          type="date"
+                          value={filters.dateFrom}
+                          onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="dateTo">Date To</Label>
+                        <Input
+                          id="dateTo"
+                          type="date"
+                          value={filters.dateTo}
+                          onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="font-medium text-xs text-muted-foreground">Material</p>
-                    <p className="truncate">{report.material_type || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-xs text-muted-foreground">Technician</p>
-                    <p className="truncate">{report.technician_name || 'Not specified'}</p>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground">
-                  Created: {new Date(report.created_at).toLocaleDateString()}
-                </div>
+                  </CardContent>
+                </Card>
 
-                {report.notes && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Notes:</p>
-                    <p className="text-sm line-clamp-2">{report.notes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <Card className="md:col-span-2 lg:col-span-3">
-            <CardContent className="text-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No test reports found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || filterStatus !== 'all' 
-                  ? 'No reports match your current filters.' 
-                  : 'Get started by creating your first test report.'}
-              </p>
-              <Button onClick={() => setIsCreateOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create First Report
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                {/* Reports Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {loading ? (
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <Card key={i} className="animate-pulse">
+                        <CardHeader>
+                          <div className="h-4 bg-muted rounded w-3/4"></div>
+                          <div className="h-3 bg-muted rounded w-1/2"></div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <div className="h-3 bg-muted rounded"></div>
+                            <div className="h-3 bg-muted rounded w-2/3"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : reports.length === 0 ? (
+                    <Card className="col-span-full">
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <div className="text-center">
+                          <h3 className="text-lg font-semibold">No test reports found</h3>
+                          <p className="text-muted-foreground mt-2">
+                            Get started by creating your first test report.
+                          </p>
+                          <Button onClick={() => setIsWizardOpen(true)} className="mt-4">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Test Report
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    reports.map((report) => (
+                      <Card key={report.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-lg">{report.report_number}</CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                {report.projects?.name || 'No project'}
+                              </p>
+                              {report.road_name && (
+                                <p className="text-xs text-muted-foreground">
+                                  {report.road_name} • {report.chainage_from} - {report.chainage_to}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              {getStatusBadge(report.status)}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Material:</span>
+                              <span className="capitalize">{report.material || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Test Type:</span>
+                              <span>{report.test_type}</span>
+                            </div>
+                            {report.side && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Side:</span>
+                                <span className="capitalize">{report.side}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Date:</span>
+                              <span>{new Date(report.test_date).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 mt-4 flex-wrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/test-reports/${report.id}/edit`)}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                            
+                            {report.status === 'draft' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSubmitForApproval(report.id)}
+                              >
+                                <Send className="h-3 w-3 mr-1" />
+                                Submit
+                              </Button>
+                            )}
+                            
+                            {report.status === 'submitted' && profile?.role === 'admin' && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleApprove(report.id)}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleReject(report.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            
+                            {report.status === 'approved' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/barchart/${report.project_id}`)}
+                              >
+                                <BarChart3 className="h-3 w-3 mr-1" />
+                                Chart
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+
+      {/* Create Report Wizard */}
+      <CreateReportWizard
+        open={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+      />
     </div>
   );
 }
