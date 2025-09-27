@@ -19,6 +19,16 @@ export interface TestReport {
   road_offset?: string;
   status: ReportStatusEnum;
   test_date?: string;
+  report_number?: string;
+  doc_code?: string;
+  yymmdd?: string;
+  seq?: number;
+  gps_latitude?: number;
+  gps_longitude?: number;
+  weather_conditions?: string;
+  site_conditions?: string;
+  time_of_test?: string;
+  technician_id?: string;
   data_json?: any;
   summary_json?: any;
   graphs_json?: any;
