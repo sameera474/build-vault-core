@@ -1,5 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { HardHat, LogOut, User, ChevronDown } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { HardHat, LogOut, User, ChevronDown, BarChart3, FileText, Users as UsersIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
@@ -22,12 +22,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+const navigationItems = [
+  { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
+  { title: "Test Reports", url: "/test-reports", icon: FileText },
+  { title: "Projects", url: "/projects", icon: UsersIcon, disabled: true },
+  { title: "Templates", url: "/templates", icon: FileText, disabled: true },
+];
+
 function AppSidebar() {
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  const isActive = (path: string) => currentPath === path;
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -42,11 +55,32 @@ function AppSidebar() {
           <SidebarGroupLabel>Testing Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton disabled>
-                  <span className="text-muted-foreground">Coming soon...</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {navigationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild disabled={item.disabled}>
+                    {item.disabled ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                        <span className="text-xs ml-auto">Soon</span>
+                      </div>
+                    ) : (
+                      <Link 
+                        to={item.url} 
+                        className={cn(
+                          "flex items-center gap-2 transition-colors",
+                          isActive(item.url) 
+                            ? "bg-muted text-primary font-medium" 
+                            : "hover:bg-muted/50"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

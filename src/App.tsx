@@ -20,6 +20,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 
 // Protected pages
 import Dashboard from "./pages/Dashboard";
+import TestReports from "./pages/TestReports";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -46,6 +47,7 @@ const App = () => (
             
             {/* Auth routes without layout */}
             <Route path="/signin" element={<SignIn />} />
+            <Route path="/sign-in" element={<SignIn />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
           
@@ -54,6 +56,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Dashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/test-reports" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <TestReports />
               </AppLayout>
             </ProtectedRoute>
           } />
