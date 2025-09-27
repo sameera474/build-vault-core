@@ -87,16 +87,16 @@ export default function TestReports() {
       if (filters.search) {
         query = query.or(`report_number.ilike.%${filters.search}%,road_name.ilike.%${filters.search}%`);
       }
-      if (filters.project) {
+      if (filters.project && filters.project !== 'all') {
         query = query.eq('project_id', filters.project);
       }
-      if (filters.material) {
+      if (filters.material && filters.material !== 'all') {
         query = query.eq('material', filters.material as any);
       }
-      if (filters.testType) {
+      if (filters.testType && filters.testType !== 'all') {
         query = query.eq('test_type', filters.testType);
       }
-      if (filters.status) {
+      if (filters.status && filters.status !== 'all') {
         query = query.eq('status', filters.status as any);
       }
       if (filters.dateFrom) {
@@ -323,7 +323,7 @@ export default function TestReports() {
                             <SelectValue placeholder="All projects" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All projects</SelectItem>
+                            <SelectItem value="all">All projects</SelectItem>
                             {projects.map(project => (
                               <SelectItem key={project.id} value={project.id}>
                                 {project.name}
@@ -343,7 +343,7 @@ export default function TestReports() {
                             <SelectValue placeholder="All materials" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All materials</SelectItem>
+                            <SelectItem value="all">All materials</SelectItem>
                             <SelectItem value="soil">Soil</SelectItem>
                             <SelectItem value="concrete">Concrete</SelectItem>
                             <SelectItem value="aggregates">Aggregates</SelectItem>
@@ -363,7 +363,7 @@ export default function TestReports() {
                             <SelectValue placeholder="All statuses" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All statuses</SelectItem>
+                            <SelectItem value="all">All statuses</SelectItem>
                             <SelectItem value="draft">Draft</SelectItem>
                             <SelectItem value="submitted">Submitted</SelectItem>
                             <SelectItem value="approved">Approved</SelectItem>

@@ -817,7 +817,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50">
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     <SelectItem value="concrete">Concrete Testing</SelectItem>
                     <SelectItem value="soil">Soil Testing</SelectItem>
                     <SelectItem value="steel">Steel Testing</SelectItem>
@@ -829,7 +829,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
                 {templates
-                  .filter(template => !selectedCategory || template.calculations?.category === selectedCategory)
+                  .filter(template => !selectedCategory || selectedCategory === 'all' || template.calculations?.category === selectedCategory)
                   .map((template) => (
                   <div key={template.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
                        onClick={() => {
