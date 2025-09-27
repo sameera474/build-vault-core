@@ -41,7 +41,7 @@ const navigationItems = [
   { title: "Automation", url: "/automation", icon: FileText },
   { title: "Mobile", url: "/mobile", icon: FileText },
   { title: "Export", url: "/export", icon: FileText },
-  { title: "Templates", url: "/templates", icon: FileText, disabled: true },
+  { title: "Templates", url: "/templates", icon: FileText },
 ];
 
 function AppSidebar() {
@@ -66,27 +66,19 @@ function AppSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild disabled={item.disabled}>
-                    {item.disabled ? (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                        <span className="text-xs ml-auto">Soon</span>
-                      </div>
-                    ) : (
-                      <Link 
-                        to={item.url} 
-                        className={cn(
-                          "flex items-center gap-2 transition-colors",
-                          isActive(item.url) 
-                            ? "bg-muted text-primary font-medium" 
-                            : "hover:bg-muted/50"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    )}
+                  <SidebarMenuButton asChild>
+                    <Link 
+                      to={item.url} 
+                      className={cn(
+                        "flex items-center gap-2 transition-colors",
+                        isActive(item.url) 
+                          ? "bg-muted text-primary font-medium" 
+                          : "hover:bg-muted/50"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
