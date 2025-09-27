@@ -62,9 +62,19 @@ export default function TestReports() {
 
   useEffect(() => {
     if (profile?.company_id) {
-      fetchReports();
       fetchProjects();
     }
+  }, [profile?.company_id]);
+
+  // Separate effect for filters with debouncing
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    
+    const timeoutId = setTimeout(() => {
+      fetchReports();
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
   }, [profile?.company_id, filters]);
 
   const fetchReports = async () => {
@@ -84,25 +94,26 @@ export default function TestReports() {
         .order('created_at', { ascending: false });
 
       // Apply filters
-      if (filters.search) {
-        query = query.or(`report_number.ilike.%${filters.search}%,road_name.ilike.%${filters.search}%`);
+      if (filters.search && filters.search.trim()) {
+        const searchTerm = filters.search.trim();
+        query = query.or(`report_number.ilike.%${searchTerm}%,road_name.ilike.%${searchTerm}%,laboratory_test_no.ilike.%${searchTerm}%,technician_name.ilike.%${searchTerm}%`);
       }
-      if (filters.project && filters.project !== 'all') {
+      if (filters.project && filters.project !== 'all' && filters.project !== '') {
         query = query.eq('project_id', filters.project);
       }
-      if (filters.material && filters.material !== 'all') {
+      if (filters.material && filters.material !== 'all' && filters.material !== '') {
         query = query.eq('material', filters.material as any);
       }
-      if (filters.testType && filters.testType !== 'all') {
+      if (filters.testType && filters.testType !== 'all' && filters.testType !== '') {
         query = query.eq('test_type', filters.testType);
       }
-      if (filters.status && filters.status !== 'all') {
+      if (filters.status && filters.status !== 'all' && filters.status !== '') {
         query = query.eq('status', filters.status as any);
       }
-      if (filters.dateFrom) {
+      if (filters.dateFrom && filters.dateFrom.trim()) {
         query = query.gte('test_date', filters.dateFrom);
       }
-      if (filters.dateTo) {
+      if (filters.dateTo && filters.dateTo.trim()) {
         query = query.lte('test_date', filters.dateTo);
       }
 
@@ -298,6 +309,28 @@ export default function TestReports() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {reports.length} report{reports.length !== 1 ? 's' : ''} found
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFilters({
+                          search: '',
+                          project: '',
+                          material: '',
+                          testType: '',
+                          status: '',
+                          dateFrom: '',
+                          dateTo: '',
+                        })}
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                       <div>
                         <Label htmlFor="search">Search</Label>
@@ -349,6 +382,29 @@ export default function TestReports() {
                             <SelectItem value="aggregates">Aggregates</SelectItem>
                             <SelectItem value="asphalt">Asphalt</SelectItem>
                             <SelectItem value="custom">Custom</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="testType">Test Type</Label>
+                        <Select
+                          value={filters.testType}
+                          onValueChange={(value) => setFilters(prev => ({ ...prev, testType: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All test types" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All test types</SelectItem>
+                            <SelectItem value="compaction">Compaction</SelectItem>
+                            <SelectItem value="moisture">Moisture Content</SelectItem>
+                            <SelectItem value="density">Density</SelectItem>
+                            <SelectItem value="strength">Strength</SelectItem>
+                            <SelectItem value="penetration">Penetration</SelectItem>
+                            <SelectItem value="gradation">Gradation</SelectItem>
+                            <SelectItem value="liquid_limit">Liquid Limit</SelectItem>
+                            <SelectItem value="plastic_limit">Plastic Limit</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
