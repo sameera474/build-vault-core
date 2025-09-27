@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
@@ -52,8 +53,21 @@ export default function Contact() {
       // Validate form data
       const validatedData = contactSchema.parse(formData);
       
-      // Log to console as specified in requirements
-      console.log('Contact form submission:', {
+      // Save to database
+      const { error } = await supabase
+        .from('contact_submissions')
+        .insert({
+          name: validatedData.name,
+          email: validatedData.email,
+          message: validatedData.message,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Log to console for development
+      console.log('Contact form submission saved to database:', {
         name: validatedData.name,
         email: validatedData.email,
         message: validatedData.message,
@@ -70,6 +84,8 @@ export default function Contact() {
       // Reset form
       setFormData({ name: '', email: '', message: '' });
     } catch (error) {
+      console.error('Error submitting contact form:', error);
+      
       if (error instanceof z.ZodError) {
         toast({
           title: "Validation Error",
