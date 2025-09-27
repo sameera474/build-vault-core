@@ -54,7 +54,7 @@ export default function Contact() {
       const validatedData = contactSchema.parse(formData);
       
       // Save to database
-      const { error } = await supabase
+      const { error: dbError } = await supabase
         .from('contact_submissions')
         .insert({
           name: validatedData.name,
@@ -62,8 +62,22 @@ export default function Contact() {
           message: validatedData.message,
         });
 
-      if (error) {
-        throw error;
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Send confirmation email
+      const { error: emailError } = await supabase.functions.invoke('send-contact-confirmation', {
+        body: {
+          name: validatedData.name,
+          email: validatedData.email,
+          message: validatedData.message,
+        }
+      });
+
+      if (emailError) {
+        console.error('Email error:', emailError);
+        // Don't throw here - form submission was successful, email is nice-to-have
       }
 
       // Log to console for development
@@ -77,7 +91,7 @@ export default function Contact() {
       // Show success toast
       toast({
         title: "Message sent successfully!",
-        description: "We'll get back to you as soon as possible.",
+        description: "We'll get back to you as soon as possible. Check your email for confirmation.",
         variant: "default",
       });
 
