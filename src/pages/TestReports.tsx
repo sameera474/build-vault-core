@@ -262,7 +262,7 @@ export default function TestReports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Test Reports</h1>
           <p className="text-muted-foreground">
@@ -271,12 +271,12 @@ export default function TestReports() {
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingReport(null)}>
+            <Button onClick={() => setEditingReport(null)} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               New Report
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingReport ? 'Edit Test Report' : 'Create New Test Report'}
@@ -286,7 +286,7 @@ export default function TestReports() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="report_number">Report Number *</Label>
                   <Input
@@ -309,7 +309,7 @@ export default function TestReports() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="test_type">Test Type *</Label>
                   <Select value={formData.test_type} onValueChange={(value) => setFormData(prev => ({...prev, test_type: value}))}>
@@ -338,7 +338,7 @@ export default function TestReports() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="technician_name">Technician Name</Label>
                   <Input
@@ -367,9 +367,10 @@ export default function TestReports() {
                 <Label htmlFor="project_id">Project</Label>
                 <Select value={formData.project_id} onValueChange={(value) => setFormData(prev => ({...prev, project_id: value}))}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
+                    <SelectValue placeholder="Select project (optional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">No Project</SelectItem>
                     {projects.map(project => (
                       <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
                     ))}
@@ -388,11 +389,11 @@ export default function TestReports() {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={resetForm}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={resetForm} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="w-full sm:w-auto">
                   {editingReport ? 'Update Report' : 'Create Report'}
                 </Button>
               </div>
@@ -401,107 +402,97 @@ export default function TestReports() {
         </Dialog>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by report number, test type, or technician..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {complianceStatuses.map(status => (
-                  <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Mobile-Optimized Filters */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="relative">
+          <Input
+            placeholder="Search reports..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger>
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {complianceStatuses.map(status => (
+              <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      {/* Reports List */}
-      <div className="grid gap-4">
+      {/* Mobile-Optimized Reports Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredReports.length > 0 ? (
           filteredReports.map((report) => (
-            <Card key={report.id} className="border-border/50">
-              <CardHeader>
+            <Card key={report.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      {report.report_number}
-                    </CardTitle>
-                    <CardDescription>
-                      {report.test_type} • {new Date(report.test_date).toLocaleDateString()}
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <CardTitle className="text-lg truncate">{report.report_number}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {report.test_type}
+                    </CardDescription>
+                    <CardDescription className="text-xs">
+                      {new Date(report.test_date).toLocaleDateString()}
                       {report.project && ` • ${report.project.name}`}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 ml-2">
                     {getStatusBadge(report.compliance_status)}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(report)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteReport(report.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(report)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deleteReport(report.id)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="font-medium">Material</p>
-                    <p className="text-muted-foreground">{report.material_type || 'Not specified'}</p>
+                    <p className="font-medium text-xs text-muted-foreground">Material</p>
+                    <p className="truncate">{report.material_type || 'Not specified'}</p>
                   </div>
                   <div>
-                    <p className="font-medium">Technician</p>
-                    <p className="text-muted-foreground">{report.technician_name || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Created</p>
-                    <p className="text-muted-foreground">{new Date(report.created_at).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Results</p>
-                    <p className="text-muted-foreground">
-                      {Object.keys(report.results || {}).length > 0 ? 'Available' : 'Pending'}
-                    </p>
+                    <p className="font-medium text-xs text-muted-foreground">Technician</p>
+                    <p className="truncate">{report.technician_name || 'Not specified'}</p>
                   </div>
                 </div>
+                
+                <div className="text-xs text-muted-foreground">
+                  Created: {new Date(report.created_at).toLocaleDateString()}
+                </div>
+
                 {report.notes && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="font-medium text-sm">Notes:</p>
-                    <p className="text-sm text-muted-foreground mt-1">{report.notes}</p>
+                  <div className="pt-2 border-t">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Notes:</p>
+                    <p className="text-sm line-clamp-2">{report.notes}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           ))
         ) : (
-          <Card>
-            <CardContent className="text-center py-8">
+          <Card className="md:col-span-2 lg:col-span-3">
+            <CardContent className="text-center py-12">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No test reports found</h3>
               <p className="text-muted-foreground mb-4">

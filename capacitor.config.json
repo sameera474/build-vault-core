@@ -1,0 +1,14 @@
+{
+  "appId": "app.lovable.9641073b7f3044c89efaac877659c9c7",
+  "appName": "build-vault-core",
+  "webDir": "dist",
+  "server": {
+    "url": "https://9641073b-7f30-44c8-9efa-ac877659c9c7.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

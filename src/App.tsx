@@ -26,6 +26,7 @@ import ChainageBarChart from "./pages/ChainageBarChart";
 import Approvals from "./pages/Approvals";
 import Documents from "./pages/Documents";
 import Team from "./pages/Team";
+import Projects from "./pages/Projects";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -117,6 +118,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Team />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Projects />
               </AppLayout>
             </ProtectedRoute>
           } />

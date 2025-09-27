@@ -36,7 +36,7 @@ const navigationItems = [
   { title: "Approvals", url: "/approvals", icon: FileText },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Team", url: "/team", icon: UsersIcon },
-  { title: "Projects", url: "/projects", icon: UsersIcon, disabled: true },
+  { title: "Projects", url: "/projects", icon: UsersIcon },
   { title: "Templates", url: "/templates", icon: FileText, disabled: true },
 ];
 
