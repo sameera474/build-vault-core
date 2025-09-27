@@ -2,6 +2,34 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function FlowDiagram() {
+  // Initialize Mermaid when component mounts
+  React.useEffect(() => {
+    const initMermaid = async () => {
+      if (typeof window !== 'undefined') {
+        try {
+          // Dynamically import mermaid
+          const mermaid = await import('mermaid');
+          mermaid.default.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+              useMaxWidth: true,
+              htmlLabels: true,
+              curve: 'basis'
+            }
+          });
+          
+          // Re-render diagrams
+          mermaid.default.contentLoaded();
+        } catch (error) {
+          console.warn('Mermaid not available, showing static diagram');
+        }
+      }
+    };
+
+    initMermaid();
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -68,31 +96,3 @@ flowchart TD
     </Card>
   );
 }
-
-// Initialize Mermaid when component mounts
-React.useEffect(() => {
-  const initMermaid = async () => {
-    if (typeof window !== 'undefined') {
-      try {
-        // Dynamically import mermaid
-        const mermaid = await import('mermaid');
-        mermaid.default.initialize({
-          startOnLoad: true,
-          theme: 'default',
-          flowchart: {
-            useMaxWidth: true,
-            htmlLabels: true,
-            curve: 'basis'
-          }
-        });
-        
-        // Re-render diagrams
-        mermaid.default.contentLoaded();
-      } catch (error) {
-        console.warn('Mermaid not available, showing static diagram');
-      }
-    }
-  };
-
-  initMermaid();
-}, []);
