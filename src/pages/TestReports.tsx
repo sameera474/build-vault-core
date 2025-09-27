@@ -79,7 +79,7 @@ export default function TestReports() {
     test_date: '',
     technician_name: '',
     compliance_status: 'pending',
-    project_id: '',
+    project_id: 'none',
     notes: '',
     results: {}
   });
@@ -140,6 +140,7 @@ export default function TestReports() {
     try {
       const reportData = {
         ...formData,
+        project_id: formData.project_id === 'none' ? null : formData.project_id,
         company_id: profile.company_id,
         created_by: profile.user_id,
         results: formData.results || {}
@@ -207,7 +208,7 @@ export default function TestReports() {
       test_date: '',
       technician_name: '',
       compliance_status: 'pending',
-      project_id: '',
+      project_id: 'none',
       notes: '',
       results: {}
     });
@@ -370,7 +371,7 @@ export default function TestReports() {
                     <SelectValue placeholder="Select project (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Project</SelectItem>
+                    <SelectItem value="none">No Project</SelectItem>
                     {projects.map(project => (
                       <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
                     ))}
