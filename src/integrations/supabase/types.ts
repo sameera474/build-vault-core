@@ -168,6 +168,33 @@ export type Database = {
         }
         Relationships: []
       }
+      material_categories: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_id: string
@@ -410,51 +437,90 @@ export type Database = {
       }
       test_reports: {
         Row: {
+          chainage_from: string | null
+          chainage_to: string | null
           company_id: string
           compliance_status: string | null
+          covered_chainage: string | null
           created_at: string
           created_by: string | null
+          custom_material: string | null
+          data_json: Json | null
           file_path: string | null
+          graphs_json: Json | null
           id: string
+          laboratory_test_no: string | null
+          material: Database["public"]["Enums"]["material_enum"] | null
           material_type: string | null
           notes: string | null
           project_id: string | null
           report_number: string
           results: Json | null
+          road_name: string | null
+          road_offset: string | null
+          side: Database["public"]["Enums"]["side_enum"] | null
+          status: Database["public"]["Enums"]["report_status_enum"] | null
+          summary_json: Json | null
           technician_name: string | null
           test_date: string
           test_type: string
           updated_at: string
         }
         Insert: {
+          chainage_from?: string | null
+          chainage_to?: string | null
           company_id: string
           compliance_status?: string | null
+          covered_chainage?: string | null
           created_at?: string
           created_by?: string | null
+          custom_material?: string | null
+          data_json?: Json | null
           file_path?: string | null
+          graphs_json?: Json | null
           id?: string
+          laboratory_test_no?: string | null
+          material?: Database["public"]["Enums"]["material_enum"] | null
           material_type?: string | null
           notes?: string | null
           project_id?: string | null
           report_number: string
           results?: Json | null
+          road_name?: string | null
+          road_offset?: string | null
+          side?: Database["public"]["Enums"]["side_enum"] | null
+          status?: Database["public"]["Enums"]["report_status_enum"] | null
+          summary_json?: Json | null
           technician_name?: string | null
           test_date: string
           test_type: string
           updated_at?: string
         }
         Update: {
+          chainage_from?: string | null
+          chainage_to?: string | null
           company_id?: string
           compliance_status?: string | null
+          covered_chainage?: string | null
           created_at?: string
           created_by?: string | null
+          custom_material?: string | null
+          data_json?: Json | null
           file_path?: string | null
+          graphs_json?: Json | null
           id?: string
+          laboratory_test_no?: string | null
+          material?: Database["public"]["Enums"]["material_enum"] | null
           material_type?: string | null
           notes?: string | null
           project_id?: string | null
           report_number?: string
           results?: Json | null
+          road_name?: string | null
+          road_offset?: string | null
+          side?: Database["public"]["Enums"]["side_enum"] | null
+          status?: Database["public"]["Enums"]["report_status_enum"] | null
+          summary_json?: Json | null
           technician_name?: string | null
           test_date?: string
           test_type?: string
@@ -478,7 +544,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
+      report_status_enum: "draft" | "submitted" | "approved" | "rejected"
+      side_enum: "left" | "right" | "middle"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -605,6 +673,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      material_enum: ["soil", "concrete", "aggregates", "asphalt", "custom"],
+      report_status_enum: ["draft", "submitted", "approved", "rejected"],
+      side_enum: ["left", "right", "middle"],
+    },
   },
 } as const
