@@ -31,6 +31,8 @@ import Analytics from "./pages/Analytics";
 import Automation from "./pages/Automation";
 import Mobile from "./pages/Mobile";
 import Export from "./pages/Export";
+import Subscription from "./pages/Subscription";
+import SuperAdmin from "./pages/SuperAdmin";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -162,6 +164,22 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Export />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/subscription" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Subscription />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/super-admin" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <SuperAdmin />
               </AppLayout>
             </ProtectedRoute>
           } />
