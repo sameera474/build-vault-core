@@ -31,12 +31,16 @@ interface AppLayoutProps {
 const navigationItems = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
   { title: "Test Reports", url: "/test-reports", icon: FileText },
+  { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Monthly Summaries", url: "/monthly-summaries", icon: BarChart3 },
   { title: "Chainage Charts", url: "/barchart", icon: BarChart3 },
   { title: "Approvals", url: "/approvals", icon: FileText },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Team", url: "/team", icon: UsersIcon },
   { title: "Projects", url: "/projects", icon: UsersIcon },
+  { title: "Automation", url: "/automation", icon: FileText },
+  { title: "Mobile", url: "/mobile", icon: FileText },
+  { title: "Export", url: "/export", icon: FileText },
   { title: "Templates", url: "/templates", icon: FileText, disabled: true },
 ];
 

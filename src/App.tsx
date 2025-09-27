@@ -27,6 +27,10 @@ import Approvals from "./pages/Approvals";
 import Documents from "./pages/Documents";
 import Team from "./pages/Team";
 import Projects from "./pages/Projects";
+import Analytics from "./pages/Analytics";
+import Automation from "./pages/Automation";
+import Mobile from "./pages/Mobile";
+import Export from "./pages/Export";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -126,6 +130,38 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Projects />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/analytics" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Analytics />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/automation" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Automation />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/mobile" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Mobile />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/export" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Export />
               </AppLayout>
             </ProtectedRoute>
           } />

@@ -99,11 +99,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const result = await emailResponse.json();
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully:", result);
 
     return new Response(JSON.stringify({
       success: true,
-      messageId: emailResponse.data?.id,
+      messageId: result.id || 'unknown',
       recipients: recipients.length
     }), {
       status: 200,

@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     };
 
-    const emailResponse = await resend.emails.send({
+    const emailData = {
       from: "ConstructTest Pro <onboarding@resend.dev>",
       to: [recipient_email],
       subject: `[ConstructTest Pro] ${title}`,
@@ -101,13 +101,24 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         </div>
       `,
+    };
+
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(emailData),
     });
 
-    console.log("Workflow notification sent successfully:", emailResponse);
+    const result = await emailResponse.json();
+
+    console.log("Workflow notification sent successfully:", result);
 
     return new Response(JSON.stringify({
       success: true,
-      messageId: emailResponse.data?.id,
+      messageId: result.id || 'unknown',
       type,
       priority
     }), {
