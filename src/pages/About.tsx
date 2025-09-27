@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Award, Users, Target, Zap } from 'lucide-react';
+import { Award, Users, Target, Zap, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import teamSuccess from '@/assets/team-success.jpg';
 
 const values = [
   {
@@ -105,29 +106,36 @@ export default function About() {
       {/* Story Section */}
       <section className="py-24 sm:py-32 bg-muted/20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-center">
+          <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-none lg:grid lg:grid-cols-2 lg:gap-x-16 lg:gap-y-6 xl:grid-cols-1 xl:grid-rows-1 xl:gap-x-8">
+            <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:col-span-2 xl:col-auto">
               Our Story
             </h2>
-            <div className="mt-8 space-y-6 text-lg leading-8 text-muted-foreground">
-              <p>
-                Founded by construction industry veterans, ConstructTest Pro was born from 
-                the frustration of managing testing data across spreadsheets, paper forms, 
-                and disconnected systems. We saw an opportunity to bring modern technology 
-                to an industry that deserves better tools.
-              </p>
-              <p>
-                Today, we serve construction companies, engineering firms, and testing 
-                laboratories around the world, helping them streamline their workflows, 
-                improve accuracy, and make data-driven decisions that lead to better 
-                construction outcomes.
-              </p>
-              <p>
-                As we continue to grow, our commitment remains the same: to provide the 
-                most reliable, intuitive, and comprehensive platform for construction 
-                materials testing management.
-              </p>
+            <div className="mt-6 max-w-xl lg:mt-0 xl:col-end-1 xl:row-start-1">
+              <div className="space-y-6 text-lg leading-8 text-muted-foreground">
+                <p>
+                  Founded by construction industry veterans, ConstructTest Pro was born from 
+                  the frustration of managing testing data across spreadsheets, paper forms, 
+                  and disconnected systems. We saw an opportunity to bring modern technology 
+                  to an industry that deserves better tools.
+                </p>
+                <p>
+                  Today, we serve construction companies, engineering firms, and testing 
+                  laboratories around the world, helping them streamline their workflows, 
+                  improve accuracy, and make data-driven decisions that lead to better 
+                  construction outcomes.
+                </p>
+                <p>
+                  As we continue to grow, our commitment remains the same: to provide the 
+                  most reliable, intuitive, and comprehensive platform for construction 
+                  materials testing management.
+                </p>
+              </div>
             </div>
+            <img
+              src={teamSuccess}
+              alt="ConstructTest Pro team celebrating success"
+              className="mt-10 aspect-[6/5] w-full max-w-lg rounded-2xl object-cover sm:mt-16 lg:mt-0 lg:max-w-none xl:row-span-2 xl:row-end-2 xl:mt-36"
+            />
           </div>
         </div>
       </section>
@@ -144,8 +152,9 @@ export default function About() {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link to="/register">
-                <Button variant="secondary" size="lg" className="bg-background text-foreground hover:bg-background/90">
+                <Button variant="secondary" size="lg" className="bg-background text-foreground hover:bg-background/90 group">
                   Start your free trial
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link to="/contact" className="text-sm font-semibold leading-6 text-primary-foreground hover:text-primary-foreground/80 transition-smooth">
