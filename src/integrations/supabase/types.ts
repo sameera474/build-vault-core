@@ -202,6 +202,7 @@ export type Database = {
           is_super_admin: boolean | null
           name: string | null
           role: string
+          tenant_role: Database["public"]["Enums"]["tenant_role"] | null
           user_id: string
         }
         Insert: {
@@ -210,6 +211,7 @@ export type Database = {
           is_super_admin?: boolean | null
           name?: string | null
           role?: string
+          tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
           user_id: string
         }
         Update: {
@@ -218,46 +220,112 @@ export type Database = {
           is_super_admin?: boolean | null
           name?: string | null
           role?: string
+          tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
           user_id?: string
         }
         Relationships: []
       }
-      projects: {
+      project_roads: {
         Row: {
           company_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          project_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          project_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_roads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          client_logo: string | null
+          client_name: string | null
+          company_id: string
+          consultant_logo: string | null
+          consultant_name: string | null
+          contract_number: string | null
+          contractor_logo: string | null
+          contractor_name: string | null
           created_at: string
           created_by: string | null
           description: string | null
           end_date: string | null
           id: string
+          lab_code: string
           location: string | null
           name: string
+          project_prefix: string
+          region_code: string
           start_date: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          client_logo?: string | null
+          client_name?: string | null
           company_id: string
+          consultant_logo?: string | null
+          consultant_name?: string | null
+          contract_number?: string | null
+          contractor_logo?: string | null
+          contractor_name?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
+          lab_code?: string
           location?: string | null
           name: string
+          project_prefix?: string
+          region_code?: string
           start_date?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          client_logo?: string | null
+          client_name?: string | null
           company_id?: string
+          consultant_logo?: string | null
+          consultant_name?: string | null
+          contract_number?: string | null
+          contractor_logo?: string | null
+          contractor_name?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
+          lab_code?: string
           location?: string | null
           name?: string
+          project_prefix?: string
+          region_code?: string
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -435,6 +503,33 @@ export type Database = {
         }
         Relationships: []
       }
+      test_doc_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          material_type: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          material_type: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          material_type?: string
+          name?: string
+        }
+        Relationships: []
+      }
       test_report_templates: {
         Row: {
           company_id: string
@@ -509,7 +604,10 @@ export type Database = {
           created_by: string | null
           custom_material: string | null
           data_json: Json | null
+          doc_code: string | null
           file_path: string | null
+          gps_latitude: number | null
+          gps_longitude: number | null
           graphs_json: Json | null
           id: string
           laboratory_test_no: string | null
@@ -521,15 +619,21 @@ export type Database = {
           results: Json | null
           road_name: string | null
           road_offset: string | null
+          seq: number | null
           side: Database["public"]["Enums"]["side_enum"] | null
+          site_conditions: string | null
           standard: string | null
           status: Database["public"]["Enums"]["report_status_enum"] | null
           summary_json: Json | null
+          technician_id: string | null
           technician_name: string | null
           template_id: string | null
           test_date: string
           test_type: string
+          time_of_test: string | null
           updated_at: string
+          weather_conditions: string | null
+          yymmdd: string | null
         }
         Insert: {
           chainage_from?: string | null
@@ -541,7 +645,10 @@ export type Database = {
           created_by?: string | null
           custom_material?: string | null
           data_json?: Json | null
+          doc_code?: string | null
           file_path?: string | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
           graphs_json?: Json | null
           id?: string
           laboratory_test_no?: string | null
@@ -553,15 +660,21 @@ export type Database = {
           results?: Json | null
           road_name?: string | null
           road_offset?: string | null
+          seq?: number | null
           side?: Database["public"]["Enums"]["side_enum"] | null
+          site_conditions?: string | null
           standard?: string | null
           status?: Database["public"]["Enums"]["report_status_enum"] | null
           summary_json?: Json | null
+          technician_id?: string | null
           technician_name?: string | null
           template_id?: string | null
           test_date: string
           test_type: string
+          time_of_test?: string | null
           updated_at?: string
+          weather_conditions?: string | null
+          yymmdd?: string | null
         }
         Update: {
           chainage_from?: string | null
@@ -573,7 +686,10 @@ export type Database = {
           created_by?: string | null
           custom_material?: string | null
           data_json?: Json | null
+          doc_code?: string | null
           file_path?: string | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
           graphs_json?: Json | null
           id?: string
           laboratory_test_no?: string | null
@@ -585,15 +701,21 @@ export type Database = {
           results?: Json | null
           road_name?: string | null
           road_offset?: string | null
+          seq?: number | null
           side?: Database["public"]["Enums"]["side_enum"] | null
+          site_conditions?: string | null
           standard?: string | null
           status?: Database["public"]["Enums"]["report_status_enum"] | null
           summary_json?: Json | null
+          technician_id?: string | null
           technician_name?: string | null
           template_id?: string | null
           test_date?: string
           test_type?: string
+          time_of_test?: string | null
           updated_at?: string
+          weather_conditions?: string | null
+          yymmdd?: string | null
         }
         Relationships: [
           {
@@ -617,12 +739,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      allocate_report_number: {
+        Args: {
+          _company: string
+          _date: string
+          _doc_code: string
+          _project: string
+        }
+        Returns: {
+          lab_code: string
+          project_prefix: string
+          region_code: string
+          report_number: string
+          seq: number
+          yymmdd: string
+        }[]
+      }
     }
     Enums: {
       material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
       report_status_enum: "draft" | "submitted" | "approved" | "rejected"
       side_enum: "left" | "right" | "middle"
+      tenant_role:
+        | "admin"
+        | "project_manager"
+        | "quality_manager"
+        | "material_engineer"
+        | "technician"
+        | "consultant_engineer"
+        | "consultant_technician"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -753,6 +898,15 @@ export const Constants = {
       material_enum: ["soil", "concrete", "aggregates", "asphalt", "custom"],
       report_status_enum: ["draft", "submitted", "approved", "rejected"],
       side_enum: ["left", "right", "middle"],
+      tenant_role: [
+        "admin",
+        "project_manager",
+        "quality_manager",
+        "material_engineer",
+        "technician",
+        "consultant_engineer",
+        "consultant_technician",
+      ],
     },
   },
 } as const
