@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import CreateReportWizard from '@/components/CreateReportWizard';
+import { EnhancedCreateReportWizard } from '@/components/EnhancedCreateReportWizard';
 import FlowDiagram from '@/components/FlowDiagram';
 
 interface Project {
@@ -537,9 +537,10 @@ export default function TestReports() {
       )}
 
       {/* Create Report Wizard */}
-      <CreateReportWizard
+      <EnhancedCreateReportWizard
         open={isWizardOpen}
-        onClose={() => setIsWizardOpen(false)}
+        onOpenChange={setIsWizardOpen}
+        onSuccess={fetchReports}
       />
     </div>
   );

@@ -445,10 +445,10 @@ export function EnhancedReportEditor() {
                   <div>
                     <h4 className="font-medium mb-2">Key Performance Indicators</h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {Object.entries(summaryData.kpis).map(([key, value]) => (
-                        <div key={key} className="p-3 border rounded">
-                          <div className="text-sm text-muted-foreground">{key.replace(/_/g, ' ').toUpperCase()}</div>
-                          <div className="text-xl font-bold">{typeof value === 'number' ? value.toFixed(3) : value}</div>
+                {Object.entries(summaryData.kpis).map(([key, value]) => (
+                  <div key={key} className="p-3 border rounded">
+                    <div className="text-sm text-muted-foreground">{key.replace(/_/g, ' ').toUpperCase()}</div>
+                          <div className="text-xl font-bold">{typeof value === 'number' ? value.toFixed(3) : String(value)}</div>
                         </div>
                       ))}
                     </div>

@@ -21,7 +21,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 // Protected pages
 import Dashboard from "./pages/Dashboard";
 import TestReports from "./pages/TestReports";
-import ReportEditor from "./components/ReportEditor";
+import { Templates } from "./pages/Templates";
+import { EnhancedReportEditor } from "./components/EnhancedReportEditor";
 import MonthlySummaries from "./pages/MonthlySummaries";
 import ChainageBarChart from "./pages/ChainageBarChart";
 import Approvals from "./pages/Approvals";

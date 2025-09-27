@@ -123,7 +123,7 @@ class TemplateService {
     if (template.id) {
       const { data, error } = await supabase
         .from('test_report_templates')
-        .update(templateData)
+        .update(templateData as any)
         .eq('id', template.id)
         .select()
         .single();
@@ -133,7 +133,7 @@ class TemplateService {
     } else {
       const { data, error } = await supabase
         .from('test_report_templates')
-        .insert(templateData)
+        .insert(templateData as any)
         .select()
         .single();
       
@@ -170,7 +170,7 @@ class TemplateService {
       updated_at: undefined,
     };
 
-    return this.saveTemplate(clonedTemplate);
+    return this.saveTemplate(clonedTemplate as any);
   }
 
   async publishTemplate(id: string) {

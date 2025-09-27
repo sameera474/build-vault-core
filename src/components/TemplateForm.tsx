@@ -240,7 +240,7 @@ export function TemplateForm({ template, onSave, onCancel, isEditing = false }: 
 
             <div className="space-y-2">
               <Label htmlFor="units">Units</Label>
-              <Select value={formData.units} onValueChange={(value) => setFormData(prev => ({ ...prev, units: value }))}>
+              <Select value={formData.units} onValueChange={(value: 'SI' | 'Imperial') => setFormData(prev => ({ ...prev, units: value }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

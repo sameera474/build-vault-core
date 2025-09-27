@@ -122,7 +122,7 @@ class ReportService {
 
     const { data, error } = await supabase
       .from('test_reports')
-      .insert(newReport)
+      .insert(newReport as any)
       .select()
       .single();
     
