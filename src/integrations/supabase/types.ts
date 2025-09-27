@@ -65,6 +65,110 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          location: string | null
+          name: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      test_reports: {
+        Row: {
+          company_id: string
+          compliance_status: string | null
+          created_at: string
+          created_by: string | null
+          file_path: string | null
+          id: string
+          material_type: string | null
+          notes: string | null
+          project_id: string | null
+          report_number: string
+          results: Json | null
+          technician_name: string | null
+          test_date: string
+          test_type: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          compliance_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_path?: string | null
+          id?: string
+          material_type?: string | null
+          notes?: string | null
+          project_id?: string | null
+          report_number: string
+          results?: Json | null
+          technician_name?: string | null
+          test_date: string
+          test_type: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          compliance_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_path?: string | null
+          id?: string
+          material_type?: string | null
+          notes?: string | null
+          project_id?: string | null
+          report_number?: string
+          results?: Json | null
+          technician_name?: string | null
+          test_date?: string
+          test_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
