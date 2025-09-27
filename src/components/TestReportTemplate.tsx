@@ -228,7 +228,16 @@ export function TestReportTemplate({ reportId, onClose, onSave }: TestReportTemp
                 <td className="border border-gray-400 p-1"></td>
                 <td className="border border-gray-400 p-1"></td>
                 <td className="border border-gray-400 p-1"></td>
-                {testData.testDates.map((date, i) => renderTableCell(date, 'testDates', i))}
+                {testData.testDates.map((date, i) => (
+                  <td key={`test-date-${i}`} className="border border-gray-400 p-1">
+                    <Input
+                      value={date}
+                      onChange={(e) => updateField('testDates', e.target.value, i)}
+                      className="border-0 text-xs p-1 h-6 bg-transparent"
+                      onBlur={saveTestData}
+                    />
+                  </td>
+                ))}
               </tr>
 
               <tr>

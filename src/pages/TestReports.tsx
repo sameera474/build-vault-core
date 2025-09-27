@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { TestReportTemplate } from '@/components/TestReportTemplate';
+import { ExcelEditor } from '@/components/ExcelEditor';
 import { DrawingCanvas } from '@/components/DrawingCanvas';
 import { testReportSchema, type TestReportFormData } from '@/lib/validationSchemas';
 
@@ -473,7 +473,7 @@ export default function TestReports() {
               </DialogDescription>
             </DialogHeader>
             <div className="mt-4">
-              <TestReportTemplate 
+              <ExcelEditor 
                 reportId={selectedReportForEditor || undefined}
                 onSave={handleExcelEditorSave}
                 onClose={() => setShowExcelEditor(false)}
