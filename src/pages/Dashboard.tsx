@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'react';
 import { BarChart3, FileText, Users, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getUserProfile } from '@/lib/auth';
-import { supabase } from '@/lib/supabaseClient';
-import type { Profile } from '@/lib/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 const stats = [
   {
@@ -33,30 +30,7 @@ const stats = [
 ];
 
 export default function Dashboard() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data, error } = await getUserProfile(user.id);
-          if (error) {
-            console.error('Error fetching profile:', error);
-          } else {
-            setProfile(data);
-          }
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, []);
+  const { profile, loading } = useAuth();
 
   if (loading) {
     return (

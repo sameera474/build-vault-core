@@ -62,7 +62,7 @@ export function Header() {
 
         <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-4">
           <ThemeToggle />
-          <Link to="/sign-in">
+          <Link to="/signin">
             <Button variant="ghost">Sign in</Button>
           </Link>
           <Link to="/register">
@@ -110,7 +110,7 @@ export function Header() {
                   ))}
                 </div>
                 <div className="py-6 space-y-4">
-                  <Link to="/sign-in" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full">
                       Sign in
                     </Button>

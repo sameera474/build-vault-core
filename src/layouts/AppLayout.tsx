@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HardHat, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { HardHat, LogOut, User, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
@@ -21,10 +20,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { signOut, getUserProfile } from '@/lib/auth';
-import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import type { Profile } from '@/lib/supabaseClient';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -59,36 +56,24 @@ function AppSidebar() {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, signOut: authSignOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data, error } = await getUserProfile(user.id);
-        if (error) {
-          console.error('Error fetching profile:', error);
-        } else {
-          setProfile(data);
-        }
-      }
-    };
-
-    fetchProfile();
-  }, []);
-
   const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
+    try {
+      await authSignOut();
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+      navigate('/signin');
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to sign out",
         variant: "destructive",
       });
-    } else {
-      navigate('/sign-in');
     }
   };
 
