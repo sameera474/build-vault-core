@@ -49,6 +49,22 @@ class ReportService {
     return profile;
   }
 
+  private async generateReportNumber(companyId: string): Promise<string> {
+    // Get the count of existing reports for this company to generate a sequential number
+    const { count } = await supabase
+      .from('test_reports')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId);
+
+    const reportCount = (count || 0) + 1;
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    
+    // Format: TR-YYYY-MM-NNNN (e.g., TR-2024-03-0001)
+    return `TR-${year}-${month}-${String(reportCount).padStart(4, '0')}`;
+  }
+
   async fetchReports(filters?: {
     project_id?: string;
     material?: MaterialEnum;
@@ -113,8 +129,12 @@ class ReportService {
     const profile = await this.getProfile();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Generate a unique report number
+    const reportNumber = await this.generateReportNumber(profile.company_id);
+
     const newReport = {
       ...reportData,
+      report_number: reportNumber,
       company_id: profile.company_id,
       created_by: user?.id,
       status: 'draft' as ReportStatusEnum,
