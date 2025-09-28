@@ -38,7 +38,7 @@ export function Step3Summary({ data, onUpdate }: Step3SummaryProps) {
       }
 
       // Determine compliance status
-      const requiredCompaction = parseFloat(testData.degree_compaction_spec) || 95;
+      const requiredCompaction = parseFloat(testData.degree_of_compaction_spec) || 95;
       if (summary.degree_of_compaction >= requiredCompaction) {
         setComplianceStatus('PASS');
       } else if (summary.degree_of_compaction > 0) {
@@ -178,8 +178,8 @@ export function Step3Summary({ data, onUpdate }: Step3SummaryProps) {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Specification Requirement</Label>
                 <div className="text-2xl font-bold">
-                  {data.data_json?.degree_compaction_spec ? 
-                    `${data.data_json.degree_compaction_spec}%` : 
+                  {data.data_json?.degree_of_compaction_spec ? 
+                    `${data.data_json.degree_of_compaction_spec}%` : 
                     'N/A'
                   }
                 </div>

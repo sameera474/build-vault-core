@@ -13,48 +13,52 @@ interface FieldDensityTestProps {
 
 export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
   const [testData, setTestData] = useState({
-    // Basic Test Information
-    test_location: '',
-    side: '',
-    offset_m: '',
-    depth_mm: '',
-    hole_depth_mm: '',
+    // Test Location
+    test_location: data.test_location || '',
+    side: data.side || '',
+    offset_m: data.offset_m || '',
+    depth_mm: data.depth_mm || '',
+    hole_depth_mm: data.hole_depth_mm || '',
     
-    // Container and Soil Weights
-    container_weight_g: '',
-    soil_container_weight_g: '',
-    soil_weight_g: '',
+    // Container Weight
+    container_weight_g: data.container_weight_g || '',
+    
+    // Soil Weights
+    soil_container_weight_g: data.soil_container_weight_g || '',
+    soil_from_hole_weight_g: data.soil_from_hole_weight_g || '',
     
     // Sand Cone Data
-    sand_cone_no: '',
-    sand_before_pouring_g: '',
-    sand_after_pouring_g: '',
-    sand_in_hole_cone_baseplate_g: '',
-    sand_in_cone_baseplate_g: '',
-    sand_in_hole_g: '',
-    bulk_density_sand_g_cm3: '',
-    volume_hole_cm3: '',
+    sand_cone_no: data.sand_cone_no || '',
+    sand_before_pouring_g: data.sand_before_pouring_g || '',
+    sand_after_pouring_g: data.sand_after_pouring_g || '',
+    sand_in_hole_cone_base_g: data.sand_in_hole_cone_base_g || '',
+    sand_in_cone_base_g: data.sand_in_cone_base_g || '',
+    sand_in_hole_g: data.sand_in_hole_g || '',
+    
+    // Bulk Density
+    bulk_density_sand_g_cm3: data.bulk_density_sand_g_cm3 || '',
+    volume_hole_cm3: data.volume_hole_cm3 || '',
+    wet_density_g_cm3: data.wet_density_g_cm3 || '',
+    
+    // Moisture Content
+    container_no: data.container_no || '',
+    wet_soil_container_g: data.wet_soil_container_g || '',
+    dry_soil_container_g: data.dry_soil_container_g || '',
+    container_weight_moisture_g: data.container_weight_moisture_g || '',
+    moisture_content_percent: data.moisture_content_percent || '',
     
     // Calculated Values
-    wet_density_g_cm3: '',
-    
-    // Moisture Content Block
-    moisture_container_no: '',
-    wet_soil_container_g: '',
-    dry_soil_container_g: '',
-    container_weight_moisture_g: '',
-    moisture_content_percent: '',
-    dry_density_g_cm3: '',
+    dry_density_g_cm3: data.dry_density_g_cm3 || '',
     
     // Reference Lab Values
-    proctor_report_no: '',
-    max_dry_density_g_cm3: '',
-    optimum_moisture_percent: '',
+    proctor_report_no: data.proctor_report_no || '',
+    max_dry_density_g_cm3: data.max_dry_density_g_cm3 || '',
+    optimum_moisture_percent: data.optimum_moisture_percent || '',
     
-    // Specification Requirements
-    degree_compaction_spec: '95', // Default to 95%
-    
-    ...data
+    // Specification
+    degree_of_compaction_spec: data.degree_of_compaction_spec || '98',
+    degree_of_compaction_actual: data.degree_of_compaction_actual || '',
+    compliance_status: data.compliance_status || 'pending'
   });
 
   useEffect(() => {
@@ -62,138 +66,150 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
   }, [data]);
 
   const updateField = (field: string, value: string) => {
-    const updated = { ...testData, [field]: value };
-    setTestData(updated);
-    
-    // Perform calculations when relevant fields change
-    performCalculations(updated);
+    setTestData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Trigger calculations when relevant fields change
+      const calculatedData = performCalculations(updated);
+      const finalData = { ...updated, ...calculatedData };
+      
+      onUpdate(finalData);
+      return finalData;
+    });
   };
 
   const performCalculations = (data: any) => {
-    let updated = { ...data };
+    const calculations: any = {};
     
-    // Calculate soil weight from hole
+    // Calculate soil from hole weight
     if (data.soil_container_weight_g && data.container_weight_g) {
-      const soilWeight = parseFloat(data.soil_container_weight_g) - parseFloat(data.container_weight_g);
-      updated.soil_weight_g = soilWeight.toFixed(1);
+      calculations.soil_from_hole_weight_g = (
+        parseFloat(data.soil_container_weight_g) - parseFloat(data.container_weight_g)
+      ).toFixed(2);
     }
     
     // Calculate sand in hole
-    if (data.sand_in_hole_cone_baseplate_g && data.sand_in_cone_baseplate_g) {
-      const sandInHole = parseFloat(data.sand_in_hole_cone_baseplate_g) - parseFloat(data.sand_in_cone_baseplate_g);
-      updated.sand_in_hole_g = sandInHole.toFixed(1);
+    if (data.sand_in_hole_cone_base_g && data.sand_in_cone_base_g) {
+      calculations.sand_in_hole_g = (
+        parseFloat(data.sand_in_hole_cone_base_g) - parseFloat(data.sand_in_cone_base_g)
+      ).toFixed(2);
     }
     
     // Calculate volume of hole
     if (data.sand_in_hole_g && data.bulk_density_sand_g_cm3) {
-      const volume = parseFloat(data.sand_in_hole_g) / parseFloat(data.bulk_density_sand_g_cm3);
-      updated.volume_hole_cm3 = volume.toFixed(1);
+      calculations.volume_hole_cm3 = (
+        parseFloat(data.sand_in_hole_g) / parseFloat(data.bulk_density_sand_g_cm3)
+      ).toFixed(2);
     }
     
     // Calculate wet density
-    if (data.soil_weight_g && data.volume_hole_cm3) {
-      const wetDensity = parseFloat(data.soil_weight_g) / parseFloat(data.volume_hole_cm3);
-      updated.wet_density_g_cm3 = wetDensity.toFixed(3);
+    if (data.soil_from_hole_weight_g && calculations.volume_hole_cm3) {
+      calculations.wet_density_g_cm3 = (
+        parseFloat(data.soil_from_hole_weight_g) / parseFloat(calculations.volume_hole_cm3)
+      ).toFixed(3);
     }
     
     // Calculate moisture content
     if (data.wet_soil_container_g && data.dry_soil_container_g && data.container_weight_moisture_g) {
-      const wetSoil = parseFloat(data.wet_soil_container_g) - parseFloat(data.container_weight_moisture_g);
-      const drySoil = parseFloat(data.dry_soil_container_g) - parseFloat(data.container_weight_moisture_g);
-      if (drySoil > 0) {
-        const moisture = ((wetSoil - drySoil) / drySoil) * 100;
-        updated.moisture_content_percent = moisture.toFixed(2);
+      const wetWeight = parseFloat(data.wet_soil_container_g) - parseFloat(data.container_weight_moisture_g);
+      const dryWeight = parseFloat(data.dry_soil_container_g) - parseFloat(data.container_weight_moisture_g);
+      if (dryWeight > 0) {
+        calculations.moisture_content_percent = (
+          ((wetWeight - dryWeight) / dryWeight) * 100
+        ).toFixed(2);
       }
     }
     
     // Calculate dry density
-    if (data.wet_density_g_cm3 && data.moisture_content_percent) {
-      const wetDensity = parseFloat(data.wet_density_g_cm3);
-      const moisture = parseFloat(data.moisture_content_percent);
-      const dryDensity = wetDensity / (1 + (moisture / 100));
-      updated.dry_density_g_cm3 = dryDensity.toFixed(3);
+    if (calculations.wet_density_g_cm3 && calculations.moisture_content_percent) {
+      calculations.dry_density_g_cm3 = (
+        parseFloat(calculations.wet_density_g_cm3) / 
+        (1 + parseFloat(calculations.moisture_content_percent) / 100)
+      ).toFixed(3);
     }
     
-    setTestData(updated);
-    onUpdate(updated);
+    // Calculate degree of compaction
+    if (calculations.dry_density_g_cm3 && data.max_dry_density_g_cm3) {
+      calculations.degree_of_compaction_actual = (
+        (parseFloat(calculations.dry_density_g_cm3) / parseFloat(data.max_dry_density_g_cm3)) * 100
+      ).toFixed(1);
+      
+      // Determine compliance status
+      const specPercent = parseFloat(data.degree_of_compaction_spec || '98');
+      const actualPercent = parseFloat(calculations.degree_of_compaction_actual);
+      calculations.compliance_status = actualPercent >= specPercent ? 'PASS' : 'FAIL';
+    }
+    
+    return calculations;
   };
 
   const getComplianceStatus = () => {
-    if (!testData.dry_density_g_cm3 || !testData.max_dry_density_g_cm3 || !testData.degree_compaction_spec) {
-      return { status: 'PENDING', color: 'secondary' };
+    if (!testData.degree_of_compaction_actual || !testData.degree_of_compaction_spec) {
+      return 'pending';
     }
     
-    const fieldDryDensity = parseFloat(testData.dry_density_g_cm3);
-    const maxDryDensity = parseFloat(testData.max_dry_density_g_cm3);
-    const requiredPercent = parseFloat(testData.degree_compaction_spec);
+    const actual = parseFloat(testData.degree_of_compaction_actual);
+    const required = parseFloat(testData.degree_of_compaction_spec);
     
-    const achievedPercent = (fieldDryDensity / maxDryDensity) * 100;
-    
-    return achievedPercent >= requiredPercent 
-      ? { status: 'PASS', color: 'default' as const }
-      : { status: 'FAIL', color: 'destructive' as const };
+    return actual >= required ? 'PASS' : 'FAIL';
   };
-
-  const compliance = getComplianceStatus();
 
   return (
     <div className="space-y-6">
-      {/* Test Location and Basic Info */}
+      {/* Test Location */}
       <Card>
         <CardHeader>
-          <CardTitle>Test Location Details</CardTitle>
+          <CardTitle>Test Location</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label>Test Location</Label>
-              <Input
-                value={testData.test_location}
-                onChange={(e) => updateField('test_location', e.target.value)}
-                placeholder="e.g., Chainage 5+250"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Side</Label>
-              <Select value={testData.side} onValueChange={(value) => updateField('side', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Left">Left</SelectItem>
-                  <SelectItem value="Right">Right</SelectItem>
-                  <SelectItem value="Middle">Middle</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Offset (m)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.offset_m}
-                onChange={(e) => updateField('offset_m', e.target.value)}
-                placeholder="e.g., 2.5"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Depth (mm)</Label>
-              <Input
-                type="number"
-                value={testData.depth_mm}
-                onChange={(e) => updateField('depth_mm', e.target.value)}
-                placeholder="e.g., 150"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Hole Depth (mm)</Label>
-              <Input
-                type="number"
-                value={testData.hole_depth_mm}
-                onChange={(e) => updateField('hole_depth_mm', e.target.value)}
-                placeholder="e.g., 200"
-              />
-            </div>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Test Location</Label>
+            <Input
+              value={testData.test_location}
+              onChange={(e) => updateField('test_location', e.target.value)}
+              placeholder="e.g., Station 1+200"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Side</Label>
+            <Select value={testData.side} onValueChange={(value) => updateField('side', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select side" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Left">Left</SelectItem>
+                <SelectItem value="Right">Right</SelectItem>
+                <SelectItem value="Center">Center</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Offset (m)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={testData.offset_m}
+              onChange={(e) => updateField('offset_m', e.target.value)}
+              placeholder="0.0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Depth (mm)</Label>
+            <Input
+              type="number"
+              value={testData.depth_mm}
+              onChange={(e) => updateField('depth_mm', e.target.value)}
+              placeholder="150"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Hole Depth (mm)</Label>
+            <Input
+              type="number"
+              value={testData.hole_depth_mm}
+              onChange={(e) => updateField('hole_depth_mm', e.target.value)}
+              placeholder="150"
+            />
           </div>
         </CardContent>
       </Card>
@@ -203,39 +219,37 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
         <CardHeader>
           <CardTitle>Container and Soil Weights</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Container Weight (g)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.container_weight_g}
-                onChange={(e) => updateField('container_weight_g', e.target.value)}
-                placeholder="e.g., 250.5"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Weight of Soil from hole + container (g)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.soil_container_weight_g}
-                onChange={(e) => updateField('soil_container_weight_g', e.target.value)}
-                placeholder="e.g., 3250.5"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Weight of Soil from hole (g)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.soil_weight_g}
-                readOnly
-                className="bg-muted"
-                placeholder="Calculated automatically"
-              />
-            </div>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Container Weight (g)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={testData.container_weight_g}
+              onChange={(e) => updateField('container_weight_g', e.target.value)}
+              placeholder="0.0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Weight of Soil from hole + container (g)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={testData.soil_container_weight_g}
+              onChange={(e) => updateField('soil_container_weight_g', e.target.value)}
+              placeholder="0.0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Weight of Soil from hole (g)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={testData.soil_from_hole_weight_g}
+              readOnly
+              className="bg-muted"
+              placeholder="Calculated automatically"
+            />
           </div>
         </CardContent>
       </Card>
@@ -245,34 +259,14 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
         <CardHeader>
           <CardTitle>Sand Cone Data</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Sand cone No.</Label>
               <Input
                 value={testData.sand_cone_no}
                 onChange={(e) => updateField('sand_cone_no', e.target.value)}
-                placeholder="e.g., SC-001"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Weight of standard sand before pouring (g)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.sand_before_pouring_g}
-                onChange={(e) => updateField('sand_before_pouring_g', e.target.value)}
-                placeholder="e.g., 5500.0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>after pouring (g)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.sand_after_pouring_g}
-                onChange={(e) => updateField('sand_after_pouring_g', e.target.value)}
-                placeholder="e.g., 2800.0"
+                placeholder="SC-001"
               />
             </div>
             <div className="space-y-2">
@@ -282,20 +276,42 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
                 step="0.001"
                 value={testData.bulk_density_sand_g_cm3}
                 onChange={(e) => updateField('bulk_density_sand_g_cm3', e.target.value)}
-                placeholder="e.g., 1.625"
+                placeholder="1.350"
               />
             </div>
           </div>
-
+          
+          <Separator />
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Weight of standard sand before pouring (g)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={testData.sand_before_pouring_g}
+                onChange={(e) => updateField('sand_before_pouring_g', e.target.value)}
+                placeholder="0.0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>after pouring (g)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={testData.sand_after_pouring_g}
+                onChange={(e) => updateField('sand_after_pouring_g', e.target.value)}
+                placeholder="0.0"
+              />
+            </div>
             <div className="space-y-2">
               <Label>in hole + cone (+ base plate) (g)</Label>
               <Input
                 type="number"
                 step="0.1"
-                value={testData.sand_in_hole_cone_baseplate_g}
-                onChange={(e) => updateField('sand_in_hole_cone_baseplate_g', e.target.value)}
-                placeholder="e.g., 2700.0"
+                value={testData.sand_in_hole_cone_base_g}
+                onChange={(e) => updateField('sand_in_hole_cone_base_g', e.target.value)}
+                placeholder="0.0"
               />
             </div>
             <div className="space-y-2">
@@ -303,9 +319,9 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
               <Input
                 type="number"
                 step="0.1"
-                value={testData.sand_in_cone_baseplate_g}
-                onChange={(e) => updateField('sand_in_cone_baseplate_g', e.target.value)}
-                placeholder="e.g., 1350.0"
+                value={testData.sand_in_cone_base_g}
+                onChange={(e) => updateField('sand_in_cone_base_g', e.target.value)}
+                placeholder="0.0"
               />
             </div>
             <div className="space-y-2">
@@ -316,14 +332,9 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
                 value={testData.sand_in_hole_g}
                 readOnly
                 className="bg-muted"
-                placeholder="Calculated automatically"
+                placeholder="Calculated"
               />
             </div>
-          </div>
-
-          <Separator className="my-4" />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Volume of hole (cm³)</Label>
               <Input
@@ -332,82 +343,80 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
                 value={testData.volume_hole_cm3}
                 readOnly
                 className="bg-muted"
-                placeholder="Calculated automatically"
+                placeholder="Calculated"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Wet Density of Soil/ABC (g/cm³)</Label>
-              <Input
-                type="number"
-                step="0.001"
-                value={testData.wet_density_g_cm3}
-                readOnly
-                className="bg-muted"
-                placeholder="Calculated automatically"
-              />
-            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Wet Density of Soil/ABC (g/cm³)</Label>
+            <Input
+              type="number"
+              step="0.001"
+              value={testData.wet_density_g_cm3}
+              readOnly
+              className="bg-muted font-semibold"
+              placeholder="Calculated automatically"
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Moisture Content Block */}
+      {/* Moisture Content */}
       <Card>
         <CardHeader>
           <CardTitle>Moisture Content</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-            <div className="space-y-2">
-              <Label>Container No.</Label>
-              <Input
-                value={testData.moisture_container_no}
-                onChange={(e) => updateField('moisture_container_no', e.target.value)}
-                placeholder="e.g., MC-001"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Weight of wet Soil/ABC + container (g)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.wet_soil_container_g}
-                onChange={(e) => updateField('wet_soil_container_g', e.target.value)}
-                placeholder="e.g., 850.5"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Weight of dry Soil/ABC + container (g)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.dry_soil_container_g}
-                onChange={(e) => updateField('dry_soil_container_g', e.target.value)}
-                placeholder="e.g., 795.2"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Weight of container (g)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={testData.container_weight_moisture_g}
-                onChange={(e) => updateField('container_weight_moisture_g', e.target.value)}
-                placeholder="e.g., 125.0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Moisture content (%)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={testData.moisture_content_percent}
-                readOnly
-                className="bg-muted"
-                placeholder="Calculated automatically"
-              />
-            </div>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Container No.</Label>
+            <Input
+              value={testData.container_no}
+              onChange={(e) => updateField('container_no', e.target.value)}
+              placeholder="C-001"
+            />
           </div>
-
+          <div className="space-y-2">
+            <Label>Weight of wet Soil/ABC + container (g)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={testData.wet_soil_container_g}
+              onChange={(e) => updateField('wet_soil_container_g', e.target.value)}
+              placeholder="0.0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Weight of dry Soil/ABC + container (g)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={testData.dry_soil_container_g}
+              onChange={(e) => updateField('dry_soil_container_g', e.target.value)}
+              placeholder="0.0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Weight of container (g)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={testData.container_weight_moisture_g}
+              onChange={(e) => updateField('container_weight_moisture_g', e.target.value)}
+              placeholder="0.0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Moisture content (%)</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={testData.moisture_content_percent}
+              readOnly
+              className="bg-muted font-semibold"
+              placeholder="Calculated"
+            />
+          </div>
           <div className="space-y-2">
             <Label>Dry density (g/cm³)</Label>
             <Input
@@ -415,8 +424,8 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
               step="0.001"
               value={testData.dry_density_g_cm3}
               readOnly
-              className="bg-muted"
-              placeholder="Calculated automatically"
+              className="bg-muted font-semibold"
+              placeholder="Calculated"
             />
           </div>
         </CardContent>
@@ -427,44 +436,39 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
         <CardHeader>
           <CardTitle>Reference Lab Value (from Proctor)</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Proctor Report Number</Label>
-              <Select 
-                value={testData.proctor_report_no} 
-                onValueChange={(value) => updateField('proctor_report_no', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Proctor report..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PRO-001">PRO-001 - Standard Proctor</SelectItem>
-                  <SelectItem value="PRO-002">PRO-002 - Modified Proctor</SelectItem>
-                  <SelectItem value="PRO-003">PRO-003 - Standard Proctor (Sample 2)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Max Dry Density (g/cm³)</Label>
-              <Input
-                type="number"
-                step="0.001"
-                value={testData.max_dry_density_g_cm3}
-                onChange={(e) => updateField('max_dry_density_g_cm3', e.target.value)}
-                placeholder="e.g., 2.150"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Optimum Moisture Content (%)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={testData.optimum_moisture_percent}
-                onChange={(e) => updateField('optimum_moisture_percent', e.target.value)}
-                placeholder="e.g., 8.5"
-              />
-            </div>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Proctor Report Number</Label>
+            <Select value={testData.proctor_report_no} onValueChange={(value) => updateField('proctor_report_no', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Proctor report" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PRO-2024-001">PRO-2024-001</SelectItem>
+                <SelectItem value="PRO-2024-002">PRO-2024-002</SelectItem>
+                <SelectItem value="PRO-2024-003">PRO-2024-003</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Max Dry Density (g/cm³)</Label>
+            <Input
+              type="number"
+              step="0.001"
+              value={testData.max_dry_density_g_cm3}
+              onChange={(e) => updateField('max_dry_density_g_cm3', e.target.value)}
+              placeholder="2.150"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Optimum Moisture Content (%)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={testData.optimum_moisture_percent}
+              onChange={(e) => updateField('optimum_moisture_percent', e.target.value)}
+              placeholder="8.5"
+            />
           </div>
         </CardContent>
       </Card>
@@ -472,41 +476,46 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
       {/* Specification Requirements */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            Specification Requirement
-            <Badge variant={compliance.color === 'default' ? 'default' : 'destructive'} className="ml-2">
-              {compliance.status}
-            </Badge>
-          </CardTitle>
+          <CardTitle>Specification Requirement – Degree of Compaction</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label>Degree of Compaction</Label>
-            <Select 
-              value={testData.degree_compaction_spec} 
-              onValueChange={(value) => updateField('degree_compaction_spec', value)}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="98">98%</SelectItem>
-                <SelectItem value="95">95%</SelectItem>
-                <SelectItem value="93">93%</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
-            {testData.degree_compaction_spec === 'custom' && (
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Required (%)</Label>
+              <Select value={testData.degree_of_compaction_spec} onValueChange={(value) => updateField('degree_of_compaction_spec', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select requirement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="98">98%</SelectItem>
+                  <SelectItem value="95">95%</SelectItem>
+                  <SelectItem value="93">93%</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Actual (%)</Label>
               <Input
                 type="number"
-                min="0"
-                max="100"
                 step="0.1"
-                placeholder="Enter custom percentage..."
-                className="w-48 mt-2"
-                onChange={(e) => updateField('degree_compaction_spec', e.target.value)}
+                value={testData.degree_of_compaction_actual}
+                readOnly
+                className="bg-muted font-semibold"
+                placeholder="Calculated"
               />
-            )}
+            </div>
+            <div className="space-y-2">
+              <Label>Compliance Status</Label>
+              <div className="flex items-center h-10">
+                <Badge 
+                  variant={getComplianceStatus() === 'PASS' ? 'default' : getComplianceStatus() === 'FAIL' ? 'destructive' : 'secondary'}
+                  className="px-3 py-1"
+                >
+                  {getComplianceStatus()}
+                </Badge>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

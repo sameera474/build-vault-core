@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { NewTestReportWizard } from '@/components/NewTestReportWizard';
+import { CreateTestReportDialog } from '@/components/CreateTestReportDialog';
 import FlowDiagram from '@/components/FlowDiagram';
 
 interface Project {
@@ -49,7 +49,7 @@ export default function TestReports() {
   const [reports, setReports] = useState<TestReport[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     project: '',
@@ -227,6 +227,34 @@ export default function TestReports() {
     }
   };
 
+  const handleDelete = async (reportId: string) => {
+    if (!confirm('Are you sure you want to delete this test report? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('test_reports')
+        .delete()
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Report deleted successfully",
+      });
+      fetchReports();
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete report",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'draft':
@@ -264,7 +292,7 @@ export default function TestReports() {
               Create Project First
             </Button>
           ) : (
-            <Button onClick={() => setIsWizardOpen(true)}>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Test Report
             </Button>
@@ -397,14 +425,13 @@ export default function TestReports() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All test types</SelectItem>
-                            <SelectItem value="compaction">Compaction</SelectItem>
-                            <SelectItem value="moisture">Moisture Content</SelectItem>
-                            <SelectItem value="density">Density</SelectItem>
-                            <SelectItem value="strength">Strength</SelectItem>
-                            <SelectItem value="penetration">Penetration</SelectItem>
-                            <SelectItem value="gradation">Gradation</SelectItem>
-                            <SelectItem value="liquid_limit">Liquid Limit</SelectItem>
-                            <SelectItem value="plastic_limit">Plastic Limit</SelectItem>
+                            <SelectItem value="Field Density">Field Density</SelectItem>
+                            <SelectItem value="Atterberg Limits">Atterberg Limits</SelectItem>
+                            <SelectItem value="Proctor Compaction">Proctor Compaction</SelectItem>
+                            <SelectItem value="CBR">CBR</SelectItem>
+                            <SelectItem value="Sieve Analysis (Fine/Coarse Aggregates)">Sieve Analysis</SelectItem>
+                            <SelectItem value="Compressive Strength of Concrete">Compressive Strength</SelectItem>
+                            <SelectItem value="Asphalt Core Density & Compaction">Asphalt Core Density</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -476,7 +503,7 @@ export default function TestReports() {
                           <p className="text-muted-foreground mt-2">
                             Get started by creating your first test report.
                           </p>
-                          <Button onClick={() => setIsWizardOpen(true)} className="mt-4">
+                          <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4">
                             <Plus className="h-4 w-4 mr-2" />
                             Create Test Report
                           </Button>
@@ -592,8 +619,6 @@ export default function TestReports() {
         </>
       )}
 
-      {/* Create Report Wizard */}
-      {isWizardOpen && <NewTestReportWizard />}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, Save, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { reportService } from '@/services/reportService';
 import { Step1General } from './wizard/Step1General';
@@ -43,7 +43,11 @@ interface WizardData {
   // Step 4 - Review (read-only)
 }
 
-export function NewTestReportWizard() {
+interface NewTestReportWizardProps {
+  onClose?: () => void;
+}
+
+export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [wizardData, setWizardData] = useState<WizardData>({});
@@ -176,7 +180,11 @@ export function NewTestReportWizard() {
         title: 'Submitted for Approval',
         description: 'Your test report has been submitted for quality manager approval.'
       });
-      navigate('/test-reports');
+      if (onClose) {
+        onClose();
+      } else {
+        navigate('/test-reports');
+      }
     } catch (error) {
       toast({
         title: 'Error',
@@ -245,13 +253,23 @@ export function NewTestReportWizard() {
             Follow the step-by-step wizard to create a comprehensive test report
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/test-reports')}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Reports
-        </Button>
+        {onClose ? (
+          <Button
+            variant="outline"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4 mr-2" />
+            Close
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={() => navigate('/test-reports')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Reports
+          </Button>
+        )}
       </div>
 
       {/* Progress Bar */}

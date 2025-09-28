@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/projectService';
-import { testCodeService, MATERIAL_TYPES } from '@/services/testCodeService';
+import { testCatalogService } from '@/services/testCatalogService';
 import { useReportNumber } from '@/hooks/useReportNumber';
 import { toast } from '@/hooks/use-toast';
 
@@ -23,8 +23,8 @@ interface Step1GeneralProps {
 export function Step1General({ data, onUpdate }: Step1GeneralProps) {
   const [projects, setProjects] = useState<any[]>([]);
   const [projectRoads, setProjectRoads] = useState<any[]>([]);
-  const [testCodes, setTestCodes] = useState<any[]>([]);
   const [filteredTests, setFilteredTests] = useState<any[]>([]);
+  const [materialTypes] = useState(testCatalogService.getMaterialTypes());
   const [newRoadName, setNewRoadName] = useState('');
   const [showAddRoad, setShowAddRoad] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -38,7 +38,6 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
 
   useEffect(() => {
     loadProjects();
-    loadTestCodes();
   }, []);
 
   useEffect(() => {
@@ -49,12 +48,12 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
 
   useEffect(() => {
     if (data.material && data.material !== 'Custom') {
-      const filtered = testCodes.filter(test => test.material_type === data.material);
+      const filtered = testCatalogService.getTestsByMaterial(data.material);
       setFilteredTests(filtered);
     } else {
       setFilteredTests([]);
     }
-  }, [data.material, testCodes]);
+  }, [data.material]);
 
   useEffect(() => {
     if (reportNumber && reportNumber !== data.report_number) {
@@ -80,14 +79,6 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
     }
   };
 
-  const loadTestCodes = async () => {
-    try {
-      const codes = await testCodeService.fetchTestCodes();
-      setTestCodes(codes);
-    } catch (error) {
-      console.error('Error loading test codes:', error);
-    }
-  };
 
   const handleAddRoad = async () => {
     if (!newRoadName.trim() || !data.project_id) return;
@@ -152,7 +143,7 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
   };
 
   const handleTestTypeChange = (testType: string) => {
-    const selectedTest = testCodes.find(test => test.name === testType);
+    const selectedTest = testCatalogService.getTestByName(testType);
     onUpdate({
       test_type: testType,
       doc_code: selectedTest?.code || ''
@@ -339,11 +330,12 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                   <SelectValue placeholder="Select material..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {MATERIAL_TYPES.map((material) => (
+                  {materialTypes.map((material) => (
                     <SelectItem key={material} value={material}>
                       {material}
                     </SelectItem>
                   ))}
+                  <SelectItem value="Custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
             </div>

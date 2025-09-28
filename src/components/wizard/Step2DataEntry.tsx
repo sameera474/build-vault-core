@@ -40,11 +40,17 @@ export function Step2DataEntry({ data, onUpdate, testType }: Step2DataEntryProps
       default:
         return (
           <div className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-2">Test Interface Not Available</h3>
-            <p className="text-muted-foreground">
-              The test interface for "{testType}" is being developed.
-              Please use the generic data entry form or contact support.
+            <h3 className="text-lg font-semibold mb-2">Excel-like Grid Interface</h3>
+            <p className="text-muted-foreground mb-4">
+              Advanced Excel-like data entry grid for "{testType}" test.
             </p>
+            <div className="bg-muted/30 border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
+              <p className="text-muted-foreground">
+                Excel-like grid with formulas, validation, copy/paste, undo/redo features will be implemented here.
+                <br />
+                Features: SUM, AVG, MIN, MAX formulas • Typed columns • Freeze headers • Add/remove rows
+              </p>
+            </div>
           </div>
         );
     }
