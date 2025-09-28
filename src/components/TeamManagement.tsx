@@ -386,8 +386,24 @@ const addMemberManually = async () => {
     });
 
     if (error) {
-      // supabase-js wraps non-2xx as error; read the payload if available
-      const payload = (error as any).context?.body ? JSON.parse((error as any).context.body) : null;
+      // Handle different error response formats from supabase-js
+      let payload = null;
+      try {
+        // Try to get the error details from various possible locations
+        if ((error as any).context?.body) {
+          const body = (error as any).context.body;
+          payload = typeof body === 'string' ? JSON.parse(body) : body;
+        } else if ((error as any).details) {
+          payload = (error as any).details;
+        } else if ((error as any).message) {
+          // If it's a simple error, wrap it
+          payload = { error: (error as any).message };
+        }
+      } catch (parseError) {
+        console.error('Error parsing response:', parseError);
+        payload = null;
+      }
+
       if (payload?.code === "INVITE_EXISTS" && payload.acceptUrl) {
         try {
           await navigator.clipboard.writeText(payload.acceptUrl);
@@ -408,7 +424,11 @@ const addMemberManually = async () => {
           variant: "destructive",
         });
       } else {
-        throw error;
+        toast({
+          title: "Failed to add member",
+          description: payload?.error || error.message || "Please try again.",
+          variant: "destructive",
+        });
       }
       return;
     }
