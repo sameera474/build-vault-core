@@ -1,15 +1,15 @@
-// supabase/functions/create-team-member/index.ts
-// Edge-safe: creates actual users + profiles, no Node polyfills
+// Edge-safe: Deno.serve + web APIs only.
+// No std/node imports, no process, no Buffer.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const headers = {
+const CORS = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers });
+  return new Response(JSON.stringify(data), { status, headers: CORS });
 }
 
 const ALLOWED_ROLES = new Set([
@@ -23,25 +23,26 @@ const ALLOWED_ROLES = new Set([
 ]);
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
-    // 1) Auth header (caller must be signed in)
+    // Auth header from client
     const authHeader = req.headers.get("Authorization") ?? "";
     const jwt = authHeader.replace("Bearer ", "");
     if (!jwt) return json({ error: "Missing Authorization header" }, 401);
 
-    // 2) Clients
+    // Env (set as Function Secrets)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const userClient = createClient(SUPABASE_URL, ANON, {
+    // Clients
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${jwt}` } },
     });
-    const admin = createClient(SUPABASE_URL, SERVICE);
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY); // bypass RLS
 
-    // 3) Parse input
+    // Input - keeping existing format for compatibility
     const body = await req.json().catch(() => ({}));
     const { name, email, role, phone, department, avatar_url } = body as Record<string, any>;
     
@@ -60,17 +61,14 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid role" }, 400);
     }
 
-    // 4) Get caller profile / company
-    const {
-      data: { user },
-      error: userErr,
-    } = await userClient.auth.getUser();
-    if (userErr || !user) return json({ error: "Not authenticated" }, 401);
+    // Caller profile → company_id, permissions
+    const { data: authUser } = await userClient.auth.getUser();
+    if (!authUser?.user) return json({ error: "Not authenticated" }, 401);
 
     const { data: me, error: meErr } = await userClient
       .from("profiles")
       .select("user_id, company_id, tenant_role, is_super_admin")
-      .eq("user_id", user.id)
+      .eq("user_id", authUser.user.id)
       .single();
     if (meErr || !me) return json({ error: "Profile not found" }, 403);
 
@@ -80,7 +78,7 @@ Deno.serve(async (req) => {
       return json({ error: "Forbidden: admin only" }, 403);
     }
 
-    // 5) Create auth user or find existing
+    // Create auth user or find existing
     let newUserId: string;
     
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -113,7 +111,7 @@ Deno.serve(async (req) => {
       newUserId = created!.user!.id;
     }
 
-    // 6) Check if user already belongs to another company
+    // Check if user already belongs to another company
     const { data: existingProfile, error: existingErr } = await admin
       .from("profiles")
       .select("company_id")
@@ -128,7 +126,7 @@ Deno.serve(async (req) => {
       return json({ error: "User already belongs to another company" }, 409);
     }
 
-    // 7) Upsert profile
+    // Upsert profile with service-role (bypass RLS)
     const { error: profileUpsertErr } = await admin
       .from("profiles")
       .upsert({
