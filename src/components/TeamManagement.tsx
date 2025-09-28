@@ -628,7 +628,8 @@ const copyInvitationLink = async (token: string) => {
             onClick={() => copyInvitationLink(invitation.invitation_token)}
             title="Copy invite link"
           >
-            <Copy className="h-4 w-4" />
+            <Copy className="h-4 w-4 mr-2" />
+            Copy Link
           </Button>
           <Button
             variant="outline"
