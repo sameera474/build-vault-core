@@ -619,6 +619,10 @@ export default function TestReports() {
         </>
       )}
 
+      <CreateTestReportDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
     </div>
   );
 }
