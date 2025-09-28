@@ -59,9 +59,10 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Missing company_id. User must be authenticated or company_id provided.');
     }
 
-    // Generate invitation token
+    // Generate invitation token (stored in DB for tracking)
     const invitationToken = crypto.randomUUID();
-    const invitationUrl = `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify?token=${invitationToken}&type=invite&redirect_to=${Deno.env.get('SITE_URL')}/dashboard`;
+    const siteUrl = Deno.env.get('SITE_URL') || '';
+    const invitationUrl = `${siteUrl}/invite/${invitationToken}`;
 
     // Create invitation record
     const { error: inviteError } = await supabase
@@ -129,7 +130,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ 
       success: true,
       message: "Invitation sent successfully",
-      invitation_token: invitationToken
+      invitation_token: invitationToken,
+      invitation_url: invitationUrl,
     }), {
       status: 200,
       headers: {

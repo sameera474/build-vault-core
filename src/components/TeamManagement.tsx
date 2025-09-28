@@ -192,7 +192,7 @@ export function TeamManagement() {
     setIsInviting(true);
 
     try {
-      const { error } = await supabase.functions.invoke('send-team-invitation', {
+      const { data, error } = await supabase.functions.invoke('send-team-invitation', {
         body: {
           email: inviteEmail.trim(),
           role: inviteRole,
@@ -203,10 +203,25 @@ export function TeamManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: "Invitation sent!",
-        description: `An invitation has been sent to ${inviteEmail}`,
-      });
+      if (data?.invitation_url) {
+        try {
+          await navigator.clipboard.writeText(data.invitation_url);
+          toast({
+            title: "Invitation sent",
+            description: "Invite link copied to clipboard in case the email is delayed.",
+          });
+        } catch {
+          toast({
+            title: "Invitation sent",
+            description: `If email is delayed, share this link: ${data.invitation_url}`,
+          });
+        }
+      } else {
+        toast({
+          title: "Invitation sent!",
+          description: `An invitation has been sent to ${inviteEmail}`,
+        });
+      }
 
       setInviteEmail('');
       setInviteRole('technician');
