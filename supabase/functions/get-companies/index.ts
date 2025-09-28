@@ -6,7 +6,6 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,51 +16,35 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: req.headers.get('Authorization') || '' },
         },
       }
     )
 
-    console.log('Fetching companies...');
+    console.log('Fetching companies...')
 
-    // Get all companies with their profile counts
-    const { data: companies, error: companiesError } = await supabase
+    const { data, error } = await supabase
       .from('companies')
-      .select(`
-        *,
-        profiles(count)
-      `)
-      .order('created_at', { ascending: false });
+      .select('*')
+      .order('created_at', { ascending: false })
 
-    if (companiesError) {
-      console.error('Error fetching companies:', companiesError);
+    if (error) {
+      console.error('Error fetching companies:', error)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch companies', details: companiesError.message }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+        JSON.stringify({ error: 'Failed to fetch companies', details: error.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    console.log(`Successfully fetched ${companies?.length || 0} companies`);
-
     return new Response(
-      JSON.stringify({ companies }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-
-  } catch (error) {
-    console.error('Unexpected error:', error);
+      JSON.stringify({ companies: data ?? [] }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  } catch (error: any) {
+    console.error('Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+      JSON.stringify({ error: 'Internal server error', details: String(error?.message || error) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
-});
+})

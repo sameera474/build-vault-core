@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCompanies } from '@/lib/auth';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 interface Company {
@@ -67,36 +68,20 @@ export default function SuperAdmin() {
 
   const fetchSuperAdminData = async () => {
     try {
-      // Fetch companies with user and report counts
-      const { data: companiesData, error: companiesError } = await supabase
-        .from('profiles')
-        .select(`
-          company_id,
-          name,
-          created_at
-        `)
-        .order('created_at', { ascending: false });
+      // Fetch companies from dedicated edge function
+      const { data: companiesRes, error: companiesErr } = await getCompanies();
+      if (companiesErr) throw companiesErr;
 
-      if (companiesError) throw companiesError;
+      const fetchedCompanies = (companiesRes?.companies || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        user_count: 0,
+        report_count: 0,
+        subscription_status: 'active',
+        created_at: c.created_at,
+      }));
 
-      // Process companies data
-      const companiesMap = new Map();
-      companiesData?.forEach(item => {
-        const companyId = item.company_id;
-        if (!companiesMap.has(companyId)) {
-          companiesMap.set(companyId, {
-            id: companyId,
-            name: `Company ${companyId.slice(0, 8)}`,
-            user_count: 0,
-            report_count: 0,
-            subscription_status: 'active',
-            created_at: item.created_at || new Date().toISOString()
-          });
-        }
-        companiesMap.get(companyId).user_count += 1;
-      });
-
-      setCompanies(Array.from(companiesMap.values()));
+      setCompanies(fetchedCompanies);
 
       // Fetch user details
       const { data: usersData, error: usersError } = await supabase
@@ -129,10 +114,10 @@ export default function SuperAdmin() {
 
       setStats({
         total_users: formattedUsers.length,
-        total_companies: companiesMap.size,
+        total_companies: fetchedCompanies.length,
         total_reports: reportsData?.length || 0,
-        active_subscriptions: Math.floor(companiesMap.size * 0.8), // Simulated
-        monthly_revenue: companiesMap.size * 79.99, // Simulated
+        active_subscriptions: Math.floor(fetchedCompanies.length * 0.8), // Simulated
+        monthly_revenue: fetchedCompanies.length * 79.99, // Simulated
         growth_rate: 12.5 // Simulated
       });
 
