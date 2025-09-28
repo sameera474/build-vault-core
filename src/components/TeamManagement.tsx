@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, Mail, Trash2, UserCheck, Edit, Building, FolderOpen } from 'lucide-react';
+import { Plus, Users, Mail, Trash2, UserCheck, Edit, Building, FolderOpen, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,6 +43,7 @@ interface Invitation {
   created_at: string;
   expires_at: string;
   accepted_at: string | null;
+  invitation_token: string;
 }
 
 const TENANT_ROLES = [
@@ -109,7 +110,7 @@ export function TeamManagement() {
       // Fetch pending invitations
       const { data: invites, error: invitesError } = await supabase
         .from('team_invitations')
-        .select('id, email, role, created_at, expires_at, accepted_at')
+        .select('id, email, role, created_at, expires_at, accepted_at, invitation_token')
         .eq('company_id', profile.company_id)
         .is('accepted_at', null)
         .gt('expires_at', new Date().toISOString());
@@ -204,8 +205,11 @@ export function TeamManagement() {
       if (error) throw error;
 
       if (data?.invitation_url) {
+        const urlToCopy = data.invitation_url.startsWith('http')
+          ? data.invitation_url
+          : `${window.location.origin}${data.invitation_url}`;
         try {
-          await navigator.clipboard.writeText(data.invitation_url);
+          await navigator.clipboard.writeText(urlToCopy);
           toast({
             title: "Invitation sent",
             description: "Invite link copied to clipboard in case the email is delayed.",
@@ -213,7 +217,7 @@ export function TeamManagement() {
         } catch {
           toast({
             title: "Invitation sent",
-            description: `If email is delayed, share this link: ${data.invitation_url}`,
+            description: `If email is delayed, share this link: ${urlToCopy}`,
           });
         }
       } else {
@@ -331,9 +335,19 @@ export function TeamManagement() {
     return TENANT_ROLES.find(r => r.value === role)?.label || role.charAt(0).toUpperCase() + role.slice(1);
   };
 
-  const getRoleColor = (role: string) => {
-    return ROLE_COLORS[role] || 'bg-gray-100 text-gray-800';
-  };
+const getRoleColor = (role: string) => {
+  return ROLE_COLORS[role] || 'bg-gray-100 text-gray-800';
+};
+
+const copyInvitationLink = async (token: string) => {
+  const url = `${window.location.origin}/invite/${token}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    toast({ title: 'Invite link copied', description: url });
+  } catch (e: any) {
+    toast({ title: 'Copy failed', description: url });
+  }
+};
 
   if (loading) {
     return (
@@ -604,18 +618,26 @@ export function TeamManagement() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-yellow-100 text-yellow-800">
-                          {formatRole(invitation.role)}
-                        </Badge>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteInvitation(invitation.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-yellow-100 text-yellow-800">
+            {formatRole(invitation.role)}
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => copyInvitationLink(invitation.invitation_token)}
+            title="Copy invite link"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => deleteInvitation(invitation.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
                     </div>
                   ))}
                 </div>

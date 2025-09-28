@@ -17,6 +17,7 @@ import Contact from "./pages/Contact";
 import SignIn from "./pages/SignIn";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
+import Invite from "./pages/Invite";
 
 // Protected pages
 import Dashboard from "./pages/Dashboard";
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
             <Route path="/pricing" element={<PublicLayout><Pricing /></PublicLayout>} />
             <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+            <Route path="/invite/:token" element={<PublicLayout><Invite /></PublicLayout>} />
             
             {/* Auth routes without layout */}
             <Route path="/signin" element={<SignIn />} />
