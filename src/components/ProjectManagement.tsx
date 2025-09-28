@@ -424,6 +424,22 @@ export function ProjectManagement() {
                     {project._count?.test_reports || 0} test reports
                   </div>
                 </div>
+
+                {/* Always-visible actions for clarity */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button size="sm" variant="outline" onClick={() => navigate(`/projects/${project.id}`)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => navigate(`/barchart/${project.id}`)}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    View Charts
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDelete(project.id)}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
