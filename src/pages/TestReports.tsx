@@ -597,5 +597,3 @@ export default function TestReports() {
     </div>
   );
 }
-
-export { TestReports };
