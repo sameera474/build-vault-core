@@ -44,7 +44,8 @@ export default function Register() {
       const { data, error } = await signUp(
         validatedData.adminEmail,
         validatedData.password,
-        validatedData.adminName
+        validatedData.adminName,
+        validatedData.companyName
       );
 
       if (error) {

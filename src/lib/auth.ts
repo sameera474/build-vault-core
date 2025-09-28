@@ -8,7 +8,7 @@ export const signIn = async (email: string, password: string) => {
   return { data, error };
 };
 
-export const signUp = async (email: string, password: string, name: string) => {
+export const signUp = async (email: string, password: string, name: string, companyName?: string) => {
   const redirectUrl = `${window.location.origin}/`;
   
   const { data, error } = await supabase.auth.signUp({
@@ -18,10 +18,16 @@ export const signUp = async (email: string, password: string, name: string) => {
       emailRedirectTo: redirectUrl,
       data: {
         name: name,
+        company_name: companyName,
       }
     }
   });
   
+  return { data, error };
+};
+
+export const getCompanies = async () => {
+  const { data, error } = await supabase.functions.invoke('get-companies');
   return { data, error };
 };
 
