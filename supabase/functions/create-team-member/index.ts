@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (pending) {
-      const acceptUrl = `${SITE_URL}/invite/${encodeURIComponent(pending.invitation_token)}`;
+      const acceptUrl = `${SITE_URL}/accept-invitation?token=${encodeURIComponent(pending.invitation_token)}`;
       return json(
         { error: "Invitation already exists", code: "INVITE_EXISTS", acceptUrl, inviteId: pending.id },
         409
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     if (invErr) {
       // Map unique violation to 409
       if ((invErr as any).code === "23505") {
-        const acceptUrl = `${SITE_URL}/invite/${encodeURIComponent(token)}`;
+        const acceptUrl = `${SITE_URL}/accept-invitation?token=${encodeURIComponent(token)}`;
         return json(
           { error: "Duplicate invitation", code: "INVITE_EXISTS", details: invErr.message, acceptUrl },
           409
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       return json({ error: "Insert invitation failed", details: invErr.message }, 500);
     }
 
-    const acceptUrl = `${SITE_URL}/invite/${encodeURIComponent(invite.invitation_token)}`;
+    const acceptUrl = `${SITE_URL}/accept-invitation?token=${encodeURIComponent(invite.invitation_token)}`;
 
     // 4) Optional: send email via provider HTTP API using fetch (no Node sdk)
     // If email fails, do not fail the whole request—still return acceptUrl

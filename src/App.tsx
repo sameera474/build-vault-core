@@ -18,6 +18,7 @@ import SignIn from "./pages/SignIn";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Invite from "./pages/Invite";
+import InviteAccept from "./pages/InviteAccept";
 
 // Protected pages
 import Dashboard from "./pages/Dashboard";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/pricing" element={<PublicLayout><Pricing /></PublicLayout>} />
             <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
             <Route path="/invite/:token" element={<PublicLayout><Invite /></PublicLayout>} />
+            <Route path="/accept-invitation" element={<InviteAccept />} />
             
             {/* Auth routes without layout */}
             <Route path="/signin" element={<SignIn />} />
