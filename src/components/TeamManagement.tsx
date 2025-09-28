@@ -114,23 +114,13 @@ export function TeamManagement() {
       // Fetch team members (exclude super admin from display)
       const { data: members, error: membersError } = await supabase
         .from('profiles')
-        .select('user_id, name, role, tenant_role, created_at, is_super_admin')
+        .select('user_id, name, role, tenant_role, created_at, is_super_admin, phone, department, avatar_url')
         .eq('company_id', profile.company_id);
-
-      // Get auth users data for email and additional profile info
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      const authUsersMap = new Map(authUsers?.users?.map(user => [user.id, user]) || []);
 
       if (membersError) throw membersError;
 
-      // Filter out super admin from team display and add email info
-      const filteredMembers = members?.filter(member => !member.is_super_admin).map(member => ({
-        ...member,
-        email: authUsersMap.get(member.user_id)?.email || '',
-        avatar_url: member.avatar_url || '',
-        phone: member.phone || '',
-        department: member.department || ''
-      })) || [];
+      // Filter out super admin from team display
+      const filteredMembers = members?.filter(member => !member.is_super_admin) || [];
       setTeamMembers(filteredMembers);
 
       // Fetch pending invitations
@@ -381,26 +371,18 @@ const addMemberManually = async () => {
   setIsSaving(true);
 
   try {
-    // Create auth user first
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: newMember.email,
-      email_confirm: true,
-      user_metadata: {
-        name: newMember.name
-      }
-    });
-
-    if (authError) throw authError;
+    // Create a user ID for the manual member
+    const tempUserId = crypto.randomUUID();
 
     // Create profile for the user
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
-        user_id: authData.user.id,
+        user_id: tempUserId,
         company_id: profile.company_id,
         name: newMember.name,
         role: 'admin',
-        tenant_role: newMember.role,
+        tenant_role: newMember.role as any,
         phone: newMember.phone,
         department: newMember.department,
         avatar_url: newMember.avatar_url
@@ -450,7 +432,7 @@ const updateMember = async () => {
       .from('profiles')
       .update({
         name: editingMember.name,
-        tenant_role: editingMember.tenant_role,
+        tenant_role: editingMember.tenant_role as any,
         phone: editingMember.phone,
         department: editingMember.department,
         avatar_url: editingMember.avatar_url

@@ -197,28 +197,37 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           company_id: string
           created_at: string
+          department: string | null
           is_super_admin: boolean | null
           name: string | null
+          phone: string | null
           role: string
           tenant_role: Database["public"]["Enums"]["tenant_role"] | null
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           company_id: string
           created_at?: string
+          department?: string | null
           is_super_admin?: boolean | null
           name?: string | null
+          phone?: string | null
           role?: string
           tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           company_id?: string
           created_at?: string
+          department?: string | null
           is_super_admin?: boolean | null
           name?: string | null
+          phone?: string | null
           role?: string
           tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
           user_id?: string
