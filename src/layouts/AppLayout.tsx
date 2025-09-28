@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { HardHat, LogOut, User, ChevronDown, BarChart3, FileText, Users as UsersIcon, Building2 } from 'lucide-react';
+import { HardHat, LogOut, User, ChevronDown, BarChart3, FileText, Users as UsersIcon, Building2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
@@ -22,34 +22,66 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-const navigationItems = [
+interface NavigationItem {
+  title: string;
+  url: string;
+  icon: any;
+  requiredPermissions?: string[];
+  requireSuperAdmin?: boolean;
+}
+
+const navigationItems: NavigationItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
-  { title: "Test Reports", url: "/test-reports", icon: FileText },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Monthly Summaries", url: "/monthly-summaries", icon: BarChart3 },
-  { title: "Chainage Charts", url: "/barchart", icon: BarChart3 },
-  { title: "Approvals", url: "/approvals", icon: FileText },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Team", url: "/team", icon: UsersIcon },
-  { title: "Projects", url: "/projects", icon: UsersIcon },
-  { title: "Companies", url: "/companies", icon: Building2 },
-  { title: "Automation", url: "/automation", icon: FileText },
+  { title: "Test Reports", url: "/test-reports", icon: FileText, requiredPermissions: ['create_reports', 'view_company_reports', 'view_own_reports'] },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, requiredPermissions: ['view_analytics', 'view_system_analytics'] },
+  { title: "Monthly Summaries", url: "/monthly-summaries", icon: BarChart3, requiredPermissions: ['view_analytics', 'view_company_reports'] },
+  { title: "Chainage Charts", url: "/barchart", icon: BarChart3, requiredPermissions: ['view_analytics', 'view_company_reports'] },
+  { title: "Approvals", url: "/approvals", icon: FileText, requiredPermissions: ['approve_reports'] },
+  { title: "Documents", url: "/documents", icon: FileText, requiredPermissions: ['view_company_reports', 'export_data'] },
+  { title: "Team", url: "/team", icon: UsersIcon, requiredPermissions: ['manage_company_users'] },
+  { title: "Projects", url: "/projects", icon: UsersIcon, requiredPermissions: ['manage_projects', 'view_company_reports'] },
+  { title: "Companies", url: "/companies", icon: Building2, requireSuperAdmin: true },
+  { title: "Demo Users", url: "/demo-users", icon: Users, requireSuperAdmin: true },
+  { title: "Super Admin", url: "/super-admin", icon: Building2, requireSuperAdmin: true },
+  { title: "Automation", url: "/automation", icon: FileText, requiredPermissions: ['manage_system_settings'] },
   { title: "Mobile", url: "/mobile", icon: FileText },
-  { title: "Export", url: "/export", icon: FileText },
-  { title: "Templates", url: "/templates", icon: FileText },
+  { title: "Export", url: "/export", icon: FileText, requiredPermissions: ['export_data'] },
+  { title: "Templates", url: "/templates", icon: FileText, requiredPermissions: ['manage_templates', 'view_company_reports'] },
 ];
 
 function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { hasPermission, hasAnyPermission, isSuperAdmin } = usePermissions();
 
   const isActive = (path: string) => currentPath === path;
+
+  const shouldShowMenuItem = (item: NavigationItem) => {
+    // Super admin can see everything except specific restrictions
+    if (isSuperAdmin) {
+      return true;
+    }
+
+    // Check if super admin is required
+    if (item.requireSuperAdmin) {
+      return false;
+    }
+
+    // Check permissions
+    if (item.requiredPermissions) {
+      return hasAnyPermission(item.requiredPermissions);
+    }
+
+    // Default to show if no restrictions
+    return true;
+  };
 
   return (
     <Sidebar>
@@ -65,24 +97,26 @@ function AppSidebar() {
           <SidebarGroupLabel>Testing Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link 
-                      to={item.url} 
-                      className={cn(
-                        "flex items-center gap-2 transition-colors",
-                        isActive(item.url) 
-                          ? "bg-muted text-primary font-medium" 
-                          : "hover:bg-muted/50"
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navigationItems
+                .filter(shouldShowMenuItem)
+                .map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <Link 
+                        to={item.url} 
+                        className={cn(
+                          "flex items-center gap-2 transition-colors",
+                          isActive(item.url) 
+                            ? "bg-muted text-primary font-medium" 
+                            : "hover:bg-muted/50"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

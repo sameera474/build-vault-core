@@ -39,6 +39,7 @@ import Export from "./pages/Export";
 import Subscription from "./pages/Subscription";
 import SuperAdmin from "./pages/SuperAdmin";
 import Companies from "./pages/Companies";
+import DemoUsers from "./pages/DemoUsers";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -244,6 +245,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Companies />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/demo-users" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <DemoUsers />
               </AppLayout>
             </ProtectedRoute>
           } />
