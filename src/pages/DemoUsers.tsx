@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Users, Plus, Shield, Mail, Key, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Plus, Shield, Mail, Key, Eye, EyeOff, Database } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,13 @@ interface DemoUser {
   role: string;
   tenant_role: string;
   company_name: string;
+}
+
+interface RolePermission {
+  id: string;
+  role: string;
+  permission: string;
+  created_at: string;
 }
 
 const DEMO_USERS: DemoUser[] = [
@@ -65,7 +72,35 @@ const DEMO_USERS: DemoUser[] = [
 export default function DemoUsers() {
   const [showPasswords, setShowPasswords] = useState<{[key: string]: boolean}>({});
   const [creating, setCreating] = useState<{[key: string]: boolean}>({});
+  const [rolePermissions, setRolePermissions] = useState<RolePermission[]>([]);
+  const [loadingPermissions, setLoadingPermissions] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchRolePermissions();
+  }, []);
+
+  const fetchRolePermissions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('*')
+        .order('role', { ascending: true })
+        .order('permission', { ascending: true });
+
+      if (error) throw error;
+      setRolePermissions(data || []);
+    } catch (error) {
+      console.error('Error fetching role permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load role permissions",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPermissions(false);
+    }
+  };
 
   const togglePasswordVisibility = (email: string) => {
     setShowPasswords(prev => ({
@@ -317,6 +352,65 @@ export default function DemoUsers() {
               </CardContent>
             </Card>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Database Role Permissions
+          </CardTitle>
+          <CardDescription>
+            Current role permissions stored in the database
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingPermissions ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Permission</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Created At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rolePermissions.map((permission) => (
+                  <TableRow key={permission.id}>
+                    <TableCell>
+                      <Badge 
+                        variant="secondary" 
+                        className={`${getRoleBadgeColor(permission.role)}`}
+                      >
+                        {permission.role.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-sm bg-muted px-2 py-1 rounded">
+                        {permission.permission}
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs text-muted-foreground">
+                        {permission.id.substring(0, 8)}...
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {new Date(permission.created_at).toLocaleDateString()}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
