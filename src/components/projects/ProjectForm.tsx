@@ -71,6 +71,8 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
   });
 
   const onSubmit = (data: ProjectFormData) => {
+    console.log('Form submission data:', data);
+    console.log('Logo URLs:', logoUrls);
     onSave({
       ...data,
       ...logoUrls,
@@ -102,14 +104,20 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
             </p>
           </div>
         </div>
-        <Button onClick={handleSubmit(onSubmit)} disabled={isSubmitting}>
+        <Button 
+          onClick={(e) => {
+            e.preventDefault();
+            console.log('Button clicked, form errors:', errors);
+            handleSubmit(onSubmit)(e);
+          }} 
+          disabled={isSubmitting}
+        >
           <Save className="h-4 w-4 mr-2" />
           {isSubmitting ? 'Saving...' : 'Save Project'}
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Building className="h-4 w-4" />
@@ -378,7 +386,6 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
             </Card>
           </TabsContent>
         </Tabs>
-      </form>
     </div>
   );
 }
