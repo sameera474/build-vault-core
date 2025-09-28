@@ -6,7 +6,6 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: CORS });
 
@@ -21,7 +20,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://<your-app>.lovable.app";
+    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://scwhurqvgeskseugwcrx.lovable.app";
     const admin = createClient(SUPABASE_URL, SERVICE);
     const userClient = createClient(SUPABASE_URL, ANON, {
       global: { headers: { Authorization: `Bearer ${jwt}` } },
