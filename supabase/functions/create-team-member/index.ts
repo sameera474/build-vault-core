@@ -104,22 +104,63 @@ serve(async (req) => {
     }
 
     // Create auth user (email confirmed so they can login immediately)
+    let newUserId: string;
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
       user_metadata: { name },
     });
-    if (createErr || !created?.user) {
-      console.error("createUser error", createErr);
-      return new Response(JSON.stringify({ error: createErr?.message || "Failed to create user" }), {
-        status: 500,
+
+    if (createErr) {
+      // If user already exists, find their id by email
+      const code = (createErr as any)?.code || (createErr as any)?.status;
+      if (code === 'email_exists' || code === 422) {
+        const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 } as any);
+        if (listErr) {
+          console.error('listUsers error', listErr);
+          return new Response(JSON.stringify({ error: 'Failed to locate existing user' }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
+        const found = (list as any)?.users?.find((u: any) => (u.email || '').toLowerCase() === email);
+        if (!found) {
+          return new Response(JSON.stringify({ error: 'Email already registered to another account' }), {
+            status: 409,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
+        newUserId = found.id;
+      } else {
+        console.error("createUser error", createErr);
+        return new Response(JSON.stringify({ error: createErr?.message || "Failed to create user" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+    } else {
+      newUserId = created!.user!.id;
+    }
+
+    // Ensure user is assignable to this company
+    const { data: existingProfile, error: existingErr } = await admin
+      .from("profiles")
+      .select("company_id")
+      .eq("user_id", newUserId)
+      .maybeSingle();
+
+    if (existingErr) {
+      console.error("profile lookup error", existingErr);
+    }
+
+    if (existingProfile && existingProfile.company_id && existingProfile.company_id !== callerProfile.company_id) {
+      return new Response(JSON.stringify({ error: "User already belongs to another company" }), {
+        status: 409,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const newUserId = created.user.id;
-
-    // Upsert profile for the new user in the caller's company
+    // Upsert profile for the new/existing user in the caller's company
     const { error: profileUpsertErr } = await admin
       .from("profiles")
       .upsert({
