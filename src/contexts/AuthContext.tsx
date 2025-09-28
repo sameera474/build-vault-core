@@ -26,7 +26,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -35,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted) return;
+        console.log('[Auth] onAuthStateChange', { event, hasSession: !!session, userId: session?.user?.id });
 
         // Update state for runtime changes
         setSession(session);
@@ -51,8 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
         }
 
-        // Only end loading on non-initial events; initial handled by getSession
-        if (event && event !== 'INITIAL_SESSION' && !initialized) {
+        // Avoid flipping loading during initial bootstrap
+        if (event && event !== 'INITIAL_SESSION') {
           setLoading(false);
         }
       }
@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // THEN check for existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
+      console.log('[Auth] getSession', { hasSession: !!session, userId: session?.user?.id });
 
       setSession(session);
       setUser(session?.user ?? null);
@@ -69,11 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getUserProfile(session.user.id).then(({ data: profileData }) => {
           if (!mounted) return;
           setProfile(profileData);
-          setInitialized(true);
           setLoading(false);
         });
       } else {
-        setInitialized(true);
         setLoading(false);
       }
     });
@@ -82,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
