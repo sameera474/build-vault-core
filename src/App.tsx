@@ -29,6 +29,7 @@ import Approvals from "./pages/Approvals";
 import Documents from "./pages/Documents";
 import Team from "./pages/Team";
 import Projects from "./pages/Projects";
+import ProjectEdit from "./pages/ProjectEdit";
 import Analytics from "./pages/Analytics";
 import Automation from "./pages/Automation";
 import Mobile from "./pages/Mobile";
@@ -166,6 +167,22 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Projects />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/new" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ProjectEdit />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:id" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ProjectEdit />
               </AppLayout>
             </ProtectedRoute>
           } />

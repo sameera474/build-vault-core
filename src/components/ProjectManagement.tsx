@@ -232,7 +232,7 @@ export function ProjectManagement() {
             Manage your construction projects and track testing progress
           </p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={() => navigate('/projects/new')}>
           <Plus className="h-4 w-4 mr-2" />
           New Project
         </Button>
@@ -333,7 +333,7 @@ export function ProjectManagement() {
             <p className="text-muted-foreground text-center mb-4">
               Create your first project to start organizing your construction testing activities.
             </p>
-            <Button onClick={handleCreate}>
+            <Button onClick={() => navigate('/projects/new')}>
               <Plus className="h-4 w-4 mr-2" />
               Create First Project
             </Button>
@@ -361,7 +361,7 @@ export function ProjectManagement() {
                       <DropdownMenuItem onClick={() => navigate(`/barchart/${project.id}`)}>
                         View Charts
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEdit(project)}>
+                      <DropdownMenuItem onClick={() => navigate(`/projects/${project.id}`)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
