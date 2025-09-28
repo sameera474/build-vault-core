@@ -17,17 +17,17 @@ import type { Project } from '@/services/projectService';
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(255),
-  contract_number: z.string().min(1, 'Contract number is required').max(100),
-  contractor_name: z.string().min(1, 'Contractor name is required').max(255),
-  client_name: z.string().min(1, 'Client name is required').max(255),
-  consultant_name: z.string().min(1, 'Consultant name is required').max(255),
+  contract_number: z.string().max(100).optional(),
+  contractor_name: z.string().max(255).optional(),
+  client_name: z.string().max(255).optional(),
+  consultant_name: z.string().max(255).optional(),
   description: z.string().optional(),
   location: z.string().optional(),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
-  project_prefix: z.string().min(1, 'Project prefix is required').max(10),
-  region_code: z.string().min(1, 'Region code is required').max(10),
-  lab_code: z.string().min(1, 'Lab code is required').max(10),
+  project_prefix: z.string().max(10).optional(),
+  region_code: z.string().max(10).optional(),
+  lab_code: z.string().max(10).optional(),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -45,6 +45,13 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
     client_logo: project?.client_logo || '',
     consultant_logo: project?.consultant_logo || '',
   });
+
+  // Initialize active tab from query param if provided (e.g., ?tab=roads)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab) setActiveTab(tab);
+  }, []);
 
   const {
     register,
@@ -84,7 +91,7 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -104,14 +111,7 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
             </p>
           </div>
         </div>
-        <Button 
-          onClick={(e) => {
-            e.preventDefault();
-            console.log('Button clicked, form errors:', errors);
-            handleSubmit(onSubmit)(e);
-          }} 
-          disabled={isSubmitting}
-        >
+        <Button type="submit" disabled={isSubmitting}>
           <Save className="h-4 w-4 mr-2" />
           {isSubmitting ? 'Saving...' : 'Save Project'}
         </Button>
@@ -386,6 +386,6 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
             </Card>
           </TabsContent>
         </Tabs>
-    </div>
+    </form>
   );
 }

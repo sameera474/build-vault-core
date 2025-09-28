@@ -55,7 +55,7 @@ export default function ProjectEdit() {
           title: "Success",
           description: "Project created successfully",
         });
-        navigate(`/projects/${newProject.id}`);
+        navigate(`/projects/${newProject.id}?tab=roads`);
       } else if (project) {
         console.log('Updating project', project.id, 'with data:', projectData);
         await projectService.updateProject(project.id, projectData);
