@@ -26,6 +26,12 @@ interface RolePermission {
   created_at: string;
 }
 
+interface Company {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 const DEMO_USERS: DemoUser[] = [
   {
     email: 'john.manager@alpha.com',
@@ -73,12 +79,28 @@ export default function DemoUsers() {
   const [showPasswords, setShowPasswords] = useState<{[key: string]: boolean}>({});
   const [creating, setCreating] = useState<{[key: string]: boolean}>({});
   const [rolePermissions, setRolePermissions] = useState<RolePermission[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loadingPermissions, setLoadingPermissions] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchRolePermissions();
+    fetchCompanies();
   }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
 
   const fetchRolePermissions = async () => {
     try {
@@ -163,11 +185,22 @@ export default function DemoUsers() {
     }
   };
 
+  const groupPermissionsByRole = () => {
+    const grouped = rolePermissions.reduce((acc, permission) => {
+      if (!acc[permission.role]) {
+        acc[permission.role] = [];
+      }
+      acc[permission.role].push(permission);
+      return acc;
+    }, {} as Record<string, RolePermission[]>);
+    return grouped;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Demo Users</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Users Management</h1>
           <p className="text-muted-foreground">
             Create demo users for testing role-based access control
           </p>
@@ -359,10 +392,10 @@ export default function DemoUsers() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            Database Role Permissions
+            Role Permissions by Company Context
           </CardTitle>
           <CardDescription>
-            Current role permissions stored in the database
+            Role permissions organized by company and role hierarchy
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -371,45 +404,55 @@ export default function DemoUsers() {
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Permission</TableHead>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Created At</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rolePermissions.map((permission) => (
-                  <TableRow key={permission.id}>
-                    <TableCell>
-                      <Badge 
-                        variant="secondary" 
-                        className={`${getRoleBadgeColor(permission.role)}`}
-                      >
-                        {permission.role.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-sm bg-muted px-2 py-1 rounded">
-                        {permission.permission}
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-xs text-muted-foreground">
-                        {permission.id.substring(0, 8)}...
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(permission.created_at).toLocaleDateString()}
+            <div className="space-y-6">
+              {/* Companies Overview */}
+              <div>
+                <h4 className="font-medium mb-3">Companies in System</h4>
+                <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                  {companies.map((company) => (
+                    <Card key={company.id} className="p-3">
+                      <div className="font-medium text-sm">{company.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        ID: {company.id.substring(0, 8)}...
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Role Permissions Grouped */}
+              <div>
+                <h4 className="font-medium mb-3">Global Role Permissions</h4>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {Object.entries(groupPermissionsByRole()).map(([role, permissions]) => (
+                    <Card key={role}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Badge 
+                            variant="secondary" 
+                            className={`${getRoleBadgeColor(role)}`}
+                          >
+                            {role.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            ({permissions.length} permissions)
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {permissions.map((permission) => (
+                          <div key={permission.id} className="text-xs">
+                            <code className="bg-muted px-2 py-1 rounded text-xs">
+                              {permission.permission}
+                            </code>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -48,7 +48,7 @@ const navigationItems: NavigationItem[] = [
   { title: "Team", url: "/team", icon: UsersIcon, requiredPermissions: ['manage_company_users'] },
   { title: "Projects", url: "/projects", icon: UsersIcon, requiredPermissions: ['manage_projects', 'view_company_reports'] },
   { title: "Companies", url: "/companies", icon: Building2, requireSuperAdmin: true },
-  { title: "Demo Users", url: "/demo-users", icon: Users, requireSuperAdmin: true },
+  { title: "Users", url: "/demo-users", icon: Users, requireSuperAdmin: true },
   { title: "Super Admin", url: "/super-admin", icon: Building2, requireSuperAdmin: true },
   { title: "Automation", url: "/automation", icon: FileText, requiredPermissions: ['manage_system_settings'] },
   { title: "Mobile", url: "/mobile", icon: FileText },
