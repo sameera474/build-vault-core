@@ -371,24 +371,18 @@ const addMemberManually = async () => {
   setIsSaving(true);
 
   try {
-    // Create a user ID for the manual member
-    const tempUserId = crypto.randomUUID();
+    const { data, error } = await supabase.functions.invoke('create-team-member', {
+      body: {
+        name: newMember.name.trim(),
+        email: newMember.email.trim(),
+        role: newMember.role,
+        phone: newMember.phone || undefined,
+        department: newMember.department || undefined,
+        avatar_url: newMember.avatar_url || undefined,
+      },
+    });
 
-    // Create profile for the user
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        user_id: tempUserId,
-        company_id: profile.company_id,
-        name: newMember.name,
-        role: 'admin',
-        tenant_role: newMember.role as any,
-        phone: newMember.phone,
-        department: newMember.department,
-        avatar_url: newMember.avatar_url
-      });
-
-    if (profileError) throw profileError;
+    if (error) throw error;
 
     toast({
       title: "Member added successfully",
