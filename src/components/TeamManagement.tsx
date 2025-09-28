@@ -375,24 +375,56 @@ const addMemberManually = async () => {
 
     const { data, error } = await supabase.functions.invoke('create-team-member', {
       body: {
-        name: newMember.name.trim(),
         email: newMember.email.trim(),
         role: newMember.role,
-        phone: newMember.phone || undefined,
-        department: newMember.department || undefined,
-        avatar_url: newMember.avatar_url || undefined,
+        expiresInDays: 7,
+        sendEmail: false
       },
       headers: {
         Authorization: `Bearer ${session?.access_token ?? ''}`,
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      // supabase-js wraps non-2xx as error; read the payload if available
+      const payload = (error as any).context?.body ? JSON.parse((error as any).context.body) : null;
+      if (payload?.code === "INVITE_EXISTS" && payload.acceptUrl) {
+        try {
+          await navigator.clipboard.writeText(payload.acceptUrl);
+          toast({
+            title: "Invitation already exists",
+            description: "Link copied to clipboard.",
+          });
+        } catch {
+          toast({
+            title: "Invitation already exists",
+            description: payload.acceptUrl,
+          });
+        }
+      } else if (payload?.code === "ALREADY_MEMBER") {
+        toast({
+          title: "User already a member",
+          description: "That user is already a member of your company.",
+          variant: "destructive",
+        });
+      } else {
+        throw error;
+      }
+      return;
+    }
 
-    toast({
-      title: "Member added successfully",
-      description: `${newMember.name} has been added to your team.`,
-    });
+    try {
+      await navigator.clipboard.writeText(data.acceptUrl);
+      toast({
+        title: "Invitation created",
+        description: "Invite link copied to clipboard.",
+      });
+    } catch {
+      toast({
+        title: "Invitation created",
+        description: data.acceptUrl,
+      });
+    }
 
     setNewMember({
       name: '',
@@ -407,7 +439,7 @@ const addMemberManually = async () => {
   } catch (error: any) {
     console.error('Error adding member:', error);
     toast({
-      title: "Failed to add member",
+      title: "Failed to create invitation",
       description: error.message || "Please try again.",
       variant: "destructive",
     });

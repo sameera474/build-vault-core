@@ -1,5 +1,4 @@
-// Edge-safe: Deno.serve + web APIs only.
-// No std/node imports, no process, no Buffer.
+// supabase/functions/create-team-member/index.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS = {
@@ -8,60 +7,31 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: CORS });
-}
-
-const ALLOWED_ROLES = new Set([
-  "admin",
-  "project_manager", 
-  "quality_manager",
-  "material_engineer",
-  "technician",
-  "consultant_engineer",
-  "consultant_technician",
-]);
+const json = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), { status, headers: CORS });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
-    // Auth header from client
     const authHeader = req.headers.get("Authorization") ?? "";
     const jwt = authHeader.replace("Bearer ", "");
     if (!jwt) return json({ error: "Missing Authorization header" }, 401);
 
-    // Env (set as Function Secrets)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Clients
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+    const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://<your-app>.lovable.app";
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    const userClient = createClient(SUPABASE_URL, ANON, {
       global: { headers: { Authorization: `Bearer ${jwt}` } },
     });
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY); // bypass RLS
 
-    // Input - keeping existing format for compatibility
     const body = await req.json().catch(() => ({}));
-    const { name, email, role, phone, department, avatar_url } = body as Record<string, any>;
-    
-    if (!name?.trim() || !email?.trim() || !role) {
-      return json({ error: "name, email and role are required" }, 400);
-    }
+    const { email, role, projects = [], expiresInDays = 7, sendEmail = false } = body;
+    if (!email || !role) return json({ error: "email and role are required" }, 400);
 
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = name.trim();
-    
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      return json({ error: "Invalid email" }, 400);
-    }
-    
-    if (!ALLOWED_ROLES.has(role)) {
-      return json({ error: "Invalid role" }, 400);
-    }
-
-    // Caller profile → company_id, permissions
+    // Who is calling?
     const { data: authUser } = await userClient.auth.getUser();
     if (!authUser?.user) return json({ error: "Not authenticated" }, 401);
 
@@ -71,81 +41,104 @@ Deno.serve(async (req) => {
       .eq("user_id", authUser.user.id)
       .single();
     if (meErr || !me) return json({ error: "Profile not found" }, 403);
-
-    // Permission check - only admin can add members
+    
     const isAdmin = me.is_super_admin === true || me.tenant_role === "admin";
     if (!isAdmin) {
-      return json({ error: "Forbidden: admin only" }, 403);
+      return json({ error: "Insufficient permission" }, 403);
     }
 
-    // Create auth user or find existing
-    let newUserId: string;
-    
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email: cleanEmail,
-      email_confirm: true,
-      user_metadata: { name: cleanName },
-    });
-
-    if (createErr) {
-      // Handle "email already exists"
-      const code = (createErr as any)?.code || (createErr as any)?.status;
-      if (code === 'email_exists' || code === 422) {
-        // Find existing user by email
-        const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 } as any);
-        if (listErr) {
-          console.error('listUsers error', listErr);
-          return json({ error: 'Failed to locate existing user' }, 500);
-        }
-        
-        const found = (list as any)?.users?.find((u: any) => (u.email || '').toLowerCase() === cleanEmail);
-        if (!found) {
-          return json({ error: 'Email already registered to another account' }, 409);
-        }
-        newUserId = found.id;
-      } else {
-        console.error("createUser error", createErr);
-        return json({ error: createErr?.message || "Failed to create user" }, 500);
+    // 1) If the email already belongs to a user who is a member in this company, return 409
+    // Try to find auth user by email
+    const { data: userByEmail } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const existingUser = userByEmail?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (existingUser) {
+      const { data: existingProfile } = await admin
+        .from("profiles")
+        .select("user_id")
+        .eq("user_id", existingUser.id)
+        .eq("company_id", me.company_id)
+        .maybeSingle();
+      if (existingProfile) {
+        return json(
+          { error: "User is already a member of this company", code: "ALREADY_MEMBER" },
+          409
+        );
       }
-    } else {
-      newUserId = created!.user!.id;
     }
 
-    // Check if user already belongs to another company
-    const { data: existingProfile, error: existingErr } = await admin
-      .from("profiles")
-      .select("company_id")
-      .eq("user_id", newUserId)
+    // 2) Check for existing pending invite (idempotent behavior)
+    const { data: pending } = await admin
+      .from("team_invitations")
+      .select("id, invitation_token, expires_at")
+      .eq("company_id", me.company_id)
+      .eq("email", email)
+      .is("accepted_at", null)
+      .gt("expires_at", new Date().toISOString())
       .maybeSingle();
 
-    if (existingErr) {
-      console.error("profile lookup error", existingErr);
+    if (pending) {
+      const acceptUrl = `${SITE_URL}/invite/${encodeURIComponent(pending.invitation_token)}`;
+      return json(
+        { error: "Invitation already exists", code: "INVITE_EXISTS", acceptUrl, inviteId: pending.id },
+        409
+      );
     }
 
-    if (existingProfile && existingProfile.company_id && existingProfile.company_id !== me.company_id) {
-      return json({ error: "User already belongs to another company" }, 409);
-    }
+    // 3) Create a new invite
+    const token = crypto.randomUUID();
+    const expires_at = new Date(Date.now() + expiresInDays * 864e5).toISOString();
 
-    // Upsert profile with service-role (bypass RLS)
-    const { error: profileUpsertErr } = await admin
-      .from("profiles")
-      .upsert({
-        user_id: newUserId,
+    const { data: invite, error: invErr } = await admin
+      .from("team_invitations")
+      .insert({
         company_id: me.company_id,
-        name: cleanName,
-        role: "admin", // legacy field
-        tenant_role: role,
-        phone: phone || null,
-        department: department || null,
-        avatar_url: avatar_url || null,
-      }, { onConflict: 'user_id' });
+        email,
+        role,
+        invitation_token: token,
+        invited_by: me.user_id,
+        expires_at,
+      })
+      .select()
+      .single();
 
-    if (profileUpsertErr) {
-      console.error("profile upsert error", profileUpsertErr);
-      return json({ error: profileUpsertErr.message }, 500);
+    if (invErr) {
+      // Map unique violation to 409
+      if ((invErr as any).code === "23505") {
+        const acceptUrl = `${SITE_URL}/invite/${encodeURIComponent(token)}`;
+        return json(
+          { error: "Duplicate invitation", code: "INVITE_EXISTS", details: invErr.message, acceptUrl },
+          409
+        );
+      }
+      return json({ error: "Insert invitation failed", details: invErr.message }, 500);
     }
 
-    return json({ ok: true, user_id: newUserId }, 200);
+    const acceptUrl = `${SITE_URL}/invite/${encodeURIComponent(invite.invitation_token)}`;
+
+    // 4) Optional: send email via provider HTTP API using fetch (no Node sdk)
+    // If email fails, do not fail the whole request—still return acceptUrl
+    try {
+      const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+      if (sendEmail && RESEND_API_KEY) {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "ConstructTest Pro <noreply@yourdomain.com>",
+            to: [email],
+            subject: "You're invited to ConstructTest Pro",
+            html: `<p>You've been invited.</p><p><a href="${acceptUrl}">Accept Invite</a></p>`,
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("Invite email failed:", e);
+    }
+
+    return json({ ok: true, inviteId: invite.id, acceptUrl }, 200);
   } catch (e) {
     console.error("create-team-member crashed:", e);
     return json({ error: "Internal error", details: String(e) }, 500);
