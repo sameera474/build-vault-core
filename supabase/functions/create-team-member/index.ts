@@ -119,9 +119,8 @@ serve(async (req) => {
 
     const newUserId = created.user.id;
 
-    // Create profile row for the new user in the caller's company
-    const { error: profileInsErr } = await admin.from("profiles").insert({
-      user_id: newUserId,
+    // Update the automatically created profile (from trigger) with the correct company and details
+    const { error: profileUpdateErr } = await admin.from("profiles").update({
       company_id: callerProfile.company_id,
       name,
       role: "admin", // legacy field kept as in schema, real perms via tenant_role
@@ -129,10 +128,11 @@ serve(async (req) => {
       phone: body.phone || null,
       department: body.department || null,
       avatar_url: body.avatar_url || null,
-    });
-    if (profileInsErr) {
-      console.error("profile insert error", profileInsErr);
-      return new Response(JSON.stringify({ error: profileInsErr.message }), {
+    }).eq("user_id", newUserId);
+
+    if (profileUpdateErr) {
+      console.error("profile update error", profileUpdateErr);
+      return new Response(JSON.stringify({ error: profileUpdateErr.message }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
