@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { HardHat, LogOut, User, ChevronDown, BarChart3, FileText, Users as UsersIcon } from 'lucide-react';
+import { HardHat, LogOut, User, ChevronDown, BarChart3, FileText, Users as UsersIcon, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
@@ -38,6 +38,7 @@ const navigationItems = [
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Team", url: "/team", icon: UsersIcon },
   { title: "Projects", url: "/projects", icon: UsersIcon },
+  { title: "Companies", url: "/companies", icon: Building2 },
   { title: "Automation", url: "/automation", icon: FileText },
   { title: "Mobile", url: "/mobile", icon: FileText },
   { title: "Export", url: "/export", icon: FileText },
