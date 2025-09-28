@@ -22,7 +22,10 @@ export default function ProjectEdit() {
   }, [id]);
 
   const fetchProject = async () => {
-    if (!id || id === 'new') return;
+    if (!id || id === 'new' || id.startsWith(':')) {
+      setLoading(false);
+      return;
+    }
     
     try {
       const projectData = await projectService.fetchProject(id);
@@ -43,7 +46,8 @@ export default function ProjectEdit() {
   const handleSave = async (projectData: Partial<Project>) => {
     console.log('ProjectEdit.handleSave called', { routeId: id, projectData });
     try {
-      if (id === 'new') {
+      const isNew = !id || id === 'new';
+      if (isNew) {
         console.log('Creating new project with data:', projectData);
         const newProject = await projectService.createProject(projectData);
         console.log('Project created:', newProject);
