@@ -119,20 +119,23 @@ serve(async (req) => {
 
     const newUserId = created.user.id;
 
-    // Update the automatically created profile (from trigger) with the correct company and details
-    const { error: profileUpdateErr } = await admin.from("profiles").update({
-      company_id: callerProfile.company_id,
-      name,
-      role: "admin", // legacy field kept as in schema, real perms via tenant_role
-      tenant_role: tenantRole,
-      phone: body.phone || null,
-      department: body.department || null,
-      avatar_url: body.avatar_url || null,
-    }).eq("user_id", newUserId);
+    // Upsert profile for the new user in the caller's company
+    const { error: profileUpsertErr } = await admin
+      .from("profiles")
+      .upsert({
+        user_id: newUserId,
+        company_id: callerProfile.company_id,
+        name,
+        role: "admin", // legacy field kept as in schema, real perms via tenant_role
+        tenant_role: tenantRole as any,
+        phone: body.phone || null,
+        department: body.department || null,
+        avatar_url: body.avatar_url || null,
+      }, { onConflict: 'user_id' });
 
-    if (profileUpdateErr) {
-      console.error("profile update error", profileUpdateErr);
-      return new Response(JSON.stringify({ error: profileUpdateErr.message }), {
+    if (profileUpsertErr) {
+      console.error("profile upsert error", profileUpsertErr);
+      return new Response(JSON.stringify({ error: profileUpsertErr.message }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
