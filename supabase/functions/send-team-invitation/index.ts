@@ -14,6 +14,7 @@ interface InvitationRequest {
   email: string;
   role: string;
   company_name?: string;
+  company_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -28,29 +29,34 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { email, role, company_name }: InvitationRequest = await req.json();
+    const { email, role, company_name, company_id }: InvitationRequest = await req.json();
+    const allowedRoles = ['admin','project_manager','quality_manager','material_engineer','technician','consultant_engineer','consultant_technician'];
+    const normalizedRole = allowedRoles.includes(role) ? role : 'technician';
     
-    // Get user info from the authorization header
+    // Get user info from the authorization header (optional but preferred)
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    let invitedBy: string | null = null;
+    let companyId: string | null = company_id || null;
+    let inviterName = 'Your team';
+
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (!userError && user) {
+        invitedBy = user.id;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id, name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (profile?.company_id) companyId = profile.company_id;
+        if (profile?.name) inviterName = profile.name;
+      }
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      throw new Error('Invalid user token');
-    }
-
-    // Get user's profile and company info
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('company_id, name')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      throw new Error('Profile not found');
+    // Ensure we have a company id to scope the invite
+    if (!companyId) {
+      throw new Error('Missing company_id. User must be authenticated or company_id provided.');
     }
 
     // Generate invitation token
@@ -61,10 +67,10 @@ const handler = async (req: Request): Promise<Response> => {
     const { error: inviteError } = await supabase
       .from('team_invitations')
       .insert({
-        company_id: profile.company_id,
+        company_id: companyId,
         email,
-        role,
-        invited_by: user.id,
+        role: normalizedRole,
+        invited_by: invitedBy,
         invitation_token: invitationToken,
       });
 
@@ -86,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="padding: 30px 20px; background: #f8fafc;">
             <h2 style="color: #1e40af; margin-top: 0;">Join ${company_name || 'our team'} on ConstructTest Pro</h2>
             <p style="font-size: 16px; line-height: 1.6; color: #334155;">
-              ${profile.name} has invited you to join their construction materials testing team as a <strong>${role}</strong>.
+              ${inviterName} has invited you to join their construction materials testing team as a <strong>${normalizedRole}</strong>.
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
