@@ -197,6 +197,7 @@ export function TeamManagement() {
           email: inviteEmail.trim(),
           role: inviteRole,
           company_name: profile.name || 'ConstructTest Pro Team',
+          company_id: profile.company_id,
         },
       });
 
