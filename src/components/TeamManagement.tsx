@@ -371,6 +371,8 @@ const addMemberManually = async () => {
   setIsSaving(true);
 
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+
     const { data, error } = await supabase.functions.invoke('create-team-member', {
       body: {
         name: newMember.name.trim(),
@@ -379,6 +381,9 @@ const addMemberManually = async () => {
         phone: newMember.phone || undefined,
         department: newMember.department || undefined,
         avatar_url: newMember.avatar_url || undefined,
+      },
+      headers: {
+        Authorization: `Bearer ${session?.access_token ?? ''}`,
       },
     });
 
