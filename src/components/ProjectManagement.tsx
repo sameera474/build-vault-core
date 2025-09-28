@@ -51,6 +51,25 @@ export function ProjectManagement() {
     fetchProjects();
   }, [profile?.company_id]);
 
+  // Add navigation listener to refresh projects when returning to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchProjects();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Add focus listener to refresh projects when page gains focus
+  useEffect(() => {
+    const handleFocus = () => fetchProjects();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const fetchProjects = async () => {
     if (!profile?.company_id) return;
 

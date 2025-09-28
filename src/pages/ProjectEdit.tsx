@@ -55,12 +55,13 @@ export default function ProjectEdit() {
           title: "Success",
           description: "Project created successfully",
         });
-        navigate(`/projects/${newProject.id}?tab=roads`);
+        // Navigate directly to projects list instead of edit page
+        navigate('/projects');
       } else if (project) {
         console.log('Updating project', project.id, 'with data:', projectData);
         await projectService.updateProject(project.id, projectData);
         toast({
-          title: "Success",
+          title: "Success", 
           description: "Project updated successfully",
         });
         navigate('/projects');
