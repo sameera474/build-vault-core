@@ -1,196 +1,108 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno";
+// supabase/functions/create-team-member/index.ts
+// Edge-safe: uses Deno.serve, fetch, web crypto, no Node std polyfills.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
+const headers = {
+  "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-interface CreateMemberRequest {
-  name: string;
-  email: string;
-  role: string; // tenant_role
-  phone?: string;
-  department?: string;
-  avatar_url?: string;
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers });
 }
 
-const ALLOWED_ROLES = new Set([
-  "admin",
-  "project_manager",
-  "quality_manager",
-  "material_engineer",
-  "technician",
-  "consultant_engineer",
-  "consultant_technician",
-]);
-
-serve(async (req) => {
-  // Handle CORS
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers });
 
   try {
+    // 1) Auth header (caller must be signed in)
     const authHeader = req.headers.get("Authorization") ?? "";
-    // Client-scoped supabase (to read the caller)
-    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    // Admin client (service role) for privileged ops
-    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const jwt = authHeader.replace("Bearer ", "");
+    if (!jwt) return json({ error: "Missing Authorization header" }, 401);
 
-    // Identify caller
+    // 2) Clients (anon with caller JWT, and service-role for RLS-bypass writes)
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://<your-app>.lovable.app";
+
+    const userClient = createClient(SUPABASE_URL, ANON, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
+    });
+    const admin = createClient(SUPABASE_URL, SERVICE);
+
+    // 3) Parse input
+    const body = await req.json().catch(() => ({}));
+    const { email, role, projects = [], expiresInDays = 7, sendEmail = false } = body as Record<string, any>;
+    if (!email || !role) return json({ error: "email and role are required" }, 400);
+
+    // 4) Get caller profile / company
     const {
       data: { user },
-      error: userError,
-    } = await client.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+      error: userErr,
+    } = await userClient.auth.getUser();
+    if (userErr || !user) return json({ error: "Not authenticated" }, 401);
 
-    // Load caller profile to get company and permissions
-    const { data: callerProfile, error: profileErr } = await admin
+    const { data: me, error: meErr } = await userClient
       .from("profiles")
-      .select("user_id, company_id, tenant_role, is_super_admin")
+      .select("user_id, company_id, role")
       .eq("user_id", user.id)
-      .maybeSingle();
+      .single();
+    if (meErr || !me) return json({ error: "Profile not found" }, 403);
 
-    if (profileErr || !callerProfile) {
-      return new Response(JSON.stringify({ error: "Caller profile not found" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+    // Optional: permission gate (allow admin + quality_manager)
+    if (!["admin", "quality_manager"].includes(me.role)) {
+      return json({ error: "Insufficient permission" }, 403);
     }
 
-    const isAdmin = callerProfile.is_super_admin === true || callerProfile.tenant_role === "admin";
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    // 5) Create invitation (token) with service-role (bypass RLS)
+    const token = crypto.randomUUID();
+    const expires_at = new Date(Date.now() + expiresInDays * 864e5).toISOString();
 
-    // Parse and validate request body
-    const body = (await req.json()) as CreateMemberRequest;
-    const email = (body.email || "").trim().toLowerCase();
-    const name = (body.name || "").trim();
-    const tenantRole = (body.role || "technician").trim();
+    const { data: invite, error: invErr } = await admin
+      .from("team_invitations")
+      .insert({
+        company_id: me.company_id,
+        email,
+        role,
+        invitation_token: token,
+        invited_by: me.user_id,
+        expires_at,
+      })
+      .select()
+      .single();
+    if (invErr) return json({ error: "Insert invitation failed", details: invErr.message }, 500);
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(JSON.stringify({ error: "Invalid email" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-    if (!name) {
-      return new Response(JSON.stringify({ error: "Name is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-    if (!ALLOWED_ROLES.has(tenantRole)) {
-      return new Response(JSON.stringify({ error: "Invalid role" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    const acceptUrl = `${SITE_URL.replace(/\/$/, "")}/invite/${encodeURIComponent(token)}`;
 
-    // Create auth user (email confirmed so they can login immediately)
-    let newUserId: string;
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: { name },
-    });
-
-    if (createErr) {
-      // If user already exists, find their id by email
-      const code = (createErr as any)?.code || (createErr as any)?.status;
-      if (code === 'email_exists' || code === 422) {
-        const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 } as any);
-        if (listErr) {
-          console.error('listUsers error', listErr);
-          return new Response(JSON.stringify({ error: 'Failed to locate existing user' }), {
-            status: 500,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+    // 6) (Optional) Email via Resend HTTP API (no Node SDK)
+    if (sendEmail) {
+      const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+      if (RESEND_API_KEY) {
+        try {
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${RESEND_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: "ConstructTest Pro <noreply@yourdomain.com>",
+              to: [email],
+              subject: "You’re invited to ConstructTest Pro",
+              html: `<p>You’ve been invited.</p><p><a href="${acceptUrl}">Accept Invite</a></p>`,
+            }),
           });
+        } catch (e) {
+          console.error("Resend error:", e);
         }
-        const found = (list as any)?.users?.find((u: any) => (u.email || '').toLowerCase() === email);
-        if (!found) {
-          return new Response(JSON.stringify({ error: 'Email already registered to another account' }), {
-            status: 409,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-        newUserId = found.id;
-      } else {
-        console.error("createUser error", createErr);
-        return new Response(JSON.stringify({ error: createErr?.message || "Failed to create user" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
       }
-    } else {
-      newUserId = created!.user!.id;
     }
 
-    // Ensure user is assignable to this company
-    const { data: existingProfile, error: existingErr } = await admin
-      .from("profiles")
-      .select("company_id")
-      .eq("user_id", newUserId)
-      .maybeSingle();
-
-    if (existingErr) {
-      console.error("profile lookup error", existingErr);
-    }
-
-    if (existingProfile && existingProfile.company_id && existingProfile.company_id !== callerProfile.company_id) {
-      return new Response(JSON.stringify({ error: "User already belongs to another company" }), {
-        status: 409,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    // Upsert profile for the new/existing user in the caller's company
-    const { error: profileUpsertErr } = await admin
-      .from("profiles")
-      .upsert({
-        user_id: newUserId,
-        company_id: callerProfile.company_id,
-        name,
-        role: "admin", // legacy field kept as in schema, real perms via tenant_role
-        tenant_role: tenantRole as any,
-        phone: body.phone || null,
-        department: body.department || null,
-        avatar_url: body.avatar_url || null,
-      }, { onConflict: 'user_id' });
-
-    if (profileUpsertErr) {
-      console.error("profile upsert error", profileUpsertErr);
-      return new Response(JSON.stringify({ error: profileUpsertErr.message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    return new Response(
-      JSON.stringify({ ok: true, user_id: newUserId }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
-  } catch (e: any) {
-    console.error("create-team-member error", e);
-    return new Response(JSON.stringify({ error: e?.message || "Unexpected error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return json({ ok: true, inviteId: invite.id, acceptUrl }, 200);
+  } catch (e) {
+    console.error("create-team-member crashed:", e);
+    return json({ error: "Internal error", details: String(e) }, 500);
   }
 });
