@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, Mail, Trash2, UserCheck, Edit, Building, FolderOpen, Copy } from 'lucide-react';
+import { Plus, Users, Mail, Trash2, UserCheck, Edit, Building, FolderOpen, Copy, UserPlus, Upload, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,10 @@ interface TeamMember {
   tenant_role: string;
   created_at: string;
   is_super_admin?: boolean;
+  email?: string;
+  avatar_url?: string;
+  phone?: string;
+  department?: string;
 }
 
 interface ProjectAssignment {
@@ -69,13 +73,25 @@ const ROLE_COLORS: Record<string, string> = {
 export function TeamManagement() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isEditMemberOpen, setIsEditMemberOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('technician');
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
   const [selectedRole, setSelectedRole] = useState('technician');
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isInviting, setIsInviting] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [newMember, setNewMember] = useState({
+    name: '',
+    email: '',
+    role: 'technician',
+    phone: '',
+    department: '',
+    avatar_url: ''
+  });
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectAssignments, setProjectAssignments] = useState<ProjectAssignment[]>([]);
@@ -101,10 +117,20 @@ export function TeamManagement() {
         .select('user_id, name, role, tenant_role, created_at, is_super_admin')
         .eq('company_id', profile.company_id);
 
+      // Get auth users data for email and additional profile info
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      const authUsersMap = new Map(authUsers?.users?.map(user => [user.id, user]) || []);
+
       if (membersError) throw membersError;
 
-      // Filter out super admin from team display
-      const filteredMembers = members?.filter(member => !member.is_super_admin) || [];
+      // Filter out super admin from team display and add email info
+      const filteredMembers = members?.filter(member => !member.is_super_admin).map(member => ({
+        ...member,
+        email: authUsersMap.get(member.user_id)?.email || '',
+        avatar_url: member.avatar_url || '',
+        phone: member.phone || '',
+        department: member.department || ''
+      })) || [];
       setTeamMembers(filteredMembers);
 
       // Fetch pending invitations
@@ -349,6 +375,137 @@ const copyInvitationLink = async (token: string) => {
   }
 };
 
+const addMemberManually = async () => {
+  if (!newMember.name.trim() || !newMember.email.trim() || !profile?.company_id) return;
+
+  setIsSaving(true);
+
+  try {
+    // Create auth user first
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: newMember.email,
+      email_confirm: true,
+      user_metadata: {
+        name: newMember.name
+      }
+    });
+
+    if (authError) throw authError;
+
+    // Create profile for the user
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: authData.user.id,
+        company_id: profile.company_id,
+        name: newMember.name,
+        role: 'admin',
+        tenant_role: newMember.role,
+        phone: newMember.phone,
+        department: newMember.department,
+        avatar_url: newMember.avatar_url
+      });
+
+    if (profileError) throw profileError;
+
+    toast({
+      title: "Member added successfully",
+      description: `${newMember.name} has been added to your team.`,
+    });
+
+    setNewMember({
+      name: '',
+      email: '',
+      role: 'technician',
+      phone: '',
+      department: '',
+      avatar_url: ''
+    });
+    setIsAddMemberOpen(false);
+    fetchTeamData();
+  } catch (error: any) {
+    console.error('Error adding member:', error);
+    toast({
+      title: "Failed to add member",
+      description: error.message || "Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+const editMember = (member: TeamMember) => {
+  setEditingMember(member);
+  setIsEditMemberOpen(true);
+};
+
+const updateMember = async () => {
+  if (!editingMember || !profile?.company_id) return;
+
+  setIsSaving(true);
+
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name: editingMember.name,
+        tenant_role: editingMember.tenant_role,
+        phone: editingMember.phone,
+        department: editingMember.department,
+        avatar_url: editingMember.avatar_url
+      })
+      .eq('user_id', editingMember.user_id)
+      .eq('company_id', profile.company_id);
+
+    if (error) throw error;
+
+    toast({
+      title: "Member updated",
+      description: "Member details have been updated successfully.",
+    });
+
+    setIsEditMemberOpen(false);
+    setEditingMember(null);
+    fetchTeamData();
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+const deleteMember = async (memberId: string) => {
+  if (!profile?.company_id) return;
+
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('user_id', memberId)
+      .eq('company_id', profile.company_id);
+
+    if (error) throw error;
+
+    toast({
+      title: "Member removed",
+      description: "The team member has been removed.",
+    });
+
+    fetchTeamData();
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
+};
+
   if (loading) {
     return (
       <Card className="border-border/50">
@@ -429,6 +586,126 @@ const copyInvitationLink = async (token: string) => {
                       disabled={!inviteEmail.trim() || isInviting}
                     >
                       {isInviting ? 'Sending...' : 'Send Invitation'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Member
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Add Team Member Manually</DialogTitle>
+                  <DialogDescription>
+                    Add a new team member with profile details and role assignment.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="member-name">Name *</Label>
+                      <Input
+                        id="member-name"
+                        placeholder="Full name"
+                        value={newMember.name}
+                        onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="member-email">Email *</Label>
+                      <Input
+                        id="member-email"
+                        type="email"
+                        placeholder="email@company.com"
+                        value={newMember.email}
+                        onChange={(e) => setNewMember({...newMember, email: e.target.value})}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="member-phone">Phone</Label>
+                      <Input
+                        id="member-phone"
+                        placeholder="+1 (555) 123-4567"
+                        value={newMember.phone}
+                        onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="member-department">Department</Label>
+                      <Input
+                        id="member-department"
+                        placeholder="Engineering"
+                        value={newMember.department}
+                        onChange={(e) => setNewMember({...newMember, department: e.target.value})}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="member-avatar">Avatar URL</Label>
+                    <Input
+                      id="member-avatar"
+                      placeholder="https://example.com/avatar.jpg"
+                      value={newMember.avatar_url}
+                      onChange={(e) => setNewMember({...newMember, avatar_url: e.target.value})}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="member-role">Role *</Label>
+                    <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TENANT_ROLES.map(role => (
+                          <SelectItem key={role.value} value={role.value}>
+                            <div className="flex flex-col">
+                              <span>{role.label}</span>
+                              <span className="text-xs text-muted-foreground">{role.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsAddMemberOpen(false);
+                        setNewMember({
+                          name: '',
+                          email: '',
+                          role: 'technician',
+                          phone: '',
+                          department: '',
+                          avatar_url: ''
+                        });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={addMemberManually}
+                      disabled={!newMember.name.trim() || !newMember.email.trim() || isSaving}
+                    >
+                      {isSaving ? 'Adding...' : 'Add Member'}
                     </Button>
                   </div>
                 </div>
@@ -650,6 +927,114 @@ const copyInvitationLink = async (token: string) => {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Edit Member Dialog */}
+        <Dialog open={isEditMemberOpen} onOpenChange={setIsEditMemberOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Team Member</DialogTitle>
+              <DialogDescription>
+                Update member profile details and role.
+              </DialogDescription>
+            </DialogHeader>
+            {editingMember && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-name">Name</Label>
+                    <Input
+                      id="edit-name"
+                      value={editingMember.name}
+                      onChange={(e) => setEditingMember({...editingMember, name: e.target.value})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-email">Email</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={editingMember.email || ''}
+                      disabled
+                      className="mt-1 bg-muted"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-phone">Phone</Label>
+                    <Input
+                      id="edit-phone"
+                      value={editingMember.phone || ''}
+                      onChange={(e) => setEditingMember({...editingMember, phone: e.target.value})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-department">Department</Label>
+                    <Input
+                      id="edit-department"
+                      value={editingMember.department || ''}
+                      onChange={(e) => setEditingMember({...editingMember, department: e.target.value})}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-avatar">Avatar URL</Label>
+                  <Input
+                    id="edit-avatar"
+                    value={editingMember.avatar_url || ''}
+                    onChange={(e) => setEditingMember({...editingMember, avatar_url: e.target.value})}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-role">Role</Label>
+                  <Select 
+                    value={editingMember.tenant_role} 
+                    onValueChange={(value) => setEditingMember({...editingMember, tenant_role: value})}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TENANT_ROLES.map(role => (
+                        <SelectItem key={role.value} value={role.value}>
+                          <div className="flex flex-col">
+                            <span>{role.label}</span>
+                            <span className="text-xs text-muted-foreground">{role.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditMemberOpen(false);
+                      setEditingMember(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={updateMember}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
