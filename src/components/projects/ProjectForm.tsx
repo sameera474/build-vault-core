@@ -70,10 +70,10 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
     }
   });
 
-  const onSubmit = (data: ProjectFormData) => {
+  const onSubmit = async (data: ProjectFormData) => {
     console.log('Form submission data:', data);
     console.log('Logo URLs:', logoUrls);
-    onSave({
+    await onSave({
       ...data,
       ...logoUrls,
     });

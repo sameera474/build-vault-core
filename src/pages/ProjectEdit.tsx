@@ -41,15 +41,19 @@ export default function ProjectEdit() {
   };
 
   const handleSave = async (projectData: Partial<Project>) => {
+    console.log('ProjectEdit.handleSave called', { routeId: id, projectData });
     try {
       if (id === 'new') {
+        console.log('Creating new project with data:', projectData);
         const newProject = await projectService.createProject(projectData);
+        console.log('Project created:', newProject);
         toast({
           title: "Success",
           description: "Project created successfully",
         });
         navigate(`/projects/${newProject.id}`);
       } else if (project) {
+        console.log('Updating project', project.id, 'with data:', projectData);
         await projectService.updateProject(project.id, projectData);
         toast({
           title: "Success",

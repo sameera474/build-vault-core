@@ -83,6 +83,8 @@ class ProjectService {
       status: 'active',
     };
 
+    console.log('ProjectService.createProject payload', newProject);
+
     const { data, error } = await supabase
       .from('projects')
       .insert(newProject as any)
