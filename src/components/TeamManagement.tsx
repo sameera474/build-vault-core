@@ -18,6 +18,7 @@ interface TeamMember {
   company_id: string;
   role: string;
   name: string;
+  email?: string;
   phone?: string;
   department?: string;
   job_title?: string;
@@ -76,6 +77,7 @@ export function TeamManagement() {
           company_id,
           role,
           name,
+          email,
           phone,
           department,
           job_title,
@@ -470,6 +472,12 @@ export function TeamManagement() {
                       </Avatar>
                       <div>
                         <h4 className="font-medium">{member.name || 'Unnamed User'}</h4>
+                        {member.email && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {member.email}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2">
                           <Badge className={getRoleColor(member.role)}>
                             {tenantRoles.find(r => r.value === member.role)?.label || member.role}
