@@ -225,7 +225,6 @@ export type Database = {
           company_id: string
           created_at: string
           department: string | null
-          email: string | null
           employee_id: string | null
           hire_date: string | null
           is_active: boolean | null
@@ -243,7 +242,6 @@ export type Database = {
           company_id: string
           created_at?: string
           department?: string | null
-          email?: string | null
           employee_id?: string | null
           hire_date?: string | null
           is_active?: boolean | null
@@ -261,7 +259,6 @@ export type Database = {
           company_id?: string
           created_at?: string
           department?: string | null
-          email?: string | null
           employee_id?: string | null
           hire_date?: string | null
           is_active?: boolean | null

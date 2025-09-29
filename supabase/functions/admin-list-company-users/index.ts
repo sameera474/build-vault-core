@@ -63,7 +63,6 @@ Deno.serve(async (req) => {
         company_id,
         role,
         name,
-        email,
         phone,
         department,
         job_title,
