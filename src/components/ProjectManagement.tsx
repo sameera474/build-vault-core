@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, MapPin, Calendar, Users, FileText, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Plus, MapPin, Calendar, Users, FileText, MoreHorizontal, Edit, Trash2, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,11 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Project {
   id: string;
@@ -21,20 +23,31 @@ interface Project {
   start_date: string | null;
   end_date: string | null;
   status: string;
+  company_id: string;
   created_at: string;
   created_by: string | null;
   _count?: {
     test_reports: number;
   };
+  company_name?: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
+  is_active: boolean;
 }
 
 export function ProjectManagement() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState('all');
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -49,7 +62,16 @@ export function ProjectManagement() {
 
   useEffect(() => {
     fetchProjects();
-  }, [profile?.company_id]);
+    if (isSuperAdmin) {
+      fetchCompanies();
+    }
+  }, [profile?.company_id, isSuperAdmin]);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      fetchProjects();
+    }
+  }, [selectedCompany]);
 
   // Add navigation listener to refresh projects when returning to the page
   useEffect(() => {
@@ -71,21 +93,29 @@ export function ProjectManagement() {
   }, []);
 
   const fetchProjects = async () => {
-    if (!profile?.company_id) return;
-
     try {
-      // Fetch projects 
-      const { data: projectsData, error } = await supabase
+      let query = supabase
         .from('projects')
-        .select('*')
-        .eq('company_id', profile.company_id)
+        .select(`
+          *,
+          companies(name)
+        `)
         .order('created_at', { ascending: false });
 
+      // Apply company filtering
+      if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
+        query = query.eq('company_id', selectedCompany);
+      } else if (!isSuperAdmin && profile?.company_id) {
+        query = query.eq('company_id', profile.company_id);
+      }
+
+      const { data: projectsData, error } = await query;
       if (error) throw error;
 
-      // Transform the data to include count
+      // Transform the data to include company name and count
       const projectsWithCounts = projectsData?.map(project => ({
         ...project,
+        company_name: (project as any).companies?.name || 'Unknown Company',
         _count: {
           test_reports: 0 // Simplified for now - can be enhanced later
         }
@@ -101,6 +131,23 @@ export function ProjectManagement() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCompanies = async () => {
+    if (!isSuperAdmin) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, is_active')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
     }
   };
 
@@ -136,7 +183,22 @@ export function ProjectManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.company_id || !formData.name.trim()) return;
+    if (!formData.name.trim()) return;
+
+    // Determine company ID
+    let companyId = profile?.company_id;
+    if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
+      companyId = selectedCompany;
+    }
+
+    if (!companyId) {
+      toast({
+        title: "Error",
+        description: "Company must be selected",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -148,8 +210,8 @@ export function ProjectManagement() {
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
         status: formData.status,
-        company_id: profile.company_id,
-        created_by: profile.user_id,
+        company_id: companyId,
+        created_by: profile?.user_id,
       };
 
       if (editingProject) {
@@ -251,10 +313,30 @@ export function ProjectManagement() {
             Manage your construction projects and track testing progress
           </p>
         </div>
-        <Button onClick={() => navigate('/projects/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Project
-        </Button>
+        <div className="flex items-center gap-4">
+          {isSuperAdmin && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="company-filter" className="text-sm font-medium">Company:</Label>
+              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All companies</SelectItem>
+                  {companies.map(company => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <Button onClick={() => navigate('/projects/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Project
+          </Button>
+        </div>
       </div>
 
       <Dialog open={isCreateOpen} onOpenChange={(open) => {
@@ -366,6 +448,9 @@ export function ProjectManagement() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-lg line-clamp-1">{project.name}</CardTitle>
+                    {isSuperAdmin && (
+                      <p className="text-sm text-muted-foreground">{project.company_name}</p>
+                    )}
                     <Badge className={getStatusColor(project.status)}>
                       {project.status.replace('-', ' ')}
                     </Badge>
