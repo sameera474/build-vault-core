@@ -107,18 +107,25 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
   });
 
   const onSubmit = async (data: ProjectFormData) => {
-    if (!selectedCompanyId) {
+    // For super admin, require company selection
+    if (isSuperAdmin && !selectedCompanyId) {
       toast({
         title: "Error",
-        description: "Please select a company",
+        description: "Please select a company for this project",
         variant: "destructive",
       });
       return;
     }
 
-    console.log('Form submission data:', data);
-    console.log('Logo URLs:', logoUrls);
-    console.log('Selected company ID:', selectedCompanyId);
+    // For non-super admin, ensure we have the user's company
+    if (!isSuperAdmin && !selectedCompanyId) {
+      toast({
+        title: "Error",
+        description: "Company information is missing",
+        variant: "destructive",
+      });
+      return;
+    }
     
     await onSave({
       ...data,
@@ -186,20 +193,31 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
               <CardContent className="space-y-6">
                 {/* Company Selection for Super Admin */}
                 {isSuperAdmin && (
-                  <div className="space-y-2 mb-6">
-                    <Label htmlFor="company">Company *</Label>
+                  <div className="space-y-2 p-4 mb-6 border rounded-lg bg-muted/50">
+                    <Label htmlFor="company" className="text-base font-semibold">
+                      Company * <span className="text-xs text-muted-foreground font-normal">(Required)</span>
+                    </Label>
                     <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a company" />
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Select a company to assign this project" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {companies.map((company) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.name}
-                          </SelectItem>
-                        ))}
+                      <SelectContent className="bg-background">
+                        {companies.length === 0 ? (
+                          <div className="p-2 text-sm text-muted-foreground">No companies available</div>
+                        ) : (
+                          companies.map((company) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
+                    {!selectedCompanyId && (
+                      <p className="text-xs text-muted-foreground">
+                        Select the company this project belongs to
+                      </p>
+                    )}
                   </div>
                 )}
 
