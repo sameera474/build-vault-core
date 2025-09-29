@@ -156,6 +156,12 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
   };
 
   const handleChainageChange = (field: string, value: string) => {
+    // Allow typing freely, validation happens on blur
+    onUpdate({ [field]: value });
+  };
+
+  const handleChainageBlur = (field: string, value: string) => {
+    // Only validate when user finishes typing
     if (value && !validateChainage(value)) {
       toast({
         title: 'Invalid Format',
@@ -171,6 +177,10 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
       const toKm = parseFloat(value.split('+')[0]);
       const toM = parseFloat(value.split('+')[1]);
       
+      if (isNaN(fromKm) || isNaN(fromM) || isNaN(toKm) || isNaN(toM)) {
+        return;
+      }
+      
       const fromTotal = fromKm * 1000 + fromM;
       const toTotal = toKm * 1000 + toM;
       
@@ -180,11 +190,8 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
           description: 'Chainage To must be greater than or equal to Chainage From.',
           variant: 'destructive'
         });
-        return;
       }
     }
-
-    onUpdate({ [field]: value });
   };
 
   return (
@@ -386,8 +393,8 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
               <Input
                 value={data.chainage_from || ''}
                 onChange={(e) => handleChainageChange('chainage_from', e.target.value)}
+                onBlur={(e) => handleChainageBlur('chainage_from', e.target.value)}
                 placeholder="e.g., 5+250"
-                pattern="^\d+\+\d{3}$"
               />
               <p className="text-xs text-muted-foreground">Format: KM+meters (e.g., 5+250)</p>
             </div>
@@ -396,8 +403,8 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
               <Input
                 value={data.chainage_to || ''}
                 onChange={(e) => handleChainageChange('chainage_to', e.target.value)}
+                onBlur={(e) => handleChainageBlur('chainage_to', e.target.value)}
                 placeholder="e.g., 5+300"
-                pattern="^\d+\+\d{3}$"
               />
             </div>
             <div className="space-y-2">
