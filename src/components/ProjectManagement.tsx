@@ -202,7 +202,7 @@ export function ProjectManagement() {
     if (!formData.name.trim()) return;
 
     // Determine company ID
-    let companyId = profile?.company_id;
+    let companyId = profile?.company_id as string | undefined;
     if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
       companyId = selectedCompany;
     }
@@ -219,7 +219,7 @@ export function ProjectManagement() {
     setIsSubmitting(true);
 
     try {
-      const projectData = {
+      const baseData = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         location: formData.location.trim() || null,
@@ -228,16 +228,25 @@ export function ProjectManagement() {
         status: formData.status,
         company_id: companyId,
         created_by: profile?.user_id,
-      };
+      } as any;
 
       if (editingProject) {
         // Update existing project
-        const { error } = await supabase
-          .from('projects')
-          .update(projectData)
-          .eq('id', editingProject.id);
-
-        if (error) throw error;
+        if (isSuperAdmin) {
+          const { data: { session } } = await supabase.auth.getSession();
+          const { error, data } = await supabase.functions.invoke('admin-update-project', {
+            body: { id: editingProject.id, ...baseData },
+            headers: { Authorization: `Bearer ${session?.access_token}` },
+          });
+          if (error || (data as any)?.error) throw error || new Error((data as any)?.error);
+        } else {
+          const tenantData = { ...baseData, company_id: profile?.company_id };
+          const { error } = await supabase
+            .from('projects')
+            .update(tenantData)
+            .eq('id', editingProject.id);
+          if (error) throw error;
+        }
 
         toast({
           title: "Project updated",
@@ -245,11 +254,20 @@ export function ProjectManagement() {
         });
       } else {
         // Create new project
-        const { error } = await supabase
-          .from('projects')
-          .insert([projectData]);
-
-        if (error) throw error;
+        if (isSuperAdmin) {
+          const { data: { session } } = await supabase.auth.getSession();
+          const { error, data } = await supabase.functions.invoke('admin-create-project', {
+            body: baseData,
+            headers: { Authorization: `Bearer ${session?.access_token}` },
+          });
+          if (error || (data as any)?.error) throw error || new Error((data as any)?.error);
+        } else {
+          const tenantData = { ...baseData, company_id: profile?.company_id };
+          const { error } = await supabase
+            .from('projects')
+            .insert([tenantData]);
+          if (error) throw error;
+        }
 
         toast({
           title: "Project created",

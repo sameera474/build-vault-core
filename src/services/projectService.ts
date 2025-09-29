@@ -40,7 +40,7 @@ class ProjectService {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('company_id, role, tenant_role')
+      .select('company_id, role, tenant_role, is_super_admin')
       .eq('user_id', user.id)
       .single();
 
@@ -101,8 +101,8 @@ class ProjectService {
       });
 
       if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Failed to create project');
-      return data.project as Project;
+      if (!data?.success) throw new Error((data as any)?.error || 'Failed to create project');
+      return (data as any).project as Project;
     } else {
       // Regular tenant insert (or super admin for their own company)
       const newProject = {
@@ -126,13 +126,30 @@ class ProjectService {
   }
 
   async updateProject(id: string, updates: Partial<Project>) {
+    const profile = await this.getProfile();
+
+    // If super admin, route through edge function to bypass RLS safely
+    const isSuper = (profile as any)?.is_super_admin;
+    if (isSuper) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const payload = { id, ...updates } as any;
+      const { data, error } = await supabase.functions.invoke('admin-update-project', {
+        body: payload,
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to update project');
+      return data.project as Project;
+    }
+
+    // Tenant path: enforce own company id
+    const updatesSanitized = { ...updates, company_id: profile.company_id } as any;
     const { data, error } = await supabase
       .from('projects')
-      .update(updates)
+      .update(updatesSanitized)
       .eq('id', id)
       .select()
       .single();
-    
     if (error) throw error;
     return data as Project;
   }
