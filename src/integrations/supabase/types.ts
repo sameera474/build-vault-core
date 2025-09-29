@@ -1147,6 +1147,32 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      user_accessible_projects: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          client_logo: string
+          client_name: string
+          company_id: string
+          consultant_logo: string
+          consultant_name: string
+          contract_number: string
+          contractor_logo: string
+          contractor_name: string
+          created_at: string
+          created_by: string
+          description: string
+          end_date: string
+          id: string
+          lab_code: string
+          location: string
+          name: string
+          project_prefix: string
+          region_code: string
+          start_date: string
+          status: string
+          updated_at: string
+        }[]
+      }
     }
     Enums: {
       material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
