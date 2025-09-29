@@ -43,7 +43,7 @@ export default function ProjectEdit() {
     }
   };
 
-  const handleSave = async (projectData: Partial<Project>) => {
+  const handleSave = async (projectData: Partial<Project> & { company_id: string }) => {
     console.log('ProjectEdit.handleSave called', { routeId: id, projectData });
     try {
       const isNew = !id || id === 'new';

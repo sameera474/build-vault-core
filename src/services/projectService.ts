@@ -49,16 +49,25 @@ class ProjectService {
   }
 
   async fetchProjects() {
-    const profile = await this.getProfile();
-    
+    // RLS will automatically filter by user's company
     const { data, error } = await supabase
       .from('projects')
       .select('*')
-      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
     return data as Project[];
+  }
+
+  async fetchAllCompanies() {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name');
+    
+    if (error) throw error;
+    return data;
   }
 
   async fetchProject(id: string) {
@@ -72,13 +81,11 @@ class ProjectService {
     return data as Project;
   }
 
-  async createProject(projectData: Partial<Project>) {
-    const profile = await this.getProfile();
+  async createProject(projectData: Partial<Project> & { company_id: string }) {
     const { data: { user } } = await supabase.auth.getUser();
 
     const newProject = {
       ...projectData,
-      company_id: profile.company_id,
       created_by: user?.id,
       status: 'active',
     };
