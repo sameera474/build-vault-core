@@ -78,19 +78,43 @@ export type Database = {
       }
       companies: {
         Row: {
+          address: string | null
+          city: string | null
+          country: string | null
           created_at: string
+          description: string | null
           id: string
+          is_active: boolean | null
           name: string
+          phone: string | null
+          updated_at: string | null
+          website: string | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          is_active?: boolean | null
           name: string
+          phone?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          is_active?: boolean | null
           name?: string
+          phone?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -201,11 +225,16 @@ export type Database = {
           company_id: string
           created_at: string
           department: string | null
+          employee_id: string | null
+          hire_date: string | null
+          is_active: boolean | null
           is_super_admin: boolean | null
+          job_title: string | null
           name: string | null
           phone: string | null
           role: string
           tenant_role: Database["public"]["Enums"]["tenant_role"] | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -213,11 +242,16 @@ export type Database = {
           company_id: string
           created_at?: string
           department?: string | null
+          employee_id?: string | null
+          hire_date?: string | null
+          is_active?: boolean | null
           is_super_admin?: boolean | null
+          job_title?: string | null
           name?: string | null
           phone?: string | null
           role?: string
           tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -225,14 +259,27 @@ export type Database = {
           company_id?: string
           created_at?: string
           department?: string | null
+          employee_id?: string | null
+          hire_date?: string | null
+          is_active?: boolean | null
           is_super_admin?: boolean | null
+          job_title?: string | null
           name?: string | null
           phone?: string | null
           role?: string
           tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
+          updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_roads: {
         Row: {
