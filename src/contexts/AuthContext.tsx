@@ -2,7 +2,14 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserProfile } from '@/lib/auth';
-import { Profile } from '@/types/auth';
+
+interface Profile {
+  user_id: string;
+  company_id: string;
+  name: string | null;
+  role: string;
+  created_at: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -38,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(async () => {
             if (!mounted) return;
             const { data: profileData } = await getUserProfile(session.user.id);
-            setProfile(profileData as Profile);
+            setProfile(profileData);
           }, 0);
         } else {
           setProfile(null);
@@ -62,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         getUserProfile(session.user.id).then(({ data: profileData }) => {
           if (!mounted) return;
-          setProfile(profileData as Profile);
+          setProfile(profileData);
           setLoading(false);
         });
       } else {

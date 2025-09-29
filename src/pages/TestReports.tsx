@@ -8,15 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { CreateTestReportDialog } from '@/components/CreateTestReportDialog';
 import FlowDiagram from '@/components/FlowDiagram';
-import { RoleBadge } from '@/components/RoleBadge';
-import { useRoleAccess } from '@/hooks/useRoleAccess';
-import { useProjectMembership } from '@/hooks/useProjectMembership';
 
 interface Project {
   id: string;
@@ -50,8 +46,6 @@ interface TestReport {
 export default function TestReports() {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const { permissions, userRole } = useRoleAccess();
-  const { assignedProjectIds, loading: membershipLoading } = useProjectMembership();
   const [reports, setReports] = useState<TestReport[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,21 +61,21 @@ export default function TestReports() {
   });
 
   useEffect(() => {
-    if (profile?.company_id && !membershipLoading) {
+    if (profile?.company_id) {
       fetchProjects();
     }
-  }, [profile?.company_id, assignedProjectIds, membershipLoading, permissions]);
+  }, [profile?.company_id]);
 
   // Separate effect for filters with debouncing
   useEffect(() => {
-    if (!profile?.company_id || membershipLoading) return;
+    if (!profile?.company_id) return;
     
     const timeoutId = setTimeout(() => {
       fetchReports();
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [profile?.company_id, filters, assignedProjectIds, membershipLoading, permissions]);
+  }, [profile?.company_id, filters]);
 
   const fetchReports = async () => {
     if (!profile?.company_id) return;
@@ -95,29 +89,9 @@ export default function TestReports() {
           projects (
             name
           )
-        `);
-
-      // Apply role-based filtering
-      if (permissions.canViewAllReports) {
-        // Super admin sees all reports
-        query = query.order('created_at', { ascending: false });
-      } else if (permissions.canViewCompanyReports) {
-        // Company admin sees all company reports
-        query = query.eq('company_id', profile.company_id).order('created_at', { ascending: false });
-      } else if (permissions.isStaff || userRole === 'project_manager') {
-        // Staff and project managers see only assigned project reports
-        if (assignedProjectIds.length === 0 && !membershipLoading) {
-          setReports([]);
-          setLoading(false);
-          return;
-        }
-        query = query.in('project_id', assignedProjectIds).order('created_at', { ascending: false });
-      } else {
-        // Default: no access
-        setReports([]);
-        setLoading(false);
-        return;
-      }
+        `)
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false });
 
       // Apply filters
       if (filters.search && filters.search.trim()) {
@@ -162,26 +136,10 @@ export default function TestReports() {
   const fetchProjects = async () => {
     if (!profile?.company_id) return;
     
-    let query = supabase
+    const { data, error } = await supabase
       .from('projects')
-      .select('id, name, description');
-
-    // Apply role-based filtering for projects
-    if (permissions.canViewAllReports) {
-      // Super admin sees all projects
-    } else if (permissions.canViewCompanyReports) {
-      // Company admin sees company projects
-      query = query.eq('company_id', profile.company_id);
-    } else if (permissions.isStaff || userRole === 'project_manager') {
-      // Staff and project managers see only assigned projects
-      if (assignedProjectIds.length === 0) {
-        setProjects([]);
-        return;
-      }
-      query = query.in('id', assignedProjectIds);
-    }
-
-    const { data, error } = await query;
+      .select('id, name, description')
+      .eq('company_id', profile.company_id);
 
     if (error) {
       console.error('Error fetching projects:', error);
@@ -192,15 +150,6 @@ export default function TestReports() {
   };
 
   const handleSubmitForApproval = async (reportId: string) => {
-    if (!permissions.canSubmitReports) {
-      toast({
-        title: "Error",
-        description: "You don't have permission to submit reports",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('test_reports')
@@ -225,15 +174,6 @@ export default function TestReports() {
   };
 
   const handleApprove = async (reportId: string) => {
-    if (!permissions.canApproveReports) {
-      toast({
-        title: "Error",
-        description: "You don't have permission to approve reports",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('test_reports')
@@ -261,15 +201,6 @@ export default function TestReports() {
   };
 
   const handleReject = async (reportId: string) => {
-    if (!permissions.canRejectReports) {
-      toast({
-        title: "Error",
-        description: "You don't have permission to reject reports",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('test_reports')
@@ -297,15 +228,6 @@ export default function TestReports() {
   };
 
   const handleDelete = async (reportId: string) => {
-    if (!permissions.canDeleteReports) {
-      toast({
-        title: "Error",
-        description: "You don't have permission to delete reports",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!confirm('Are you sure you want to delete this test report? This action cannot be undone.')) {
       return;
     }
@@ -362,44 +284,23 @@ export default function TestReports() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold">Test Reports</h1>
-          <RoleBadge role={userRole} />
-        </div>
+        <h1 className="text-3xl font-bold">Test Reports</h1>
         <div className="flex gap-2">
-          {projects.length === 0 && permissions.canCreateProjects ? (
+          {projects.length === 0 ? (
             <Button onClick={() => navigate('/projects')}>
               <FolderPlus className="h-4 w-4 mr-2" />
               Create Project First
             </Button>
-          ) : permissions.canCreateReports ? (
+          ) : (
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Test Report
             </Button>
-          ) : null}
+          )}
         </div>
       </div>
 
-      {permissions.isViewOnly && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            You have view-only access to assigned projects. Contact your administrator to request additional permissions.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!permissions.canViewReports && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            You don't have permission to view test reports. Contact your administrator.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {projects.length === 0 && permissions.canCreateProjects ? (
+      {projects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FolderPlus className="h-12 w-12 text-muted-foreground mb-4" />
@@ -411,16 +312,6 @@ export default function TestReports() {
               <FolderPlus className="h-4 w-4 mr-2" />
               Create Your First Project
             </Button>
-          </CardContent>
-        </Card>
-      ) : projects.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">No Assigned Projects</h3>
-            <p className="text-muted-foreground mt-2 text-center">
-              You haven't been assigned to any projects yet. Contact your administrator to get access to projects.
-            </p>
           </CardContent>
         </Card>
       ) : (
@@ -610,17 +501,12 @@ export default function TestReports() {
                         <div className="text-center">
                           <h3 className="text-lg font-semibold">No test reports found</h3>
                           <p className="text-muted-foreground mt-2">
-                            {permissions.canCreateReports 
-                              ? "Get started by creating your first test report."
-                              : "No test reports available for your assigned projects."
-                            }
+                            Get started by creating your first test report.
                           </p>
-                          {permissions.canCreateReports && (
-                            <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4">
-                              <Plus className="h-4 w-4 mr-2" />
-                              Create Test Report
-                            </Button>
-                          )}
+                          <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Test Report
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -677,7 +563,7 @@ export default function TestReports() {
                               View
                             </Button>
                             
-                            {report.status === 'draft' && permissions.canSubmitReports && (
+                            {report.status === 'draft' && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -688,7 +574,7 @@ export default function TestReports() {
                               </Button>
                             )}
                             
-                            {report.status === 'submitted' && permissions.canApproveReports && (
+                            {report.status === 'submitted' && profile?.role === 'admin' && (
                               <>
                                 <Button
                                   variant="outline"
@@ -709,18 +595,6 @@ export default function TestReports() {
                                   Reject
                                 </Button>
                               </>
-                            )}
-
-                            {permissions.canDeleteReports && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDelete(report.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" />
-                                Delete
-                              </Button>
                             )}
                             
                             {report.status === 'approved' && (
