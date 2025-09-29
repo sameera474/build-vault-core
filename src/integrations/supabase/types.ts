@@ -922,10 +922,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
     }
     Enums: {
       material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
