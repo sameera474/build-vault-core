@@ -68,10 +68,8 @@ export function ProjectManagement() {
   }, [profile?.company_id, isSuperAdmin]);
 
   useEffect(() => {
-    if (isSuperAdmin) {
-      fetchProjects();
-    }
-  }, [selectedCompany]);
+    fetchProjects();
+  }, [selectedCompany, isSuperAdmin]);
 
   // Add navigation listener to refresh projects when returning to the page
   useEffect(() => {
