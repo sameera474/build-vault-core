@@ -918,6 +918,10 @@ export type Database = {
           yymmdd: string
         }[]
       }
+      current_user_company: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
