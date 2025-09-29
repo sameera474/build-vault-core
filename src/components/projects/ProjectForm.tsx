@@ -53,6 +53,8 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
   const { profile } = useAuth();
   const { isSuperAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState('general');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(project?.company_id || profile?.company_id || '');
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [logoUrls, setLogoUrls] = useState({
     contractor_logo: project?.contractor_logo || '',
     client_logo: project?.client_logo || '',
@@ -66,6 +68,19 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
     if (tab) setActiveTab(tab);
   }, []);
 
+  // Load companies for super admin
+  useEffect(() => {
+    if (isSuperAdmin) {
+      projectService.fetchAllCompanies().then(setCompanies).catch(console.error);
+    }
+  }, [isSuperAdmin]);
+
+  // Set company ID for non-super admin users
+  useEffect(() => {
+    if (!isSuperAdmin && profile?.company_id) {
+      setSelectedCompanyId(profile.company_id);
+    }
+  }, [isSuperAdmin, profile]);
 
   const {
     register,
@@ -92,10 +107,10 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
   });
 
   const onSubmit = async (data: ProjectFormData) => {
-    if (isSuperAdmin) {
+    if (!selectedCompanyId) {
       toast({
-        title: "Read-only",
-        description: "Super Admin cannot edit projects",
+        title: "Error",
+        description: "Please select a company",
         variant: "destructive",
       });
       return;
@@ -103,10 +118,12 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
 
     console.log('Form submission data:', data);
     console.log('Logo URLs:', logoUrls);
+    console.log('Selected company ID:', selectedCompanyId);
+    
     await onSave({
       ...data,
       ...logoUrls,
-      company_id: profile?.company_id || '',
+      company_id: selectedCompanyId,
     });
   };
 
@@ -135,12 +152,10 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
             </p>
           </div>
         </div>
-        {!isSuperAdmin && (
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? 'Saving...' : 'Save Project'}
-          </Button>
-        )}
+        <Button type="submit" disabled={isSubmitting}>
+          <Save className="h-4 w-4 mr-2" />
+          {isSubmitting ? 'Saving...' : 'Save Project'}
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -169,7 +184,27 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
                 <CardTitle>Project Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {companyName && (
+                {/* Company Selection for Super Admin */}
+                {isSuperAdmin && (
+                  <div className="space-y-2 mb-6">
+                    <Label htmlFor="company">Company *</Label>
+                    <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a company" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Company Display for Non-Super Admin */}
+                {!isSuperAdmin && companyName && (
                   <div className="text-sm text-muted-foreground mb-4">
                     Company: <span className="font-medium">{companyName}</span>
                   </div>

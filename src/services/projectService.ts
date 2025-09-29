@@ -85,71 +85,44 @@ class ProjectService {
     const profile = await this.getProfile();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Check if user is super admin and creating for different company
+    // For super admin: allow creating for any company
+    // For company admin: enforce their own company
     const isSuper = (profile as any)?.is_super_admin;
-    const isDifferentCompany = projectData.company_id !== profile.company_id;
+    
+    const newProject = {
+      ...projectData,
+      company_id: isSuper ? projectData.company_id : profile.company_id, // Super admin can choose, others use own company
+      created_by: user?.id,
+      status: 'active',
+    };
 
-    if (isSuper && isDifferentCompany) {
-      // Use Edge Function for super admin cross-company operations
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const { data, error } = await supabase.functions.invoke('admin-create-project', {
-        body: projectData,
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
+    console.log('ProjectService.createProject payload', newProject);
 
-      if (error) throw error;
-      if (!data?.success) throw new Error((data as any)?.error || 'Failed to create project');
-      return (data as any).project as Project;
-    } else {
-      // Regular tenant insert (or super admin for their own company)
-      const newProject = {
-        ...projectData,
-        company_id: profile.company_id, // Always use user's company for regular flow
-        created_by: user?.id,
-        status: 'active',
-      };
-
-      console.log('ProjectService.createProject payload', newProject);
-
-      const { data, error } = await supabase
-        .from('projects')
-        .insert(newProject as any)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as Project;
-    }
+    const { data, error } = await supabase
+      .from('projects')
+      .insert(newProject as any)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Project;
   }
 
   async updateProject(id: string, updates: Partial<Project>) {
     const profile = await this.getProfile();
-
-    // If super admin, route through edge function to bypass RLS safely
     const isSuper = (profile as any)?.is_super_admin;
-    if (isSuper) {
-      const { data: { session } } = await supabase.auth.getSession();
-      const payload = { id, ...updates } as any;
-      const { data, error } = await supabase.functions.invoke('admin-update-project', {
-        body: payload,
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Failed to update project');
-      return data.project as Project;
-    }
 
-    // Tenant path: enforce own company id
-    const updatesSanitized = { ...updates, company_id: profile.company_id } as any;
+    // For super admin: allow updating any project
+    // For company admin: only allow updating projects from their company (RLS enforces this)
+    const updateData = isSuper ? updates : { ...updates, company_id: profile.company_id };
+
     const { data, error } = await supabase
       .from('projects')
-      .update(updatesSanitized)
+      .update(updateData as any)
       .eq('id', id)
       .select()
       .single();
+    
     if (error) throw error;
     return data as Project;
   }

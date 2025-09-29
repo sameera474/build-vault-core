@@ -366,7 +366,7 @@ export function ProjectManagement() {
               </Select>
             </div>
           )}
-          <Button onClick={isSuperAdmin ? handleCreate : () => navigate('/projects/new')}>
+          <Button onClick={handleCreate}>
             <Plus className="h-4 w-4 mr-2" />
             New Project
           </Button>
@@ -468,7 +468,7 @@ export function ProjectManagement() {
             <p className="text-muted-foreground text-center mb-4">
               Create your first project to start organizing your construction testing activities.
             </p>
-            <Button onClick={isSuperAdmin ? handleCreate : () => navigate('/projects/new')}>
+            <Button onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Create First Project
             </Button>
