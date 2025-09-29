@@ -417,9 +417,9 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                   <SelectValue placeholder="Select side..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Left">Left</SelectItem>
-                  <SelectItem value="Right">Right</SelectItem>
-                  <SelectItem value="Middle">Middle</SelectItem>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                  <SelectItem value="middle">Middle</SelectItem>
                 </SelectContent>
               </Select>
             </div>

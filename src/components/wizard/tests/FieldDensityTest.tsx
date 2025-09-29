@@ -177,9 +177,9 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
                 <SelectValue placeholder="Select side" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Left">Left</SelectItem>
-                <SelectItem value="Right">Right</SelectItem>
-                <SelectItem value="Center">Center</SelectItem>
+                <SelectItem value="left">Left</SelectItem>
+                <SelectItem value="right">Right</SelectItem>
+                <SelectItem value="middle">Middle</SelectItem>
               </SelectContent>
             </Select>
           </div>
