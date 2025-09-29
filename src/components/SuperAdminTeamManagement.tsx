@@ -18,6 +18,8 @@ interface CompanyUser {
   email?: string;
   phone?: string;
   department?: string;
+  job_title?: string;
+  is_active?: boolean;
   company_id: string;
   company_name?: string;
 }
@@ -90,6 +92,8 @@ export function SuperAdminTeamManagement() {
           phone, 
           department, 
           company_id,
+          job_title,
+          is_active,
           companies(name)
         `)
         .order('name');
@@ -180,14 +184,29 @@ export function SuperAdminTeamManagement() {
             {companyUsers.length > 0 ? (
               <div className="space-y-2">
                 {companyUsers.map((user) => (
-                  <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div key={user.user_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <Users className="h-4 w-4 text-blue-500" />
-                      <div>
-                        <p className="font-medium">{user.name || 'Unknown User'}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{user.name || 'Unknown User'}</p>
+                          {!user.is_active && (
+                            <Badge variant="outline" className="text-xs">Inactive</Badge>
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           {user.company_name} • {formatRole(user.tenant_role || user.role)}
                         </p>
+                        {user.job_title && (
+                          <p className="text-xs text-muted-foreground">
+                            {user.job_title}
+                          </p>
+                        )}
+                        {user.department && (
+                          <p className="text-xs text-muted-foreground">
+                            Dept: {user.department}
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           Joined {new Date(user.created_at).toLocaleDateString()}
                         </p>

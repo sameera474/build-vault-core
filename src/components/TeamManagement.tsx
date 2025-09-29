@@ -119,6 +119,7 @@ export function TeamManagement() {
   useEffect(() => {
     if (isSuperAdmin && selectedCompany) {
       fetchAllCompanyUsers();
+      fetchProjects();
     }
   }, [selectedCompany]);
 
@@ -214,15 +215,20 @@ export function TeamManagement() {
   };
 
   const fetchProjects = async () => {
-    if (!profile?.company_id) return;
-
     try {
-      const { data: projectsData, error } = await supabase
+      let query = supabase
         .from('projects')
-        .select('id, name')
-        .eq('company_id', profile.company_id)
+        .select('id, name, company_id')
         .order('name');
 
+      // For super admin, optionally filter by selected company
+      if (isSuperAdmin && selectedCompany) {
+        query = query.eq('company_id', selectedCompany);
+      } else if (!isSuperAdmin && profile?.company_id) {
+        query = query.eq('company_id', profile.company_id);
+      }
+
+      const { data: projectsData, error } = await query;
       if (error) throw error;
       setProjects(projectsData || []);
     } catch (error) {
@@ -231,25 +237,36 @@ export function TeamManagement() {
   };
 
   const fetchProjectAssignments = async () => {
-    if (!profile?.company_id) return;
-
     try {
-      const { data: assignments, error } = await supabase
+      let query = supabase
         .from('project_roles')
         .select(`
           id,
           project_id,
           user_id,
           role,
-          assigned_at
-        `)
-        .eq('company_id', profile.company_id);
+          assigned_at,
+          company_id
+        `);
 
+      // For super admin, optionally filter by selected company  
+      if (isSuperAdmin && selectedCompany) {
+        query = query.eq('company_id', selectedCompany);
+      } else if (!isSuperAdmin && profile?.company_id) {
+        query = query.eq('company_id', profile.company_id);
+      }
+
+      const { data: assignments, error } = await query;
       if (error) throw error;
 
+      if (!assignments || assignments.length === 0) {
+        setProjectAssignments([]);
+        return;
+      }
+
       // Get projects and users separately to avoid join issues
-      const projectIds = [...new Set(assignments?.map(a => a.project_id))];
-      const userIds = [...new Set(assignments?.map(a => a.user_id))];
+      const projectIds = [...new Set(assignments.map(a => a.project_id))];
+      const userIds = [...new Set(assignments.map(a => a.user_id))];
 
       const [projectsRes, usersRes] = await Promise.all([
         supabase.from('projects').select('id, name').in('id', projectIds),
@@ -259,7 +276,7 @@ export function TeamManagement() {
       const projectsMap = new Map(projectsRes.data?.map(p => [p.id, p.name]) || []);
       const usersMap = new Map(usersRes.data?.map(u => [u.user_id, u.name]) || []);
 
-      const formattedAssignments = assignments?.map(assignment => ({
+      const formattedAssignments = assignments.map(assignment => ({
         id: assignment.id,
         project_id: assignment.project_id,
         user_id: assignment.user_id,
@@ -267,7 +284,7 @@ export function TeamManagement() {
         assigned_at: assignment.assigned_at,
         project_name: projectsMap.get(assignment.project_id) || 'Unknown Project',
         user_name: usersMap.get(assignment.user_id) || 'Unknown User',
-      })) || [];
+      }));
 
       setProjectAssignments(formattedAssignments);
     } catch (error) {
@@ -332,19 +349,30 @@ export function TeamManagement() {
   };
 
   const assignToProject = async () => {
-    if (!selectedProject || !selectedMember || !profile?.company_id) return;
+    if (!selectedProject || !selectedMember) return;
 
     setIsAssigning(true);
 
     try {
+      // Determine the company_id based on whether it's super admin or regular user
+      let companyId = profile?.company_id;
+      
+      if (isSuperAdmin && selectedCompany) {
+        companyId = selectedCompany;
+      }
+
+      if (!companyId) {
+        throw new Error('Company ID is required');
+      }
+
       const { error } = await supabase
         .from('project_roles')
         .insert({
-          company_id: profile.company_id,
+          company_id: companyId,
           project_id: selectedProject,
           user_id: selectedMember,
           role: selectedRole,
-          assigned_by: profile.user_id,
+          assigned_by: profile?.user_id,
         });
 
       if (error) throw error;
@@ -357,6 +385,9 @@ export function TeamManagement() {
       setSelectedProject('');
       setSelectedMember('');
       setSelectedRole('technician');
+      if (isSuperAdmin) {
+        setSelectedCompany('');
+      }
       setIsAssignOpen(false);
       fetchProjectAssignments();
     } catch (error: any) {
@@ -836,37 +867,69 @@ const deleteMember = async (memberId: string) => {
                     Assign a team member to a specific project with a defined role.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="project">Project</Label>
-                    <Select value={selectedProject} onValueChange={setSelectedProject}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projects.map(project => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="member">Team Member</Label>
-                    <Select value={selectedMember} onValueChange={setSelectedMember}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select team member" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teamMembers.map(member => (
-                          <SelectItem key={member.user_id} value={member.user_id}>
-                            {member.name} ({formatRole(member.tenant_role || member.role)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                 <div className="space-y-4">
+                   {isSuperAdmin && (
+                     <div>
+                       <Label htmlFor="company">Company</Label>
+                       <Select value={selectedCompany} onValueChange={(value) => {
+                         setSelectedCompany(value);
+                         setSelectedProject('');
+                         setSelectedMember('');
+                       }}>
+                         <SelectTrigger className="mt-1">
+                           <SelectValue placeholder="Select company first" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           {companies.map(company => (
+                             <SelectItem key={company.id} value={company.id}>
+                               {company.name}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   )}
+                   <div>
+                     <Label htmlFor="project">Project</Label>
+                     <Select 
+                       value={selectedProject} 
+                       onValueChange={setSelectedProject}
+                       disabled={isSuperAdmin && !selectedCompany}
+                     >
+                       <SelectTrigger className="mt-1">
+                         <SelectValue placeholder={isSuperAdmin && !selectedCompany ? "Select company first" : "Select a project"} />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {projects.map(project => (
+                           <SelectItem key={project.id} value={project.id}>
+                             {project.name}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div>
+                     <Label htmlFor="member">Team Member</Label>
+                     <Select 
+                       value={selectedMember} 
+                       onValueChange={setSelectedMember}
+                       disabled={!selectedProject}
+                     >
+                       <SelectTrigger className="mt-1">
+                         <SelectValue placeholder={!selectedProject ? "Select project first" : "Select team member"} />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {(isSuperAdmin && selectedCompany ? allCompanyUsers : teamMembers)
+                           .filter(member => !member.is_super_admin)
+                           .map(member => (
+                           <SelectItem key={member.user_id} value={member.user_id}>
+                             {member.name} ({formatRole(member.tenant_role || member.role)})
+                             {isSuperAdmin && (member as any).company_name && ` - ${(member as any).company_name}`}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
                   <div>
                     <Label htmlFor="projectRole">Project Role</Label>
                     <Select value={selectedRole} onValueChange={setSelectedRole}>
