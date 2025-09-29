@@ -366,10 +366,12 @@ export function ProjectManagement() {
               </Select>
             </div>
           )}
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Project
-          </Button>
+          {!isSuperAdmin && (
+            <Button onClick={() => navigate('/projects/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Project
+            </Button>
+          )}
         </div>
       </div>
 
@@ -468,10 +470,12 @@ export function ProjectManagement() {
             <p className="text-muted-foreground text-center mb-4">
               Create your first project to start organizing your construction testing activities.
             </p>
-            <Button onClick={handleCreate}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create First Project
-            </Button>
+            {!isSuperAdmin && (
+              <Button onClick={() => navigate('/projects/new')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Project
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -499,17 +503,21 @@ export function ProjectManagement() {
                       <DropdownMenuItem onClick={() => navigate(`/barchart/${project.id}`)}>
                         View Charts
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={isSuperAdmin ? () => handleEdit(project) : () => navigate(`/projects/${project.id}`)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDelete(project.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
+                      {!isSuperAdmin && (
+                        <>
+                          <DropdownMenuItem onClick={() => navigate(`/projects/${project.id}`)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(project.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -544,19 +552,24 @@ export function ProjectManagement() {
                   </div>
                 </div>
 
+                {/* Actions for non-super admin */}
                 <div className="flex flex-wrap gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => navigate(`/barchart/${project.id}`)}>
                     <FileText className="h-4 w-4 mr-2" />
                     View Charts
                   </Button>
-                  <Button size="sm" variant="outline" onClick={isSuperAdmin ? () => handleEdit(project) : () => navigate(`/projects/${project.id}`)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleDelete(project.id)}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
+                  {!isSuperAdmin && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/projects/${project.id}`)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleDelete(project.id)}>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>

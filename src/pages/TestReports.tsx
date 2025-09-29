@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,34 +8,26 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus, Building2, Trash2, Edit } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { CreateTestReportDialog } from '@/components/CreateTestReportDialog';
 import FlowDiagram from '@/components/FlowDiagram';
-
-interface Company {
-  id: string;
-  name: string;
-  description?: string;
-}
+import { RoleBadge } from '@/components/RoleBadge';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { useProjectMembership } from '@/hooks/useProjectMembership';
 
 interface Project {
   id: string;
   name: string;
   description?: string;
-  company_id: string;
-  companies?: {
-    name: string;
-  };
 }
 
 interface TestReport {
   id: string;
   report_number: string;
   project_id: string;
-  company_id: string;
   material: string;
   custom_material: string;
   road_name: string;
@@ -51,27 +42,22 @@ interface TestReport {
   compliance_status: string;
   test_date: string;
   created_at: string;
-  technician_name?: string;
   projects?: {
     name: string;
-    companies?: {
-      name: string;
-    };
   };
 }
 
 export default function TestReports() {
   const { profile } = useAuth();
-  const { isSuperAdmin, userRole, hasPermission } = usePermissions();
   const navigate = useNavigate();
+  const { permissions, userRole } = useRoleAccess();
+  const { assignedProjectIds, loading: membershipLoading } = useProjectMembership();
   const [reports, setReports] = useState<TestReport[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
-    company: '',
     project: '',
     material: '',
     testType: '',
@@ -81,24 +67,21 @@ export default function TestReports() {
   });
 
   useEffect(() => {
-    if (profile?.company_id) {
-      if (isSuperAdmin) {
-        fetchCompanies();
-      }
+    if (profile?.company_id && !membershipLoading) {
       fetchProjects();
     }
-  }, [profile?.company_id, isSuperAdmin]);
+  }, [profile?.company_id, assignedProjectIds, membershipLoading, permissions]);
 
   // Separate effect for filters with debouncing
   useEffect(() => {
-    if (!profile?.company_id) return;
+    if (!profile?.company_id || membershipLoading) return;
     
     const timeoutId = setTimeout(() => {
       fetchReports();
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [profile?.company_id, filters, isSuperAdmin]);
+  }, [profile?.company_id, filters, assignedProjectIds, membershipLoading, permissions]);
 
   const fetchReports = async () => {
     if (!profile?.company_id) return;
@@ -110,28 +93,36 @@ export default function TestReports() {
         .select(`
           *,
           projects (
-            name,
-            companies (
-              name
-            )
+            name
           )
         `);
 
       // Apply role-based filtering
-      if (!isSuperAdmin) {
-        // For non-super admins, filter by company
-        query = query.eq('company_id', profile.company_id);
+      if (permissions.canViewAllReports) {
+        // Super admin sees all reports
+        query = query.order('created_at', { ascending: false });
+      } else if (permissions.canViewCompanyReports) {
+        // Company admin sees all company reports
+        query = query.eq('company_id', profile.company_id).order('created_at', { ascending: false });
+      } else if (permissions.isStaff || userRole === 'project_manager') {
+        // Staff and project managers see only assigned project reports
+        if (assignedProjectIds.length === 0 && !membershipLoading) {
+          setReports([]);
+          setLoading(false);
+          return;
+        }
+        query = query.in('project_id', assignedProjectIds).order('created_at', { ascending: false });
+      } else {
+        // Default: no access
+        setReports([]);
+        setLoading(false);
+        return;
       }
-
-      query = query.order('created_at', { ascending: false });
 
       // Apply filters
       if (filters.search && filters.search.trim()) {
         const searchTerm = filters.search.trim();
         query = query.or(`report_number.ilike.%${searchTerm}%,road_name.ilike.%${searchTerm}%,laboratory_test_no.ilike.%${searchTerm}%,technician_name.ilike.%${searchTerm}%`);
-      }
-      if (filters.company && filters.company !== 'all' && filters.company !== '') {
-        query = query.eq('company_id', filters.company);
       }
       if (filters.project && filters.project !== 'all' && filters.project !== '') {
         query = query.eq('project_id', filters.project);
@@ -168,40 +159,26 @@ export default function TestReports() {
     }
   };
 
-  const fetchCompanies = async () => {
-    if (!isSuperAdmin) return;
-    
-    const { data, error } = await supabase
-      .from('companies')
-      .select('id, name, description')
-      .eq('is_active', true);
-
-    if (error) {
-      console.error('Error fetching companies:', error);
-      return;
-    }
-
-    setCompanies(data || []);
-  };
-
   const fetchProjects = async () => {
     if (!profile?.company_id) return;
     
     let query = supabase
       .from('projects')
-      .select(`
-        id, 
-        name, 
-        description,
-        company_id,
-        companies (
-          name
-        )
-      `);
+      .select('id, name, description');
 
     // Apply role-based filtering for projects
-    if (!isSuperAdmin) {
+    if (permissions.canViewAllReports) {
+      // Super admin sees all projects
+    } else if (permissions.canViewCompanyReports) {
+      // Company admin sees company projects
       query = query.eq('company_id', profile.company_id);
+    } else if (permissions.isStaff || userRole === 'project_manager') {
+      // Staff and project managers see only assigned projects
+      if (assignedProjectIds.length === 0) {
+        setProjects([]);
+        return;
+      }
+      query = query.in('id', assignedProjectIds);
     }
 
     const { data, error } = await query;
@@ -215,6 +192,15 @@ export default function TestReports() {
   };
 
   const handleSubmitForApproval = async (reportId: string) => {
+    if (!permissions.canSubmitReports) {
+      toast({
+        title: "Error",
+        description: "You don't have permission to submit reports",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('test_reports')
@@ -239,8 +225,7 @@ export default function TestReports() {
   };
 
   const handleApprove = async (reportId: string) => {
-    // Only admins can approve reports
-    if (!hasPermission('approve_reports') && !isSuperAdmin && !['company_admin', 'admin'].includes(userRole)) {
+    if (!permissions.canApproveReports) {
       toast({
         title: "Error",
         description: "You don't have permission to approve reports",
@@ -276,8 +261,7 @@ export default function TestReports() {
   };
 
   const handleReject = async (reportId: string) => {
-    // Only admins can reject reports
-    if (!hasPermission('approve_reports') && !isSuperAdmin && !['company_admin', 'admin'].includes(userRole)) {
+    if (!permissions.canRejectReports) {
       toast({
         title: "Error",
         description: "You don't have permission to reject reports",
@@ -313,8 +297,7 @@ export default function TestReports() {
   };
 
   const handleDelete = async (reportId: string) => {
-    // Only admins can delete reports
-    if (!isSuperAdmin && !['company_admin', 'admin'].includes(userRole)) {
+    if (!permissions.canDeleteReports) {
       toast({
         title: "Error",
         description: "You don't have permission to delete reports",
@@ -350,6 +333,21 @@ export default function TestReports() {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return <Badge variant="secondary">Draft</Badge>;
+      case 'submitted':
+        return <Badge variant="default">Submitted</Badge>;
+      case 'approved':
+        return <Badge variant="default" className="bg-green-600">Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -364,23 +362,44 @@ export default function TestReports() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Test Reports</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold">Test Reports</h1>
+          <RoleBadge role={userRole} />
+        </div>
         <div className="flex gap-2">
-          {projects.length === 0 ? (
+          {projects.length === 0 && permissions.canCreateProjects ? (
             <Button onClick={() => navigate('/projects')}>
               <FolderPlus className="h-4 w-4 mr-2" />
               Create Project First
             </Button>
-          ) : (
+          ) : permissions.canCreateReports ? (
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Test Report
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {projects.length === 0 ? (
+      {permissions.isViewOnly && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            You have view-only access to assigned projects. Contact your administrator to request additional permissions.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!permissions.canViewReports && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            You don't have permission to view test reports. Contact your administrator.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {projects.length === 0 && permissions.canCreateProjects ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FolderPlus className="h-12 w-12 text-muted-foreground mb-4" />
@@ -392,6 +411,16 @@ export default function TestReports() {
               <FolderPlus className="h-4 w-4 mr-2" />
               Create Your First Project
             </Button>
+          </CardContent>
+        </Card>
+      ) : projects.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold">No Assigned Projects</h3>
+            <p className="text-muted-foreground mt-2 text-center">
+              You haven't been assigned to any projects yet. Contact your administrator to get access to projects.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -428,7 +457,6 @@ export default function TestReports() {
                         size="sm"
                         onClick={() => setFilters({
                           search: '',
-                          company: '',
                           project: '',
                           material: '',
                           testType: '',
@@ -440,7 +468,7 @@ export default function TestReports() {
                         Clear Filters
                       </Button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                       <div>
                         <Label htmlFor="search">Search</Label>
                         <div className="relative">
@@ -454,29 +482,6 @@ export default function TestReports() {
                           />
                         </div>
                       </div>
-
-                      {/* Company Filter - Only for Super Admin */}
-                      {isSuperAdmin && (
-                        <div>
-                          <Label htmlFor="company">Company</Label>
-                          <Select
-                            value={filters.company}
-                            onValueChange={(value) => setFilters(prev => ({ ...prev, company: value, project: '' }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="All companies" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All companies</SelectItem>
-                              {companies.map(company => (
-                                <SelectItem key={company.id} value={company.id}>
-                                  {company.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
                       
                       <div>
                         <Label htmlFor="project">Project</Label>
@@ -489,11 +494,9 @@ export default function TestReports() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All projects</SelectItem>
-                            {projects
-                              .filter(project => !filters.company || filters.company === 'all' || project.company_id === filters.company)
-                              .map(project => (
+                            {projects.map(project => (
                               <SelectItem key={project.id} value={project.id}>
-                                {isSuperAdmin && project.companies?.name ? `${project.companies.name} - ${project.name}` : project.name}
+                                {project.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -584,278 +587,168 @@ export default function TestReports() {
                   </CardContent>
                 </Card>
 
-                {/* Reports Display */}
-                {isSuperAdmin ? (
-                  <SuperAdminReportsView 
-                    reports={reports}
-                    loading={loading}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                    onDelete={handleDelete}
-                    onSubmit={handleSubmitForApproval}
-                    onView={(id) => navigate(`/test-reports/${id}`)}
-                    onEdit={(id) => navigate(`/test-reports/${id}/edit`)}
-                    userRole={userRole}
-                  />
-                ) : (
-                  <RegularReportsView 
-                    reports={reports}
-                    loading={loading}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                    onDelete={handleDelete}
-                    onSubmit={handleSubmitForApproval}
-                    onView={(id) => navigate(`/test-reports/${id}`)}
-                    onEdit={(id) => navigate(`/test-reports/${id}/edit`)}
-                    userRole={userRole}
-                  />
-                )}
+                {/* Reports Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {loading ? (
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <Card key={i} className="animate-pulse">
+                        <CardHeader>
+                          <div className="h-4 bg-muted rounded w-3/4"></div>
+                          <div className="h-3 bg-muted rounded w-1/2"></div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <div className="h-3 bg-muted rounded"></div>
+                            <div className="h-3 bg-muted rounded w-2/3"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : reports.length === 0 ? (
+                    <Card className="col-span-full">
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <div className="text-center">
+                          <h3 className="text-lg font-semibold">No test reports found</h3>
+                          <p className="text-muted-foreground mt-2">
+                            {permissions.canCreateReports 
+                              ? "Get started by creating your first test report."
+                              : "No test reports available for your assigned projects."
+                            }
+                          </p>
+                          {permissions.canCreateReports && (
+                            <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Create Test Report
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    reports.map((report) => (
+                      <Card key={report.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-lg">{report.report_number}</CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                {report.projects?.name || 'No project'}
+                              </p>
+                              {report.road_name && (
+                                <p className="text-xs text-muted-foreground">
+                                  {report.road_name} • {report.chainage_from} - {report.chainage_to}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              {getStatusBadge(report.status)}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Material:</span>
+                              <span className="capitalize">{report.material || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Test Type:</span>
+                              <span>{report.test_type}</span>
+                            </div>
+                            {report.side && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Side:</span>
+                                <span className="capitalize">{report.side}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Date:</span>
+                              <span>{new Date(report.test_date).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 mt-4 flex-wrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/test-reports/${report.id}/edit`)}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                            
+                            {report.status === 'draft' && permissions.canSubmitReports && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSubmitForApproval(report.id)}
+                              >
+                                <Send className="h-3 w-3 mr-1" />
+                                Submit
+                              </Button>
+                            )}
+                            
+                            {report.status === 'submitted' && permissions.canApproveReports && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleApprove(report.id)}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleReject(report.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+
+                            {permissions.canDeleteReports && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(report.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            )}
+                            
+                            {report.status === 'approved' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/barchart/${report.project_id}`)}
+                              >
+                                <BarChart3 className="h-3 w-3 mr-1" />
+                                Chart
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>
         </>
       )}
 
-      <CreateTestReportDialog 
-        open={isCreateDialogOpen} 
+      <CreateTestReportDialog
+        open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
       />
     </div>
-  );
-}
-
-// Super Admin View - Organized by Company and Project
-interface ReportsViewProps {
-  reports: TestReport[];
-  loading: boolean;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-  onDelete: (id: string) => void;
-  onSubmit: (id: string) => void;
-  onView: (id: string) => void;
-  onEdit: (id: string) => void;
-  userRole: string;
-}
-
-function SuperAdminReportsView({ reports, loading, onApprove, onReject, onDelete, onSubmit, onView, onEdit, userRole }: ReportsViewProps) {
-  // Group reports by company, then by project
-  const groupedReports = reports.reduce((acc, report) => {
-    const companyName = report.projects?.companies?.name || 'Unknown Company';
-    const projectName = report.projects?.name || 'Unknown Project';
-    
-    if (!acc[companyName]) {
-      acc[companyName] = {};
-    }
-    if (!acc[companyName][projectName]) {
-      acc[companyName][projectName] = [];
-    }
-    acc[companyName][projectName].push(report);
-    return acc;
-  }, {} as Record<string, Record<string, TestReport[]>>);
-
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-3 bg-muted rounded w-1/2"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="h-3 bg-muted rounded"></div>
-                <div className="h-3 bg-muted rounded w-3/4"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {Object.entries(groupedReports).map(([companyName, projects]) => (
-        <Card key={companyName}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              {companyName}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Accordion type="multiple" className="w-full">
-              {Object.entries(projects).map(([projectName, projectReports]) => (
-                <AccordionItem key={projectName} value={projectName}>
-                  <AccordionTrigger>
-                    {projectName} ({projectReports.length} reports)
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                      {projectReports.map((report) => (
-                        <ReportCard
-                          key={report.id}
-                          report={report}
-                          onApprove={onApprove}
-                          onReject={onReject}
-                          onDelete={onDelete}
-                          onSubmit={onSubmit}
-                          onView={onView}
-                          onEdit={onEdit}
-                          userRole={userRole}
-                        />
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-// Regular View - Simple grid layout
-function RegularReportsView({ reports, loading, onApprove, onReject, onDelete, onSubmit, onView, onEdit, userRole }: ReportsViewProps) {
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-3 bg-muted rounded w-1/2"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="h-3 bg-muted rounded"></div>
-                <div className="h-3 bg-muted rounded w-3/4"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      {reports.map((report) => (
-        <ReportCard
-          key={report.id}
-          report={report}
-          onApprove={onApprove}
-          onReject={onReject}
-          onDelete={onDelete}
-          onSubmit={onSubmit}
-          onView={onView}
-          onEdit={onEdit}
-          userRole={userRole}
-        />
-      ))}
-    </div>
-  );
-}
-
-// Individual Report Card Component
-interface ReportCardProps {
-  report: TestReport;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-  onDelete: (id: string) => void;
-  onSubmit: (id: string) => void;
-  onView: (id: string) => void;
-  onEdit: (id: string) => void;
-  userRole: string;
-}
-
-function ReportCard({ report, onApprove, onReject, onDelete, onSubmit, onView, onEdit, userRole }: ReportCardProps) {
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return <Badge variant="secondary">Draft</Badge>;
-      case 'submitted':
-        return <Badge variant="default">Submitted</Badge>;
-      case 'approved':
-        return <Badge variant="default" className="bg-green-600">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Rejected</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
-  const canEdit = userRole !== 'project_manager' && (report.status === 'draft' || report.status === 'rejected');
-  const canApprove = userRole === 'super_admin' || ['company_admin', 'admin'].includes(userRole);
-  const canDelete = userRole === 'super_admin' || ['company_admin', 'admin'].includes(userRole);
-  const canSubmit = userRole !== 'project_manager' && report.status === 'draft';
-
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{report.report_number}</CardTitle>
-            <p className="text-sm text-muted-foreground">{report.projects?.name}</p>
-          </div>
-          {getStatusBadge(report.status)}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2 text-sm">
-          <div><span className="font-medium">Test Type:</span> {report.test_type}</div>
-          <div><span className="font-medium">Material:</span> {report.material}</div>
-          <div><span className="font-medium">Road:</span> {report.road_name}</div>
-          <div><span className="font-medium">Date:</span> {new Date(report.test_date).toLocaleDateString()}</div>
-          {report.technician_name && (
-            <div><span className="font-medium">Technician:</span> {report.technician_name}</div>
-          )}
-        </div>
-        
-        <div className="flex flex-wrap gap-2 mt-4">
-          <Button size="sm" variant="outline" onClick={() => onView(report.id)}>
-            <Eye className="h-4 w-4 mr-1" />
-            View
-          </Button>
-          
-          {canEdit && (
-            <Button size="sm" variant="outline" onClick={() => onEdit(report.id)}>
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
-            </Button>
-          )}
-          
-          {canSubmit && (
-            <Button size="sm" onClick={() => onSubmit(report.id)}>
-              <Send className="h-4 w-4 mr-1" />
-              Submit
-            </Button>
-          )}
-          
-          {canApprove && report.status === 'submitted' && (
-            <>
-              <Button size="sm" variant="default" onClick={() => onApprove(report.id)}>
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Approve
-              </Button>
-              <Button size="sm" variant="destructive" onClick={() => onReject(report.id)}>
-                <XCircle className="h-4 w-4 mr-1" />
-                Reject
-              </Button>
-            </>
-          )}
-          
-          {canDelete && (
-            <Button size="sm" variant="destructive" onClick={() => onDelete(report.id)}>
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

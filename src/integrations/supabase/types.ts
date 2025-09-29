@@ -1155,14 +1155,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_user_company: {
-        Args: { user_uuid: string }
-        Returns: string
-      }
-      is_super_admin: {
-        Args: { user_uuid: string }
-        Returns: boolean
-      }
       user_accessible_projects: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1188,14 +1180,6 @@ export type Database = {
           status: string
           updated_at: string
         }[]
-      }
-      user_can_access_project: {
-        Args: { project_uuid: string; user_uuid: string }
-        Returns: boolean
-      }
-      user_can_modify_report: {
-        Args: { project_uuid: string; user_uuid: string }
-        Returns: boolean
       }
     }
     Enums: {
