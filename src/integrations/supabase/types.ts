@@ -1143,14 +1143,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      current_user_info: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          company_id: string
-          role: string
-          user_id: string
-        }[]
-      }
       current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
