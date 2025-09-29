@@ -82,24 +82,47 @@ class ProjectService {
   }
 
   async createProject(projectData: Partial<Project> & { company_id: string }) {
+    const profile = await this.getProfile();
     const { data: { user } } = await supabase.auth.getUser();
 
-    const newProject = {
-      ...projectData,
-      created_by: user?.id,
-      status: 'active',
-    };
+    // Check if user is super admin and creating for different company
+    const isSuper = (profile as any)?.is_super_admin;
+    const isDifferentCompany = projectData.company_id !== profile.company_id;
 
-    console.log('ProjectService.createProject payload', newProject);
+    if (isSuper && isDifferentCompany) {
+      // Use Edge Function for super admin cross-company operations
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data, error } = await supabase.functions.invoke('admin-create-project', {
+        body: projectData,
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
 
-    const { data, error } = await supabase
-      .from('projects')
-      .insert(newProject as any)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as Project;
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Failed to create project');
+      return data.project as Project;
+    } else {
+      // Regular tenant insert (or super admin for their own company)
+      const newProject = {
+        ...projectData,
+        company_id: profile.company_id, // Always use user's company for regular flow
+        created_by: user?.id,
+        status: 'active',
+      };
+
+      console.log('ProjectService.createProject payload', newProject);
+
+      const { data, error } = await supabase
+        .from('projects')
+        .insert(newProject as any)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Project;
+    }
   }
 
   async updateProject(id: string, updates: Partial<Project>) {
