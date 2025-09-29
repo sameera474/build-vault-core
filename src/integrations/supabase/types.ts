@@ -71,13 +71,6 @@ export type Database = {
             foreignKeyName: "chainage_points_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chainage_points_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -224,15 +217,7 @@ export type Database = {
           name?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "material_categories_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -240,7 +225,6 @@ export type Database = {
           company_id: string
           created_at: string
           department: string | null
-          email: string | null
           employee_id: string | null
           hire_date: string | null
           is_active: boolean | null
@@ -258,7 +242,6 @@ export type Database = {
           company_id: string
           created_at?: string
           department?: string | null
-          email?: string | null
           employee_id?: string | null
           hire_date?: string | null
           is_active?: boolean | null
@@ -276,7 +259,6 @@ export type Database = {
           company_id?: string
           created_at?: string
           department?: string | null
-          email?: string | null
           employee_id?: string | null
           hire_date?: string | null
           is_active?: boolean | null
@@ -303,66 +285,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies_for_registration"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      project_members: {
-        Row: {
-          assigned_at: string | null
-          assigned_by: string | null
-          project_id: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          assigned_at?: string | null
-          assigned_by?: string | null
-          project_id: string
-          role: string
-          user_id: string
-        }
-        Update: {
-          assigned_at?: string | null
-          assigned_by?: string | null
-          project_id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_members_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "project_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -392,20 +314,6 @@ export type Database = {
           project_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "project_roads_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "project_roads_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "project_roads_project_id_fkey"
             columns: ["project_id"]
@@ -445,32 +353,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "project_roles_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "project_roles_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "project_roles_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -558,13 +445,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies_for_registration"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projects_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -713,15 +593,7 @@ export type Database = {
           invited_by?: string | null
           role?: Database["public"]["Enums"]["tenant_role"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "team_invitations_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       templates: {
         Row: {
@@ -856,15 +728,7 @@ export type Database = {
           version?: number
           visibility_roles?: string[] | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "test_report_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       test_reports: {
         Row: {
@@ -874,7 +738,7 @@ export type Database = {
           compliance_status: string | null
           covered_chainage: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           custom_material: string | null
           data_json: Json | null
           doc_code: string | null
@@ -915,7 +779,7 @@ export type Database = {
           compliance_status?: string | null
           covered_chainage?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           custom_material?: string | null
           data_json?: Json | null
           doc_code?: string | null
@@ -956,7 +820,7 @@ export type Database = {
           compliance_status?: string | null
           covered_chainage?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           custom_material?: string | null
           data_json?: Json | null
           doc_code?: string | null
@@ -991,20 +855,6 @@ export type Database = {
           yymmdd?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "test_reports_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "test_reports_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "test_reports_project_id_fkey"
             columns: ["project_id"]
@@ -1050,77 +900,6 @@ export type Database = {
         }
         Relationships: []
       }
-      me: {
-        Row: {
-          company_id: string | null
-          role: string | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_for_registration"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      my_projects: {
-        Row: {
-          client_logo: string | null
-          client_name: string | null
-          company_id: string | null
-          consultant_logo: string | null
-          consultant_name: string | null
-          contract_number: string | null
-          contractor_logo: string | null
-          contractor_name: string | null
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          end_date: string | null
-          id: string | null
-          lab_code: string | null
-          location: string | null
-          name: string | null
-          project_prefix: string | null
-          region_code: string | null
-          start_date: string | null
-          status: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_projects_company_id"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_projects_company_id"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_for_registration"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projects_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "me"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
     }
     Functions: {
       allocate_report_number: {
@@ -1143,59 +922,9 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      current_user_info: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          company_id: string
-          role: string
-          user_id: string
-        }[]
-      }
       current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
-      }
-      get_user_company: {
-        Args: { user_uuid: string }
-        Returns: string
-      }
-      is_super_admin: {
-        Args: { user_uuid: string }
-        Returns: boolean
-      }
-      user_accessible_projects: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          client_logo: string
-          client_name: string
-          company_id: string
-          consultant_logo: string
-          consultant_name: string
-          contract_number: string
-          contractor_logo: string
-          contractor_name: string
-          created_at: string
-          created_by: string
-          description: string
-          end_date: string
-          id: string
-          lab_code: string
-          location: string
-          name: string
-          project_prefix: string
-          region_code: string
-          start_date: string
-          status: string
-          updated_at: string
-        }[]
-      }
-      user_can_access_project: {
-        Args: { project_uuid: string; user_uuid: string }
-        Returns: boolean
-      }
-      user_can_modify_report: {
-        Args: { project_uuid: string; user_uuid: string }
-        Returns: boolean
       }
     }
     Enums: {

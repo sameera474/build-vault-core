@@ -53,8 +53,6 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
   const { profile } = useAuth();
   const { isSuperAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState('general');
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(project?.company_id || profile?.company_id || '');
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [logoUrls, setLogoUrls] = useState({
     contractor_logo: project?.contractor_logo || '',
     client_logo: project?.client_logo || '',
@@ -68,19 +66,6 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
     if (tab) setActiveTab(tab);
   }, []);
 
-  // Load companies for super admin
-  useEffect(() => {
-    if (isSuperAdmin) {
-      projectService.fetchAllCompanies().then(setCompanies).catch(console.error);
-    }
-  }, [isSuperAdmin]);
-
-  // Set company ID for non-super admin users
-  useEffect(() => {
-    if (!isSuperAdmin && profile?.company_id) {
-      setSelectedCompanyId(profile.company_id);
-    }
-  }, [isSuperAdmin, profile]);
 
   const {
     register,
@@ -107,30 +92,21 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
   });
 
   const onSubmit = async (data: ProjectFormData) => {
-    // For super admin, require company selection
-    if (isSuperAdmin && !selectedCompanyId) {
+    if (isSuperAdmin) {
       toast({
-        title: "Error",
-        description: "Please select a company for this project",
+        title: "Read-only",
+        description: "Super Admin cannot edit projects",
         variant: "destructive",
       });
       return;
     }
 
-    // For non-super admin, ensure we have the user's company
-    if (!isSuperAdmin && !selectedCompanyId) {
-      toast({
-        title: "Error",
-        description: "Company information is missing",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+    console.log('Form submission data:', data);
+    console.log('Logo URLs:', logoUrls);
     await onSave({
       ...data,
       ...logoUrls,
-      company_id: selectedCompanyId,
+      company_id: profile?.company_id || '',
     });
   };
 
@@ -159,10 +135,12 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
             </p>
           </div>
         </div>
-        <Button type="submit" disabled={isSubmitting}>
-          <Save className="h-4 w-4 mr-2" />
-          {isSubmitting ? 'Saving...' : 'Save Project'}
-        </Button>
+        {!isSuperAdmin && (
+          <Button type="submit" disabled={isSubmitting}>
+            <Save className="h-4 w-4 mr-2" />
+            {isSubmitting ? 'Saving...' : 'Save Project'}
+          </Button>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -191,38 +169,7 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
                 <CardTitle>Project Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Company Selection for Super Admin */}
-                {isSuperAdmin && (
-                  <div className="space-y-2 p-4 mb-6 border rounded-lg bg-muted/50">
-                    <Label htmlFor="company" className="text-base font-semibold">
-                      Company * <span className="text-xs text-muted-foreground font-normal">(Required)</span>
-                    </Label>
-                    <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                      <SelectTrigger className="bg-background">
-                        <SelectValue placeholder="Select a company to assign this project" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background">
-                        {companies.length === 0 ? (
-                          <div className="p-2 text-sm text-muted-foreground">No companies available</div>
-                        ) : (
-                          companies.map((company) => (
-                            <SelectItem key={company.id} value={company.id}>
-                              {company.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {!selectedCompanyId && (
-                      <p className="text-xs text-muted-foreground">
-                        Select the company this project belongs to
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Company Display for Non-Super Admin */}
-                {!isSuperAdmin && companyName && (
+                {companyName && (
                   <div className="text-sm text-muted-foreground mb-4">
                     Company: <span className="font-medium">{companyName}</span>
                   </div>
