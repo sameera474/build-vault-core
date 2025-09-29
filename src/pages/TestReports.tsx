@@ -65,27 +65,28 @@ export default function TestReports() {
   });
 
   useEffect(() => {
-    if (profile?.company_id) {
+    if (profile?.user_id) {
       fetchProjects();
     }
-  }, [profile?.company_id]);
+  }, [profile?.user_id]);
 
   // Separate effect for filters with debouncing
   useEffect(() => {
-    if (!profile?.company_id) return;
+    if (!profile?.user_id) return;
     
     const timeoutId = setTimeout(() => {
       fetchReports();
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [profile?.company_id, filters]);
+  }, [profile?.user_id, filters]);
 
   const fetchReports = async () => {
-    if (!profile?.company_id) return;
+    if (!profile?.user_id) return;
     
     setLoading(true);
     try {
+      // Let RLS handle filtering - no need to explicitly filter by company_id
       let query = supabase
         .from('test_reports')
         .select(`
@@ -94,7 +95,6 @@ export default function TestReports() {
             name
           )
         `)
-        .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -138,12 +138,12 @@ export default function TestReports() {
   };
 
   const fetchProjects = async () => {
-    if (!profile?.company_id) return;
+    if (!profile?.user_id) return;
     
+    // Use my_projects view which respects RLS and role-based access
     const { data, error } = await supabase
-      .from('projects')
-      .select('id, name, description')
-      .eq('company_id', profile.company_id);
+      .from('my_projects')
+      .select('id, name, description');
 
     if (error) {
       console.error('Error fetching projects:', error);
