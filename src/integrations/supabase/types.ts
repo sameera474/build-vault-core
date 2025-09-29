@@ -279,6 +279,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_for_registration"
+            referencedColumns: ["id"]
+          },
         ]
       }
       project_roads: {
@@ -851,7 +858,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      companies_for_registration: {
+        Row: {
+          city: string | null
+          country: string | null
+          description: string | null
+          id: string | null
+          name: string | null
+          website: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          description?: string | null
+          id?: string | null
+          name?: string | null
+          website?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          description?: string | null
+          id?: string | null
+          name?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       allocate_report_number: {
