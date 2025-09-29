@@ -49,9 +49,9 @@ class ProjectService {
   }
 
   async fetchProjects() {
-    // RLS will automatically filter by user's company
+    // Use my_projects view which respects RLS and role-based access
     const { data, error } = await supabase
-      .from('projects')
+      .from('my_projects')
       .select('*')
       .order('created_at', { ascending: false });
     
