@@ -1,10 +1,13 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { TeamManagement } from '@/components/TeamManagement';
+import { SuperAdminTeamManagement } from '@/components/SuperAdminTeamManagement';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Shield, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function Team() {
   const { profile } = useAuth();
+  const { isSuperAdmin } = usePermissions();
 
   const roleFeatures = {
     admin: [
@@ -209,6 +212,13 @@ export default function Team() {
       <div className="lg:col-span-2">
         <TeamManagement />
       </div>
+
+      {/* Super Admin Section */}
+      {isSuperAdmin && (
+        <div className="lg:col-span-2">
+          <SuperAdminTeamManagement />
+        </div>
+      )}
     </div>
   );
 }
