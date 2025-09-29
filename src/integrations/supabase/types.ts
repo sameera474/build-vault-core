@@ -431,7 +431,22 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_projects_company_id"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_projects_company_id"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_for_registration"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {

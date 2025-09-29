@@ -221,12 +221,12 @@ export function TeamManagement() {
         .select('id, name, company_id')
         .order('name');
 
-      // For super admin, optionally filter by selected company
-      if (isSuperAdmin && selectedCompany) {
-        query = query.eq('company_id', selectedCompany);
-      } else if (!isSuperAdmin && profile?.company_id) {
-        query = query.eq('company_id', profile.company_id);
-      }
+       // For super admin, optionally filter by selected company
+       if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
+         query = query.eq('company_id', selectedCompany);
+       } else if (!isSuperAdmin && profile?.company_id) {
+         query = query.eq('company_id', profile.company_id);
+       }
 
       const { data: projectsData, error } = await query;
       if (error) throw error;
@@ -249,12 +249,12 @@ export function TeamManagement() {
           company_id
         `);
 
-      // For super admin, optionally filter by selected company  
-      if (isSuperAdmin && selectedCompany) {
-        query = query.eq('company_id', selectedCompany);
-      } else if (!isSuperAdmin && profile?.company_id) {
-        query = query.eq('company_id', profile.company_id);
-      }
+       // For super admin, optionally filter by selected company  
+       if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
+         query = query.eq('company_id', selectedCompany);
+       } else if (!isSuperAdmin && profile?.company_id) {
+         query = query.eq('company_id', profile.company_id);
+       }
 
       const { data: assignments, error } = await query;
       if (error) throw error;
