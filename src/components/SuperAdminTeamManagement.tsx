@@ -39,7 +39,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export function SuperAdminTeamManagement() {
-  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('all');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +94,7 @@ export function SuperAdminTeamManagement() {
         `)
         .order('name');
 
-      if (selectedCompany) {
+      if (selectedCompany && selectedCompany !== 'all') {
         query = query.eq('company_id', selectedCompany);
       }
 
@@ -158,7 +158,7 @@ export function SuperAdminTeamManagement() {
               <SelectValue placeholder="All companies" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All companies</SelectItem>
+              <SelectItem value="all">All companies</SelectItem>
               {companies.map(company => (
                 <SelectItem key={company.id} value={company.id}>
                   {company.name}
