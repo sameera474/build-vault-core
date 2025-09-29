@@ -92,6 +92,14 @@ export function ProjectManagement() {
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
+  // Refresh projects when component mounts to catch new projects created from other pages
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchProjects();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const fetchProjects = async () => {
     try {
       let query = supabase
