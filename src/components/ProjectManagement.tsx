@@ -100,40 +100,50 @@ export function ProjectManagement() {
 
   const fetchProjects = async () => {
     try {
-      let query = supabase
-        .from('projects')
-        .select(`
-          *,
-          companies(name)
-        `)
-        .order('created_at', { ascending: false });
+      setLoading(true);
 
-      // Apply company filtering
-      if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
-        query = query.eq('company_id', selectedCompany);
-      } else if (!isSuperAdmin && profile?.company_id) {
-        query = query.eq('company_id', profile.company_id);
+      if (isSuperAdmin) {
+        // Super admins must fetch via Edge Function to bypass tenant RLS safely
+        const body = selectedCompany && selectedCompany !== 'all' ? { company_id: selectedCompany } : {};
+        const { data, error } = await supabase.functions.invoke('admin-list-projects', { body });
+        if (error) throw error;
+        const res = (data as any) || {};
+        if (res.error) throw new Error(res.error);
+        const projectsData = (res.projects as any[]) || [];
+
+        const projectsWithCounts = projectsData.map((project: any) => ({
+          ...project,
+          company_name: (project as any).companies?.name || 'Unknown Company',
+          _count: { test_reports: 0 },
+        }));
+        setProjects(projectsWithCounts);
+      } else {
+        // Tenant users fetch only their company's projects (RLS enforced)
+        let query = supabase
+          .from('projects')
+          .select(`
+            *,
+            companies(name)
+          `)
+          .eq('company_id', profile?.company_id as string)
+          .order('created_at', { ascending: false });
+
+        const { data: projectsData, error } = await query;
+        if (error) throw error;
+
+        const projectsWithCounts = (projectsData || []).map((project: any) => ({
+          ...project,
+          company_name: (project as any).companies?.name || 'Unknown Company',
+          _count: { test_reports: 0 },
+        }));
+        setProjects(projectsWithCounts);
       }
-
-      const { data: projectsData, error } = await query;
-      if (error) throw error;
-
-      // Transform the data to include company name and count
-      const projectsWithCounts = projectsData?.map(project => ({
-        ...project,
-        company_name: (project as any).companies?.name || 'Unknown Company',
-        _count: {
-          test_reports: 0 // Simplified for now - can be enhanced later
-        }
-      })) || [];
-
-      setProjects(projectsWithCounts);
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast({
-        title: "Error",
-        description: "Failed to load projects",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to load projects',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
