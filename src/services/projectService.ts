@@ -40,7 +40,7 @@ class ProjectService {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('company_id, role, tenant_role')
+      .select('company_id, role, tenant_role, is_super_admin')
       .eq('user_id', user.id)
       .single();
 
@@ -49,16 +49,25 @@ class ProjectService {
   }
 
   async fetchProjects() {
-    const profile = await this.getProfile();
-    
+    // RLS will automatically filter by user's company
     const { data, error } = await supabase
       .from('projects')
       .select('*')
-      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
     return data as Project[];
+  }
+
+  async fetchAllCompanies() {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name');
+    
+    if (error) throw error;
+    return data;
   }
 
   async fetchProject(id: string) {
@@ -72,13 +81,17 @@ class ProjectService {
     return data as Project;
   }
 
-  async createProject(projectData: Partial<Project>) {
+  async createProject(projectData: Partial<Project> & { company_id: string }) {
     const profile = await this.getProfile();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // For super admin: allow creating for any company
+    // For company admin: enforce their own company
+    const isSuper = (profile as any)?.is_super_admin;
+    
     const newProject = {
       ...projectData,
-      company_id: profile.company_id,
+      company_id: isSuper ? projectData.company_id : profile.company_id, // Super admin can choose, others use own company
       created_by: user?.id,
       status: 'active',
     };
@@ -96,9 +109,16 @@ class ProjectService {
   }
 
   async updateProject(id: string, updates: Partial<Project>) {
+    const profile = await this.getProfile();
+    const isSuper = (profile as any)?.is_super_admin;
+
+    // For super admin: allow updating any project
+    // For company admin: only allow updating projects from their company (RLS enforces this)
+    const updateData = isSuper ? updates : { ...updates, company_id: profile.company_id };
+
     const { data, error } = await supabase
       .from('projects')
-      .update(updates)
+      .update(updateData as any)
       .eq('id', id)
       .select()
       .single();

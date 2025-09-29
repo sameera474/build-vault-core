@@ -80,6 +80,7 @@ export function TeamManagement() {
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
   const [selectedRole, setSelectedRole] = useState('technician');
+  const [selectedCompany, setSelectedCompany] = useState('all');
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isInviting, setIsInviting] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -93,6 +94,8 @@ export function TeamManagement() {
     avatar_url: ''
   });
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [allCompanyUsers, setAllCompanyUsers] = useState<TeamMember[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectAssignments, setProjectAssignments] = useState<ProjectAssignment[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -101,11 +104,24 @@ export function TeamManagement() {
   const { profile } = useAuth();
   const { toast } = useToast();
 
+  const isSuperAdmin = (profile as any)?.is_super_admin;
+
   useEffect(() => {
     fetchTeamData();
     fetchProjects();
     fetchProjectAssignments();
-  }, [profile?.company_id]);
+    if (isSuperAdmin) {
+      fetchAllCompanies();
+      fetchAllCompanyUsers();
+    }
+  }, [profile?.company_id, isSuperAdmin]);
+
+  useEffect(() => {
+    if (isSuperAdmin && selectedCompany) {
+      fetchAllCompanyUsers();
+      fetchProjects();
+    }
+  }, [selectedCompany]);
 
   const fetchTeamData = async () => {
     if (!profile?.company_id) return;
@@ -141,16 +157,78 @@ export function TeamManagement() {
     }
   };
 
-  const fetchProjects = async () => {
-    if (!profile?.company_id) return;
+  const fetchAllCompanies = async () => {
+    if (!isSuperAdmin) return;
 
     try {
-      const { data: projectsData, error } = await supabase
-        .from('projects')
-        .select('id, name')
-        .eq('company_id', profile.company_id)
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, is_active')
+        .eq('is_active', true)
         .order('name');
 
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
+
+  const fetchAllCompanyUsers = async () => {
+    if (!isSuperAdmin) return;
+
+    try {
+      let query = supabase
+        .from('profiles')
+        .select(`
+          user_id, 
+          name, 
+          role, 
+          tenant_role, 
+          created_at, 
+          is_super_admin, 
+          phone, 
+          department, 
+          avatar_url,
+          company_id,
+          companies(name)
+        `)
+        .order('name');
+
+      if (selectedCompany && selectedCompany !== 'all') {
+        query = query.eq('company_id', selectedCompany);
+      }
+
+      const { data: users, error } = await query;
+
+      if (error) throw error;
+
+      const formattedUsers = users?.map(user => ({
+        ...user,
+        company_name: (user as any).companies?.name || 'Unknown Company'
+      })) || [];
+
+      setAllCompanyUsers(formattedUsers);
+    } catch (error) {
+      console.error('Error fetching all company users:', error);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      let query = supabase
+        .from('projects')
+        .select('id, name, company_id')
+        .order('name');
+
+       // For super admin, optionally filter by selected company
+       if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
+         query = query.eq('company_id', selectedCompany);
+       } else if (!isSuperAdmin && profile?.company_id) {
+         query = query.eq('company_id', profile.company_id);
+       }
+
+      const { data: projectsData, error } = await query;
       if (error) throw error;
       setProjects(projectsData || []);
     } catch (error) {
@@ -159,25 +237,36 @@ export function TeamManagement() {
   };
 
   const fetchProjectAssignments = async () => {
-    if (!profile?.company_id) return;
-
     try {
-      const { data: assignments, error } = await supabase
+      let query = supabase
         .from('project_roles')
         .select(`
           id,
           project_id,
           user_id,
           role,
-          assigned_at
-        `)
-        .eq('company_id', profile.company_id);
+          assigned_at,
+          company_id
+        `);
 
+       // For super admin, optionally filter by selected company  
+       if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
+         query = query.eq('company_id', selectedCompany);
+       } else if (!isSuperAdmin && profile?.company_id) {
+         query = query.eq('company_id', profile.company_id);
+       }
+
+      const { data: assignments, error } = await query;
       if (error) throw error;
 
+      if (!assignments || assignments.length === 0) {
+        setProjectAssignments([]);
+        return;
+      }
+
       // Get projects and users separately to avoid join issues
-      const projectIds = [...new Set(assignments?.map(a => a.project_id))];
-      const userIds = [...new Set(assignments?.map(a => a.user_id))];
+      const projectIds = [...new Set(assignments.map(a => a.project_id))];
+      const userIds = [...new Set(assignments.map(a => a.user_id))];
 
       const [projectsRes, usersRes] = await Promise.all([
         supabase.from('projects').select('id, name').in('id', projectIds),
@@ -187,7 +276,7 @@ export function TeamManagement() {
       const projectsMap = new Map(projectsRes.data?.map(p => [p.id, p.name]) || []);
       const usersMap = new Map(usersRes.data?.map(u => [u.user_id, u.name]) || []);
 
-      const formattedAssignments = assignments?.map(assignment => ({
+      const formattedAssignments = assignments.map(assignment => ({
         id: assignment.id,
         project_id: assignment.project_id,
         user_id: assignment.user_id,
@@ -195,7 +284,7 @@ export function TeamManagement() {
         assigned_at: assignment.assigned_at,
         project_name: projectsMap.get(assignment.project_id) || 'Unknown Project',
         user_name: usersMap.get(assignment.user_id) || 'Unknown User',
-      })) || [];
+      }));
 
       setProjectAssignments(formattedAssignments);
     } catch (error) {
@@ -260,19 +349,30 @@ export function TeamManagement() {
   };
 
   const assignToProject = async () => {
-    if (!selectedProject || !selectedMember || !profile?.company_id) return;
+    if (!selectedProject || !selectedMember) return;
 
     setIsAssigning(true);
 
     try {
+      // Determine the company_id based on whether it's super admin or regular user
+      let companyId = profile?.company_id;
+      
+      if (isSuperAdmin && selectedCompany) {
+        companyId = selectedCompany;
+      }
+
+      if (!companyId) {
+        throw new Error('Company ID is required');
+      }
+
       const { error } = await supabase
         .from('project_roles')
         .insert({
-          company_id: profile.company_id,
+          company_id: companyId,
           project_id: selectedProject,
           user_id: selectedMember,
           role: selectedRole,
-          assigned_by: profile.user_id,
+          assigned_by: profile?.user_id,
         });
 
       if (error) throw error;
@@ -285,6 +385,9 @@ export function TeamManagement() {
       setSelectedProject('');
       setSelectedMember('');
       setSelectedRole('technician');
+      if (isSuperAdmin) {
+        setSelectedCompany('');
+      }
       setIsAssignOpen(false);
       fetchProjectAssignments();
     } catch (error: any) {
@@ -563,14 +666,16 @@ const deleteMember = async (memberId: string) => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Invite Member
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
+            {(profile?.role === 'admin' || isSuperAdmin) && (
+              <>
+                <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Invite Member
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Invite Team Member</DialogTitle>
                   <DialogDescription>
@@ -622,10 +727,10 @@ const deleteMember = async (memberId: string) => {
                     </Button>
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+                  </DialogContent>
+                </Dialog>
 
-            <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+                <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   <UserPlus className="h-4 w-4 mr-2" />
@@ -742,16 +847,19 @@ const deleteMember = async (memberId: string) => {
                     </Button>
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+                  </DialogContent>
+                </Dialog>
+              </>
+            )}
 
-            <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Building className="h-4 w-4 mr-2" />
-                  Assign to Project
-                </Button>
-              </DialogTrigger>
+            {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
+              <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Building className="h-4 w-4 mr-2" />
+                    Assign to Project
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Assign to Project</DialogTitle>
@@ -759,37 +867,69 @@ const deleteMember = async (memberId: string) => {
                     Assign a team member to a specific project with a defined role.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="project">Project</Label>
-                    <Select value={selectedProject} onValueChange={setSelectedProject}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projects.map(project => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="member">Team Member</Label>
-                    <Select value={selectedMember} onValueChange={setSelectedMember}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select team member" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teamMembers.map(member => (
-                          <SelectItem key={member.user_id} value={member.user_id}>
-                            {member.name} ({formatRole(member.tenant_role || member.role)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                 <div className="space-y-4">
+                   {isSuperAdmin && (
+                     <div>
+                       <Label htmlFor="company">Company</Label>
+                       <Select value={selectedCompany} onValueChange={(value) => {
+                         setSelectedCompany(value);
+                         setSelectedProject('');
+                         setSelectedMember('');
+                       }}>
+                         <SelectTrigger className="mt-1">
+                           <SelectValue placeholder="Select company first" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           {companies.map(company => (
+                             <SelectItem key={company.id} value={company.id}>
+                               {company.name}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   )}
+                   <div>
+                     <Label htmlFor="project">Project</Label>
+                     <Select 
+                       value={selectedProject} 
+                       onValueChange={setSelectedProject}
+                       disabled={isSuperAdmin && !selectedCompany}
+                     >
+                       <SelectTrigger className="mt-1">
+                         <SelectValue placeholder={isSuperAdmin && !selectedCompany ? "Select company first" : "Select a project"} />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {projects.map(project => (
+                           <SelectItem key={project.id} value={project.id}>
+                             {project.name}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div>
+                     <Label htmlFor="member">Team Member</Label>
+                     <Select 
+                       value={selectedMember} 
+                       onValueChange={setSelectedMember}
+                       disabled={!selectedProject}
+                     >
+                       <SelectTrigger className="mt-1">
+                         <SelectValue placeholder={!selectedProject ? "Select project first" : "Select team member"} />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {(isSuperAdmin && selectedCompany ? allCompanyUsers : teamMembers)
+                           .filter(member => !member.is_super_admin)
+                           .map(member => (
+                           <SelectItem key={member.user_id} value={member.user_id}>
+                             {member.name} ({formatRole(member.tenant_role || member.role)})
+                             {isSuperAdmin && (member as any).company_name && ` - ${(member as any).company_name}`}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
                   <div>
                     <Label htmlFor="projectRole">Project Role</Label>
                     <Select value={selectedRole} onValueChange={setSelectedRole}>
@@ -820,14 +960,15 @@ const deleteMember = async (memberId: string) => {
                     </Button>
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="members" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Team Members
@@ -840,6 +981,12 @@ const deleteMember = async (memberId: string) => {
               <Mail className="h-4 w-4" />
               Pending Invitations
             </TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="company-users" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Company Users
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="members" className="space-y-4">
@@ -848,20 +995,31 @@ const deleteMember = async (memberId: string) => {
               {teamMembers.length > 0 ? (
                 <div className="space-y-2">
                   {teamMembers.map((member) => (
-                    <div key={member.user_id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <UserCheck className="h-4 w-4 text-green-500" />
-                        <div>
-                          <p className="font-medium">{member.name || 'Unknown User'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatRole(member.tenant_role || member.role)} • Joined {new Date(member.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge className={getRoleColor(member.tenant_role || member.role)}>
-                        {formatRole(member.tenant_role || member.role)}
-                      </Badge>
-                    </div>
+                     <div key={member.user_id} className="flex items-center justify-between p-3 border rounded-lg">
+                       <div className="flex items-center gap-3">
+                         <UserCheck className="h-4 w-4 text-green-500" />
+                         <div>
+                           <p className="font-medium">{member.name || 'Unknown User'}</p>
+                           <p className="text-sm text-muted-foreground">
+                             {formatRole(member.tenant_role || member.role)} • Joined {new Date(member.created_at).toLocaleDateString()}
+                           </p>
+                         </div>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <Badge className={getRoleColor(member.tenant_role || member.role)}>
+                           {formatRole(member.tenant_role || member.role)}
+                         </Badge>
+                         {(profile?.role === 'admin' || isSuperAdmin) && (
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => editMember(member)}
+                           >
+                             <Edit className="h-4 w-4" />
+                           </Button>
+                         )}
+                       </div>
+                     </div>
                   ))}
                 </div>
               ) : (
@@ -959,6 +1117,71 @@ const deleteMember = async (memberId: string) => {
               </p>
             )}
           </TabsContent>
+
+          {isSuperAdmin && (
+            <TabsContent value="company-users" className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="company-filter">Filter by Company</Label>
+                    <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="All companies" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All companies</SelectItem>
+                        {companies.map(company => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium mb-3">
+                    Company Users ({allCompanyUsers.length})
+                  </h4>
+                  {allCompanyUsers.length > 0 ? (
+                    <div className="space-y-2">
+                      {allCompanyUsers.map((user) => (
+                        <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <UserCheck className="h-4 w-4 text-blue-500" />
+                            <div>
+                              <p className="font-medium">{user.name || 'Unknown User'}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {(user as any).company_name} • {formatRole(user.tenant_role || user.role)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Joined {new Date(user.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={getRoleColor(user.tenant_role || user.role)}>
+                              {formatRole(user.tenant_role || user.role)}
+                            </Badge>
+                            {user.is_super_admin && (
+                              <Badge className="bg-red-100 text-red-800">
+                                Super Admin
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">
+                      No users found for the selected company.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Edit Member Dialog */}

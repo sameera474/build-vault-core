@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, MapPin, Calendar, Users, FileText, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Plus, MapPin, Calendar, Users, FileText, MoreHorizontal, Edit, Trash2, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,11 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Project {
   id: string;
@@ -21,20 +23,31 @@ interface Project {
   start_date: string | null;
   end_date: string | null;
   status: string;
+  company_id: string;
   created_at: string;
   created_by: string | null;
   _count?: {
     test_reports: number;
   };
+  company_name?: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
+  is_active: boolean;
 }
 
 export function ProjectManagement() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState('all');
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -49,7 +62,14 @@ export function ProjectManagement() {
 
   useEffect(() => {
     fetchProjects();
-  }, [profile?.company_id]);
+    if (isSuperAdmin) {
+      fetchCompanies();
+    }
+  }, [profile?.company_id, isSuperAdmin]);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [selectedCompany, isSuperAdmin]);
 
   // Add navigation listener to refresh projects when returning to the page
   useEffect(() => {
@@ -70,37 +90,80 @@ export function ProjectManagement() {
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
+  // Refresh projects when component mounts to catch new projects created from other pages
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchProjects();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const fetchProjects = async () => {
-    if (!profile?.company_id) return;
-
     try {
-      // Fetch projects 
-      const { data: projectsData, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false });
+      setLoading(true);
 
-      if (error) throw error;
+      if (isSuperAdmin) {
+        // Super admins must fetch via Edge Function to bypass tenant RLS safely
+        const body = selectedCompany && selectedCompany !== 'all' ? { company_id: selectedCompany } : {};
+        const { data, error } = await supabase.functions.invoke('admin-list-projects', { body });
+        if (error) throw error;
+        const res = (data as any) || {};
+        if (res.error) throw new Error(res.error);
+        const projectsData = (res.projects as any[]) || [];
 
-      // Transform the data to include count
-      const projectsWithCounts = projectsData?.map(project => ({
-        ...project,
-        _count: {
-          test_reports: 0 // Simplified for now - can be enhanced later
-        }
-      })) || [];
+        const projectsWithCounts = projectsData.map((project: any) => ({
+          ...project,
+          company_name: (project as any).companies?.name || 'Unknown Company',
+          _count: { test_reports: 0 },
+        }));
+        setProjects(projectsWithCounts);
+      } else {
+        // Tenant users fetch only their company's projects (RLS enforced)
+        let query = supabase
+          .from('projects')
+          .select(`
+            *,
+            companies(name)
+          `)
+          .eq('company_id', profile?.company_id as string)
+          .order('created_at', { ascending: false });
 
-      setProjects(projectsWithCounts);
+        const { data: projectsData, error } = await query;
+        if (error) throw error;
+
+        const projectsWithCounts = (projectsData || []).map((project: any) => ({
+          ...project,
+          company_name: (project as any).companies?.name || 'Unknown Company',
+          _count: { test_reports: 0 },
+        }));
+        setProjects(projectsWithCounts);
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast({
-        title: "Error",
-        description: "Failed to load projects",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to load projects',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCompanies = async () => {
+    if (!isSuperAdmin) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, is_active')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
     }
   };
 
@@ -136,30 +199,54 @@ export function ProjectManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.company_id || !formData.name.trim()) return;
+    if (!formData.name.trim()) return;
+
+    // Determine company ID
+    let companyId = profile?.company_id as string | undefined;
+    if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
+      companyId = selectedCompany;
+    }
+
+    if (!companyId) {
+      toast({
+        title: "Error",
+        description: "Company must be selected",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      const projectData = {
+      const baseData = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         location: formData.location.trim() || null,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
         status: formData.status,
-        company_id: profile.company_id,
-        created_by: profile.user_id,
-      };
+        company_id: companyId,
+        created_by: profile?.user_id,
+      } as any;
 
       if (editingProject) {
         // Update existing project
-        const { error } = await supabase
-          .from('projects')
-          .update(projectData)
-          .eq('id', editingProject.id);
-
-        if (error) throw error;
+        if (isSuperAdmin) {
+          const { data: { session } } = await supabase.auth.getSession();
+          const { error, data } = await supabase.functions.invoke('admin-update-project', {
+            body: { id: editingProject.id, ...baseData },
+            headers: { Authorization: `Bearer ${session?.access_token}` },
+          });
+          if (error || (data as any)?.error) throw error || new Error((data as any)?.error);
+        } else {
+          const tenantData = { ...baseData, company_id: profile?.company_id };
+          const { error } = await supabase
+            .from('projects')
+            .update(tenantData)
+            .eq('id', editingProject.id);
+          if (error) throw error;
+        }
 
         toast({
           title: "Project updated",
@@ -167,11 +254,20 @@ export function ProjectManagement() {
         });
       } else {
         // Create new project
-        const { error } = await supabase
-          .from('projects')
-          .insert([projectData]);
-
-        if (error) throw error;
+        if (isSuperAdmin) {
+          const { data: { session } } = await supabase.auth.getSession();
+          const { error, data } = await supabase.functions.invoke('admin-create-project', {
+            body: baseData,
+            headers: { Authorization: `Bearer ${session?.access_token}` },
+          });
+          if (error || (data as any)?.error) throw error || new Error((data as any)?.error);
+        } else {
+          const tenantData = { ...baseData, company_id: profile?.company_id };
+          const { error } = await supabase
+            .from('projects')
+            .insert([tenantData]);
+          if (error) throw error;
+        }
 
         toast({
           title: "Project created",
@@ -251,10 +347,30 @@ export function ProjectManagement() {
             Manage your construction projects and track testing progress
           </p>
         </div>
-        <Button onClick={() => navigate('/projects/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Project
-        </Button>
+        <div className="flex items-center gap-4">
+          {isSuperAdmin && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="company-filter" className="text-sm font-medium">Company:</Label>
+              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All companies</SelectItem>
+                  {companies.map(company => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Project
+          </Button>
+        </div>
       </div>
 
       <Dialog open={isCreateOpen} onOpenChange={(open) => {
@@ -352,7 +468,7 @@ export function ProjectManagement() {
             <p className="text-muted-foreground text-center mb-4">
               Create your first project to start organizing your construction testing activities.
             </p>
-            <Button onClick={() => navigate('/projects/new')}>
+            <Button onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Create First Project
             </Button>
@@ -366,6 +482,9 @@ export function ProjectManagement() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-lg line-clamp-1">{project.name}</CardTitle>
+                    {isSuperAdmin && (
+                      <p className="text-sm text-muted-foreground">{project.company_name}</p>
+                    )}
                     <Badge className={getStatusColor(project.status)}>
                       {project.status.replace('-', ' ')}
                     </Badge>
@@ -380,7 +499,7 @@ export function ProjectManagement() {
                       <DropdownMenuItem onClick={() => navigate(`/barchart/${project.id}`)}>
                         View Charts
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(`/projects/${project.id}`)}>
+                      <DropdownMenuItem onClick={isSuperAdmin ? () => handleEdit(project) : () => navigate(`/projects/${project.id}`)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
@@ -425,15 +544,14 @@ export function ProjectManagement() {
                   </div>
                 </div>
 
-                {/* Always-visible actions for clarity */}
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <Button size="sm" variant="outline" onClick={() => navigate(`/projects/${project.id}`)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
                   <Button size="sm" variant="outline" onClick={() => navigate(`/barchart/${project.id}`)}>
                     <FileText className="h-4 w-4 mr-2" />
                     View Charts
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={isSuperAdmin ? () => handleEdit(project) : () => navigate(`/projects/${project.id}`)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
                   </Button>
                   <Button size="sm" variant="destructive" onClick={() => handleDelete(project.id)}>
                     <Trash2 className="h-4 w-4 mr-2" />

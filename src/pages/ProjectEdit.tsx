@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { ProjectForm } from '@/components/projects/ProjectForm';
 import { projectService } from '@/services/projectService';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Project } from '@/services/projectService';
 
@@ -10,6 +12,7 @@ export default function ProjectEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { isSuperAdmin, userRole } = usePermissions();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,23 +46,48 @@ export default function ProjectEdit() {
     }
   };
 
-  const handleSave = async (projectData: Partial<Project>) => {
+  const handleSave = async (projectData: Partial<Project> & { company_id: string }) => {
+    if (isSuperAdmin) {
+      toast({
+        title: "Read-only",
+        description: "Super Admin cannot edit projects",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userRole !== 'admin') {
+      toast({
+        title: "Permission denied",
+        description: "Only Company Admins can create/update projects",
+        variant: "destructive",
+      });
+      return;
+    }
+
     console.log('ProjectEdit.handleSave called', { routeId: id, projectData });
     try {
       const isNew = !id || id === 'new';
+      const body = { 
+        ...projectData, 
+        company_id: profile?.company_id || '',
+        name: projectData.name || '',
+        contract_number: projectData.contract_number || ''
+      };
+      
       if (isNew) {
-        console.log('Creating new project with data:', projectData);
-        const newProject = await projectService.createProject(projectData);
-        console.log('Project created:', newProject);
+        console.log('Creating new project with data:', body);
+        const { error } = await supabase.from('projects').insert([body]);
+        if (error) throw error;
         toast({
           title: "Success",
           description: "Project created successfully",
         });
-        // Navigate directly to projects list instead of edit page
         navigate('/projects');
       } else if (project) {
-        console.log('Updating project', project.id, 'with data:', projectData);
-        await projectService.updateProject(project.id, projectData);
+        console.log('Updating project', project.id, 'with data:', body);
+        const { error } = await supabase.from('projects').update(body).eq('id', project.id);
+        if (error) throw error;
         toast({
           title: "Success", 
           description: "Project updated successfully",
@@ -75,6 +103,12 @@ export default function ProjectEdit() {
       });
     }
   };
+
+  // Redirect super admin away from create route
+  if (isSuperAdmin && (!id || id === 'new')) {
+    navigate('/projects');
+    return null;
+  }
 
   if (loading) {
     return (
@@ -93,6 +127,7 @@ export default function ProjectEdit() {
         project={project}
         onSave={handleSave}
         onCancel={() => navigate('/projects')}
+        companyName={(project as any)?.companies?.name}
       />
     </div>
   );

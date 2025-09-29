@@ -1,229 +1,421 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HardHat, Eye, EyeOff } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Building2, User, Mail, Lock, Phone, Briefcase, MapPin, HardHat } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { signUp } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
+interface Company {
+  id: string;
+  name: string;
+  description: string | null;
+  website: string | null;
+  city: string | null;
+  country: string | null;
+}
+
 const registerSchema = z.object({
-  companyName: z.string().trim().min(1, 'Company name is required').max(100, 'Company name must be less than 100 characters'),
-  adminEmail: z.string().trim().email('Invalid email address').max(255, 'Email must be less than 255 characters'),
-  adminName: z.string().trim().min(1, 'Admin name is required').max(100, 'Name must be less than 100 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
+  phone: z.string().optional(),
+  jobTitle: z.string().optional(),
+  department: z.string().optional(),
+  role: z.string().default('admin'),
+  companyOption: z.enum(['existing', 'new']),
+  existingCompanyId: z.string().optional(),
+  newCompanyName: z.string().optional(),
+  newCompanyDescription: z.string().optional(),
+  newCompanyWebsite: z.string().optional(),
+  newCompanyCity: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+}).refine((data) => {
+  if (data.companyOption === 'existing') {
+    return data.existingCompanyId && data.existingCompanyId.length > 0;
+  }
+  return data.newCompanyName && data.newCompanyName.length > 0;
+}, {
+  message: "Company selection or name is required",
+  path: ["companyOption"],
 });
 
 export default function Register() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
   const [formData, setFormData] = useState({
-    companyName: '',
-    adminEmail: '',
-    adminName: '',
+    name: '',
+    email: '',
     password: '',
     confirmPassword: '',
+    phone: '',
+    jobTitle: '',
+    department: '',
+    role: 'admin',
+    companyOption: 'existing' as 'existing' | 'new',
+    existingCompanyId: '',
+    newCompanyName: '',
+    newCompanyDescription: '',
+    newCompanyWebsite: '',
+    newCompanyCity: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, description, website, city, country')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+      toast({
+        title: "Warning",
+        description: "Could not load companies. You can still create a new company.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setLoading(true);
 
     try {
+      // Validate form data
       const validatedData = registerSchema.parse(formData);
-      
-      const { data, error } = await signUp(
-        validatedData.adminEmail,
-        validatedData.password,
-        validatedData.adminName,
-        validatedData.companyName
-      );
+
+      // Prepare metadata for Supabase
+      const metadata: Record<string, any> = {
+        name: validatedData.name,
+        role: validatedData.role,
+        phone: validatedData.phone || '',
+        job_title: validatedData.jobTitle || '',
+        department: validatedData.department || '',
+      };
+
+      // Add company information based on selection
+      if (validatedData.companyOption === 'existing') {
+        metadata.company_id = validatedData.existingCompanyId;
+      } else {
+        metadata.company_name = validatedData.newCompanyName;
+        metadata.company_description = validatedData.newCompanyDescription || '';
+        metadata.company_website = validatedData.newCompanyWebsite || '';
+        metadata.company_city = validatedData.newCompanyCity || '';
+      }
+
+      const redirectUrl = `${window.location.origin}/dashboard`;
+
+      const { error } = await supabase.auth.signUp({
+        email: validatedData.email,
+        password: validatedData.password,
+        options: {
+          data: metadata,
+          emailRedirectTo: redirectUrl
+        }
+      });
 
       if (error) {
-        toast({
-          title: "Registration failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else if (data.user) {
-        toast({
-          title: "Registration successful!",
-          description: "Please sign in to access your account.",
-        });
-        navigate('/sign-in');
+        throw error;
       }
-    } catch (error) {
+
+      toast({
+        title: "Registration successful!",
+        description: "Please check your email to verify your account.",
+      });
+
+      navigate('/signin');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      
       if (error instanceof z.ZodError) {
         toast({
           title: "Validation Error",
-          description: error.issues[0].message,
+          description: error.issues[0]?.message || "Please check your input",
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Error",
-          description: "An unexpected error occurred. Please try again.",
+          title: "Registration failed",
+          description: error.message || "An error occurred during registration",
           variant: "destructive",
         });
       }
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/20 px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <HardHat className="h-10 w-10 text-primary" />
-            <span className="text-2xl font-bold text-foreground">ConstructTest Pro</span>
-          </Link>
-        </div>
-
-        <Card className="border-border/50 shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Create your account</CardTitle>
-            <CardDescription>
-              Start your free trial and transform your testing workflow
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="companyName">Company Name</Label>
-                <Input
-                  id="companyName"
-                  name="companyName"
-                  type="text"
-                  placeholder="Enter your company name"
-                  value={formData.companyName}
-                  onChange={handleChange}
-                  required
-                  className="mt-2"
-                />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <HardHat className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold">ConstructTest Pro</h1>
+          </div>
+          <CardTitle>Create Your Account</CardTitle>
+          <CardDescription>
+            Join thousands of construction professionals using our testing platform
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Personal Information
+              </h3>
+              
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    required
+                    placeholder="John Smith"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    required
+                    placeholder="john@company.com"
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="adminEmail">Admin Email</Label>
-                <Input
-                  id="adminEmail"
-                  name="adminEmail"
-                  type="email"
-                  placeholder="Enter admin email address"
-                  value={formData.adminEmail}
-                  onChange={handleChange}
-                  required
-                  className="mt-2"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="adminName">Admin Name</Label>
-                <Input
-                  id="adminName"
-                  name="adminName"
-                  type="text"
-                  placeholder="Enter admin full name"
-                  value={formData.adminName}
-                  onChange={handleChange}
-                  required
-                  className="mt-2"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative mt-2">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="password">Password *</Label>
                   <Input
                     id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a strong password"
+                    type="password"
                     value={formData.password}
-                    onChange={handleChange}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
                     required
-                    className="pr-10"
+                    placeholder="Minimum 8 characters"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                </div>
+                
+                <div>
+                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    required
+                    placeholder="Repeat your password"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="+27 12 345 6789"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="jobTitle">Job Title</Label>
+                  <Input
+                    id="jobTitle"
+                    type="text"
+                    value={formData.jobTitle}
+                    onChange={(e) => handleInputChange('jobTitle', e.target.value)}
+                    placeholder="Site Engineer, Lab Technician, etc."
+                  />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative mt-2">
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  id="department"
+                  type="text"
+                  value={formData.department}
+                  onChange={(e) => handleInputChange('department', e.target.value)}
+                  placeholder="Quality Control, Testing, Engineering, etc."
+                />
               </div>
-
-              <Button
-                type="submit"
-                variant="hero"
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Creating account...' : 'Create account'}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{' '}
-                <Link
-                  to="/sign-in"
-                  className="text-primary hover:text-primary-hover transition-smooth font-medium"
-                >
-                  Sign in
-                </Link>
-              </p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* Company Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Company Information
+              </h3>
+
+              <Tabs 
+                value={formData.companyOption} 
+                onValueChange={(value) => handleInputChange('companyOption', value)}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="existing">Join Existing Company</TabsTrigger>
+                  <TabsTrigger value="new">Create New Company</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="existing" className="space-y-4">
+                  <div>
+                    <Label htmlFor="existingCompany">Select Your Company *</Label>
+                    {loadingCompanies ? (
+                      <div className="flex items-center justify-center h-10 border rounded-md">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      </div>
+                    ) : (
+                      <Select 
+                        value={formData.existingCompanyId}
+                        onValueChange={(value) => handleInputChange('existingCompanyId', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a company from the list" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-lg z-50">
+                          {companies.map((company) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{company.name}</span>
+                                {company.description && (
+                                  <span className="text-sm text-muted-foreground">
+                                    {company.description}
+                                  </span>
+                                )}
+                                {company.city && (
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {company.city}, {company.country}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Select your company from the list of registered organizations
+                    </p>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="new" className="space-y-4">
+                  <div>
+                    <Label htmlFor="newCompanyName">Company Name *</Label>
+                    <Input
+                      id="newCompanyName"
+                      type="text"
+                      value={formData.newCompanyName}
+                      onChange={(e) => handleInputChange('newCompanyName', e.target.value)}
+                      placeholder="ABC Construction Ltd"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="newCompanyDescription">Company Description</Label>
+                    <Textarea
+                      id="newCompanyDescription"
+                      value={formData.newCompanyDescription}
+                      onChange={(e) => handleInputChange('newCompanyDescription', e.target.value)}
+                      placeholder="Brief description of your company's services and expertise"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="newCompanyWebsite">Website</Label>
+                      <Input
+                        id="newCompanyWebsite"
+                        type="url"
+                        value={formData.newCompanyWebsite}
+                        onChange={(e) => handleInputChange('newCompanyWebsite', e.target.value)}
+                        placeholder="https://www.company.com"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="newCompanyCity">City</Label>
+                      <Input
+                        id="newCompanyCity"
+                        type="text"
+                        value={formData.newCompanyCity}
+                        onChange={(e) => handleInputChange('newCompanyCity', e.target.value)}
+                        placeholder="Johannesburg, Cape Town, etc."
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading}
+              size="lg"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  Creating Account...
+                </div>
+              ) : (
+                'Create Account'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center text-sm">
+            <span className="text-muted-foreground">Already have an account? </span>
+            <Link to="/signin" className="text-primary hover:underline font-medium">
+              Sign in here
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
