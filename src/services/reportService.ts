@@ -129,6 +129,8 @@ class ReportService {
     const profile = await this.getProfile();
     const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) throw new Error('User not authenticated');
+
     // Generate a unique report number
     const reportNumber = await this.generateReportNumber(profile.company_id);
 
@@ -136,7 +138,7 @@ class ReportService {
       ...reportData,
       report_number: reportNumber,
       company_id: profile.company_id,
-      created_by: user?.id,
+      created_by: user.id, // Ensure created_by is set for RLS
       status: 'draft' as ReportStatusEnum,
     };
 

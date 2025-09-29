@@ -8,11 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Search, Filter, Eye, Send, CheckCircle, XCircle, BarChart3, FolderPlus, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { CreateTestReportDialog } from '@/components/CreateTestReportDialog';
 import FlowDiagram from '@/components/FlowDiagram';
+import { useTestReportPermissions } from '@/hooks/usePermissions';
+import { RoleBadge } from '@/components/RoleBadge';
 
 interface Project {
   id: string;
@@ -45,6 +48,7 @@ interface TestReport {
 
 export default function TestReports() {
   const { profile } = useAuth();
+  const permissions = useTestReportPermissions();
   const navigate = useNavigate();
   const [reports, setReports] = useState<TestReport[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -284,34 +288,55 @@ export default function TestReports() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Test Reports</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">Test Reports</h1>
+          <RoleBadge role={permissions.role} />
+        </div>
         <div className="flex gap-2">
-          {projects.length === 0 ? (
+          {projects.length === 0 && (permissions.canCreateReport || permissions.role === 'super_admin' || permissions.role === 'company_admin' || permissions.role === 'admin') ? (
             <Button onClick={() => navigate('/projects')}>
               <FolderPlus className="h-4 w-4 mr-2" />
               Create Project First
             </Button>
-          ) : (
+          ) : permissions.canCreateReport ? (
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Test Report
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
+
+      {/* View-only alert for project managers */}
+      {permissions.isViewOnly && permissions.role === 'project_manager' && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            You have view-only access to assigned projects. Contact your administrator to request edit permissions.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {projects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FolderPlus className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">No Projects Found</h3>
+            <h3 className="text-lg font-semibold">
+              {permissions.role === 'project_manager' || permissions.role === 'staff' 
+                ? 'No Assigned Projects' 
+                : 'No Projects Found'}
+            </h3>
             <p className="text-muted-foreground mt-2 text-center">
-              You need to create a project before you can create test reports.
+              {permissions.role === 'project_manager' || permissions.role === 'staff'
+                ? 'You have not been assigned to any projects yet. Contact your administrator.'
+                : 'You need to create a project before you can create test reports.'}
             </p>
-            <Button onClick={() => navigate('/projects')} className="mt-4">
-              <FolderPlus className="h-4 w-4 mr-2" />
-              Create Your First Project
-            </Button>
+            {(permissions.role === 'super_admin' || permissions.role === 'company_admin' || permissions.role === 'admin') && (
+              <Button onClick={() => navigate('/projects')} className="mt-4">
+                <FolderPlus className="h-4 w-4 mr-2" />
+                Create Your First Project
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -501,12 +526,16 @@ export default function TestReports() {
                         <div className="text-center">
                           <h3 className="text-lg font-semibold">No test reports found</h3>
                           <p className="text-muted-foreground mt-2">
-                            Get started by creating your first test report.
+                            {permissions.canCreateReport 
+                              ? 'Get started by creating your first test report.'
+                              : 'No reports to display. Contact your administrator for access.'}
                           </p>
-                          <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create Test Report
-                          </Button>
+                          {permissions.canCreateReport && (
+                            <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Create Test Report
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
