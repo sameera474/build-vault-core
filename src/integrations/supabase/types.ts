@@ -1189,6 +1189,14 @@ export type Database = {
           updated_at: string
         }[]
       }
+      user_can_access_project: {
+        Args: { project_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
+      user_can_modify_report: {
+        Args: { project_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
