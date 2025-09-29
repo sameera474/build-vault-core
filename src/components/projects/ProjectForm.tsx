@@ -15,6 +15,7 @@ import { ProjectRoads } from '@/components/projects/ProjectRoads';
 import { ProjectRoles } from '@/components/projects/ProjectRoles';
 import { ArrowLeft, Save, Building, Users, MapPin, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { projectService } from '@/services/projectService';
 import { toast } from '@/hooks/use-toast';
 import type { Project } from '@/services/projectService';
@@ -45,20 +46,18 @@ interface ProjectFormProps {
   project?: Project | null;
   onSave: (data: Partial<Project> & { company_id: string }) => void;
   onCancel: () => void;
+  companyName?: string;
 }
 
-export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
+export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectFormProps) {
   const { profile } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState('general');
-  const [companyId, setCompanyId] = useState<string>(project?.company_id || '');
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [logoUrls, setLogoUrls] = useState({
     contractor_logo: project?.contractor_logo || '',
     client_logo: project?.client_logo || '',
     consultant_logo: project?.consultant_logo || '',
   });
-
-  const isSuper = (profile as any)?.is_super_admin;
 
   // Initialize active tab from query param if provided (e.g., ?tab=roads)
   useEffect(() => {
@@ -67,33 +66,6 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
     if (tab) setActiveTab(tab);
   }, []);
 
-  // Set company_id for non-super admin users
-  useEffect(() => {
-    if (!isSuper && profile?.company_id) {
-      setCompanyId(profile.company_id);
-    }
-  }, [isSuper, profile]);
-
-  // Fetch companies for super admin
-  useEffect(() => {
-    if (isSuper) {
-      fetchCompanies();
-    }
-  }, [isSuper]);
-
-  const fetchCompanies = async () => {
-    try {
-      const companiesData = await projectService.fetchAllCompanies();
-      setCompanies(companiesData);
-    } catch (error) {
-      console.error('Error fetching companies:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load companies",
-        variant: "destructive",
-      });
-    }
-  };
 
   const {
     register,
@@ -120,10 +92,10 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
   });
 
   const onSubmit = async (data: ProjectFormData) => {
-    if (!companyId) {
+    if (isSuperAdmin) {
       toast({
-        title: "Error",
-        description: "Please select a company",
+        title: "Read-only",
+        description: "Super Admin cannot edit projects",
         variant: "destructive",
       });
       return;
@@ -134,7 +106,7 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
     await onSave({
       ...data,
       ...logoUrls,
-      company_id: companyId,
+      company_id: profile?.company_id || '',
     });
   };
 
@@ -163,10 +135,12 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
             </p>
           </div>
         </div>
-        <Button type="submit" disabled={isSubmitting}>
-          <Save className="h-4 w-4 mr-2" />
-          {isSubmitting ? 'Saving...' : 'Save Project'}
-        </Button>
+        {!isSuperAdmin && (
+          <Button type="submit" disabled={isSubmitting}>
+            <Save className="h-4 w-4 mr-2" />
+            {isSubmitting ? 'Saving...' : 'Save Project'}
+          </Button>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -195,21 +169,9 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
                 <CardTitle>Project Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {isSuper && (
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Company *</Label>
-                    <Select value={companyId} onValueChange={setCompanyId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a company" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {companies.map((company) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                {companyName && (
+                  <div className="text-sm text-muted-foreground mb-4">
+                    Company: <span className="font-medium">{companyName}</span>
                   </div>
                 )}
                 
