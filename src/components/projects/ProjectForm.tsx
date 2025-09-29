@@ -8,16 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { ImageUpload } from '@/components/projects/ImageUpload';
 import { ProjectRoads } from '@/components/projects/ProjectRoads';
 import { ProjectRoles } from '@/components/projects/ProjectRoles';
 import { ArrowLeft, Save, Building, Users, MapPin, Settings } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
-import { projectService } from '@/services/projectService';
-import { toast } from '@/hooks/use-toast';
 import type { Project } from '@/services/projectService';
 
 const projectSchema = z.object({
@@ -37,21 +32,13 @@ const projectSchema = z.object({
 
 type ProjectFormData = z.infer<typeof projectSchema>;
 
-interface Company {
-  id: string;
-  name: string;
-}
-
 interface ProjectFormProps {
   project?: Project | null;
-  onSave: (data: Partial<Project> & { company_id: string }) => void;
+  onSave: (data: Partial<Project>) => void;
   onCancel: () => void;
-  companyName?: string;
 }
 
-export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectFormProps) {
-  const { profile } = useAuth();
-  const { isSuperAdmin } = usePermissions();
+export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
   const [activeTab, setActiveTab] = useState('general');
   const [logoUrls, setLogoUrls] = useState({
     contractor_logo: project?.contractor_logo || '',
@@ -65,7 +52,6 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
     const tab = params.get('tab');
     if (tab) setActiveTab(tab);
   }, []);
-
 
   const {
     register,
@@ -92,21 +78,11 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
   });
 
   const onSubmit = async (data: ProjectFormData) => {
-    if (isSuperAdmin) {
-      toast({
-        title: "Read-only",
-        description: "Super Admin cannot edit projects",
-        variant: "destructive",
-      });
-      return;
-    }
-
     console.log('Form submission data:', data);
     console.log('Logo URLs:', logoUrls);
     await onSave({
       ...data,
       ...logoUrls,
-      company_id: profile?.company_id || '',
     });
   };
 
@@ -135,12 +111,10 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
             </p>
           </div>
         </div>
-        {!isSuperAdmin && (
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? 'Saving...' : 'Save Project'}
-          </Button>
-        )}
+        <Button type="submit" disabled={isSubmitting}>
+          <Save className="h-4 w-4 mr-2" />
+          {isSubmitting ? 'Saving...' : 'Save Project'}
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -169,12 +143,6 @@ export function ProjectForm({ project, onSave, onCancel, companyName }: ProjectF
                 <CardTitle>Project Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {companyName && (
-                  <div className="text-sm text-muted-foreground mb-4">
-                    Company: <span className="font-medium">{companyName}</span>
-                  </div>
-                )}
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Project Name *</Label>

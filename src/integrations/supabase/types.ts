@@ -78,43 +78,19 @@ export type Database = {
       }
       companies: {
         Row: {
-          address: string | null
-          city: string | null
-          country: string | null
           created_at: string
-          description: string | null
           id: string
-          is_active: boolean | null
           name: string
-          phone: string | null
-          updated_at: string | null
-          website: string | null
         }
         Insert: {
-          address?: string | null
-          city?: string | null
-          country?: string | null
           created_at?: string
-          description?: string | null
           id?: string
-          is_active?: boolean | null
           name: string
-          phone?: string | null
-          updated_at?: string | null
-          website?: string | null
         }
         Update: {
-          address?: string | null
-          city?: string | null
-          country?: string | null
           created_at?: string
-          description?: string | null
           id?: string
-          is_active?: boolean | null
           name?: string
-          phone?: string | null
-          updated_at?: string | null
-          website?: string | null
         }
         Relationships: []
       }
@@ -225,17 +201,11 @@ export type Database = {
           company_id: string
           created_at: string
           department: string | null
-          email: string | null
-          employee_id: string | null
-          hire_date: string | null
-          is_active: boolean | null
           is_super_admin: boolean | null
-          job_title: string | null
           name: string | null
           phone: string | null
           role: string
           tenant_role: Database["public"]["Enums"]["tenant_role"] | null
-          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -243,17 +213,11 @@ export type Database = {
           company_id: string
           created_at?: string
           department?: string | null
-          email?: string | null
-          employee_id?: string | null
-          hire_date?: string | null
-          is_active?: boolean | null
           is_super_admin?: boolean | null
-          job_title?: string | null
           name?: string | null
           phone?: string | null
           role?: string
           tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
-          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -261,35 +225,14 @@ export type Database = {
           company_id?: string
           created_at?: string
           department?: string | null
-          email?: string | null
-          employee_id?: string | null
-          hire_date?: string | null
-          is_active?: boolean | null
           is_super_admin?: boolean | null
-          job_title?: string | null
           name?: string | null
           phone?: string | null
           role?: string
           tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
-          updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_for_registration"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       project_roads: {
         Row: {
@@ -433,42 +376,6 @@ export type Database = {
           start_date?: string | null
           status?: string
           updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_projects_company_id"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_projects_company_id"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_for_registration"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      role_permissions: {
-        Row: {
-          created_at: string | null
-          id: string
-          permission: string
-          role: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          permission: string
-          role: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          permission?: string
-          role?: string
         }
         Relationships: []
       }
@@ -876,33 +783,7 @@ export type Database = {
       }
     }
     Views: {
-      companies_for_registration: {
-        Row: {
-          city: string | null
-          country: string | null
-          description: string | null
-          id: string | null
-          name: string | null
-          website: string | null
-        }
-        Insert: {
-          city?: string | null
-          country?: string | null
-          description?: string | null
-          id?: string | null
-          name?: string | null
-          website?: string | null
-        }
-        Update: {
-          city?: string | null
-          country?: string | null
-          description?: string | null
-          id?: string | null
-          name?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       allocate_report_number: {
@@ -920,14 +801,6 @@ export type Database = {
           seq: number
           yymmdd: string
         }[]
-      }
-      current_user_company: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
       }
     }
     Enums: {

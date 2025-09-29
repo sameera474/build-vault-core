@@ -40,7 +40,7 @@ class ProjectService {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('company_id, role, tenant_role, is_super_admin')
+      .select('company_id, role, tenant_role')
       .eq('user_id', user.id)
       .single();
 
@@ -49,25 +49,16 @@ class ProjectService {
   }
 
   async fetchProjects() {
-    // RLS will automatically filter by user's company
+    const profile = await this.getProfile();
+    
     const { data, error } = await supabase
       .from('projects')
       .select('*')
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
     return data as Project[];
-  }
-
-  async fetchAllCompanies() {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('id, name')
-      .eq('is_active', true)
-      .order('name');
-    
-    if (error) throw error;
-    return data;
   }
 
   async fetchProject(id: string) {
@@ -81,75 +72,37 @@ class ProjectService {
     return data as Project;
   }
 
-  async createProject(projectData: Partial<Project> & { company_id: string }) {
+  async createProject(projectData: Partial<Project>) {
     const profile = await this.getProfile();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Check if user is super admin and creating for different company
-    const isSuper = (profile as any)?.is_super_admin;
-    const isDifferentCompany = projectData.company_id !== profile.company_id;
+    const newProject = {
+      ...projectData,
+      company_id: profile.company_id,
+      created_by: user?.id,
+      status: 'active',
+    };
 
-    if (isSuper && isDifferentCompany) {
-      // Use Edge Function for super admin cross-company operations
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const { data, error } = await supabase.functions.invoke('admin-create-project', {
-        body: projectData,
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
+    console.log('ProjectService.createProject payload', newProject);
 
-      if (error) throw error;
-      if (!data?.success) throw new Error((data as any)?.error || 'Failed to create project');
-      return (data as any).project as Project;
-    } else {
-      // Regular tenant insert (or super admin for their own company)
-      const newProject = {
-        ...projectData,
-        company_id: profile.company_id, // Always use user's company for regular flow
-        created_by: user?.id,
-        status: 'active',
-      };
-
-      console.log('ProjectService.createProject payload', newProject);
-
-      const { data, error } = await supabase
-        .from('projects')
-        .insert(newProject as any)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as Project;
-    }
+    const { data, error } = await supabase
+      .from('projects')
+      .insert(newProject as any)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Project;
   }
 
   async updateProject(id: string, updates: Partial<Project>) {
-    const profile = await this.getProfile();
-
-    // If super admin, route through edge function to bypass RLS safely
-    const isSuper = (profile as any)?.is_super_admin;
-    if (isSuper) {
-      const { data: { session } } = await supabase.auth.getSession();
-      const payload = { id, ...updates } as any;
-      const { data, error } = await supabase.functions.invoke('admin-update-project', {
-        body: payload,
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Failed to update project');
-      return data.project as Project;
-    }
-
-    // Tenant path: enforce own company id
-    const updatesSanitized = { ...updates, company_id: profile.company_id } as any;
     const { data, error } = await supabase
       .from('projects')
-      .update(updatesSanitized)
+      .update(updates)
       .eq('id', id)
       .select()
       .single();
+    
     if (error) throw error;
     return data as Project;
   }
