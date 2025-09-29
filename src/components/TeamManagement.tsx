@@ -80,7 +80,7 @@ export function TeamManagement() {
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
   const [selectedRole, setSelectedRole] = useState('technician');
-  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('all');
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isInviting, setIsInviting] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -195,7 +195,7 @@ export function TeamManagement() {
         `)
         .order('name');
 
-      if (selectedCompany) {
+      if (selectedCompany && selectedCompany !== 'all') {
         query = query.eq('company_id', selectedCompany);
       }
 
@@ -1129,7 +1129,7 @@ const deleteMember = async (memberId: string) => {
                         <SelectValue placeholder="All companies" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All companies</SelectItem>
+                        <SelectItem value="all">All companies</SelectItem>
                         {companies.map(company => (
                           <SelectItem key={company.id} value={company.id}>
                             {company.name}
