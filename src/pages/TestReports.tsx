@@ -480,25 +480,27 @@ export default function TestReports() {
                         </Select>
                       </div>
 
-                      <div>
-                        <Label htmlFor="dateFrom">Date From</Label>
-                        <Input
-                          id="dateFrom"
-                          type="date"
-                          value={filters.dateFrom}
-                          onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                        />
-                      </div>
+                       <div>
+                         <Label htmlFor="dateFrom">Date From</Label>
+                         <Input
+                           id="dateFrom"
+                           type="date"
+                           value={filters.dateFrom}
+                           max={new Date().toISOString().split('T')[0]}
+                           onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                         />
+                       </div>
 
-                      <div>
-                        <Label htmlFor="dateTo">Date To</Label>
-                        <Input
-                          id="dateTo"
-                          type="date"
-                          value={filters.dateTo}
-                          onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                        />
-                      </div>
+                       <div>
+                         <Label htmlFor="dateTo">Date To</Label>
+                         <Input
+                           id="dateTo"
+                           type="date"
+                           value={filters.dateTo}
+                           max={new Date().toISOString().split('T')[0]}
+                           onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                         />
+                       </div>
                     </div>
                   </CardContent>
                 </Card>

@@ -3,10 +3,15 @@ import { ApprovalWorkflow } from '@/components/ApprovalWorkflow';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, TrendingUp, Eye, Calendar, Building, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { useNavigate } from 'react-router-dom';
 
 interface TestReport {
   id: string;
@@ -16,10 +21,198 @@ interface TestReport {
   compliance_status: string;
   technician_name: string;
   material_type: string;
+  material: string;
+  custom_material: string;
+  road_name: string;
+  chainage_from: string;
+  chainage_to: string;
   notes: string;
   created_at: string;
   updated_at: string;
+  status: string;
+  data_json: any;
+  results: any;
+  projects?: {
+    name: string;
+  };
 }
+
+interface ReportsListProps {
+  reports: TestReport[];
+  title: string;
+}
+
+const ReportsList: React.FC<ReportsListProps> = ({ reports, title }) => {
+  const navigate = useNavigate();
+  const [filters, setFilters] = useState({
+    search: '',
+    dateFrom: '',
+    dateTo: '',
+    road: '',
+  });
+
+  const filteredReports = reports.filter(report => {
+    const matchesSearch = !filters.search || 
+      report.report_number.toLowerCase().includes(filters.search.toLowerCase()) ||
+      report.test_type.toLowerCase().includes(filters.search.toLowerCase()) ||
+      report.technician_name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+      report.road_name?.toLowerCase().includes(filters.search.toLowerCase());
+    
+    const matchesDateFrom = !filters.dateFrom || new Date(report.test_date) >= new Date(filters.dateFrom);
+    const matchesDateTo = !filters.dateTo || new Date(report.test_date) <= new Date(filters.dateTo);
+    const matchesRoad = !filters.road || report.road_name?.toLowerCase().includes(filters.road.toLowerCase());
+
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesRoad;
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+      case 'approved':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          {title}
+          <Badge variant="outline">{filteredReports.length}</Badge>
+        </CardTitle>
+        <CardDescription>
+          Filter and view test reports by various criteria
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Advanced Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
+          <div>
+            <Label htmlFor="search">Search</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="search"
+                placeholder="Search reports..."
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="pl-9"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="dateFrom">Date From</Label>
+            <Input
+              id="dateFrom"
+              type="date"
+              value={filters.dateFrom}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="dateTo">Date To</Label>
+            <Input
+              id="dateTo"
+              type="date"
+              value={filters.dateTo}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="road">Road Name</Label>
+            <Input
+              id="road"
+              placeholder="Filter by road..."
+              value={filters.road}
+              onChange={(e) => setFilters(prev => ({ ...prev, road: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        {/* Reports List */}
+        <div className="space-y-3">
+          {filteredReports.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No reports found matching your criteria
+            </div>
+          ) : (
+            filteredReports.map((report) => (
+              <div key={report.id} className="border rounded-lg p-4 hover:bg-muted/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-medium">{report.report_number}</h4>
+                      {getStatusBadge(report.compliance_status)}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Test Type:</span>
+                        <p>{report.test_type}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Date:</span>
+                        <p>{new Date(report.test_date).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Road:</span>
+                        <p>{report.road_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Technician:</span>
+                        <p>{report.technician_name || 'N/A'}</p>
+                      </div>
+                    </div>
+                    {report.chainage_from && report.chainage_to && (
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Chainage: {report.chainage_from} - {report.chainage_to}
+                      </div>
+                    )}
+                    {/* Show test results summary if available */}
+                    {(report.data_json || report.results) && (
+                      <div className="mt-2 p-2 bg-background rounded border">
+                        <span className="text-xs font-medium text-muted-foreground">Results Summary:</span>
+                        <div className="text-sm mt-1">
+                          {report.data_json && typeof report.data_json === 'object' ? 
+                            Object.entries(report.data_json).slice(0, 3).map(([key, value]) => (
+                              <div key={key} className="flex justify-between">
+                                <span>{key}:</span>
+                                <span>{String(value)}</span>
+                              </div>
+                            )) : 
+                            report.results ? 
+                              <div>Results: {typeof report.results === 'object' ? JSON.stringify(report.results).slice(0, 100) + '...' : String(report.results)}</div> :
+                              <div className="text-muted-foreground">No detailed results available</div>
+                          }
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 ml-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/test-reports/${report.id}/edit`)}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function Approvals() {
   const [reports, setReports] = useState<TestReport[]>([]);
@@ -63,6 +256,7 @@ export default function Approvals() {
   };
 
   const { pending, approved, rejected } = getStatusCounts();
+  const navigate = useNavigate();
 
   const getRecentActivity = () => {
     return reports
@@ -148,11 +342,26 @@ export default function Approvals() {
       <Tabs defaultValue="workflow" className="space-y-4">
         <TabsList>
           <TabsTrigger value="workflow">Approval Workflow</TabsTrigger>
+          <TabsTrigger value="pending">Pending Reports</TabsTrigger>
+          <TabsTrigger value="approved">Approved Reports</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected Reports</TabsTrigger>
           <TabsTrigger value="history">Recent Activity</TabsTrigger>
         </TabsList>
 
         <TabsContent value="workflow">
           <ApprovalWorkflow reports={reports} onApprovalUpdate={fetchReports} />
+        </TabsContent>
+
+        <TabsContent value="pending">
+          <ReportsList reports={reports.filter(r => r.compliance_status === 'pending')} title="Pending Reports" />
+        </TabsContent>
+
+        <TabsContent value="approved">
+          <ReportsList reports={reports.filter(r => r.compliance_status === 'approved')} title="Approved Reports" />
+        </TabsContent>
+
+        <TabsContent value="rejected">
+          <ReportsList reports={reports.filter(r => r.compliance_status === 'rejected')} title="Rejected Reports" />
         </TabsContent>
 
         <TabsContent value="history">
