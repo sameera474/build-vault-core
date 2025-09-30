@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { reportService, TestReport } from '@/services/reportService';
 import { templateService, TemplateRules } from '@/services/templateService';
 import { useAuth } from '@/contexts/AuthContext';
+import { DetailedReportViewer } from './DetailedReportViewer';
 
 export function EnhancedReportEditor() {
   const { id } = useParams<{ id: string }>();
@@ -554,12 +555,20 @@ export function EnhancedReportEditor() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="details">Full Details</TabsTrigger>
+          <TabsTrigger value="detailed-view">Complete Report</TabsTrigger>
           <TabsTrigger value="sheet">Test Data</TabsTrigger>
           <TabsTrigger value="summary">Results Summary</TabsTrigger>
           <TabsTrigger value="charts">Charts</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="detailed-view" className="space-y-6">
+          <DetailedReportViewer 
+            report={report} 
+            project={report.project}
+            company={report.project?.company || {}}
+          />
+        </TabsContent>
 
         <TabsContent value="details" className="space-y-4">
           <Card>

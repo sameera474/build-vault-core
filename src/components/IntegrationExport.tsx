@@ -89,7 +89,10 @@ export function IntegrationExport() {
 
       const { data: projects } = await supabase
         .from('projects')
-        .select('*')
+        .select(`
+          *,
+          companies(*)
+        `)
         .eq('company_id', profile.company_id);
 
       return { reports: reports || [], projects: projects || [] };
@@ -105,6 +108,17 @@ export function IntegrationExport() {
     const margin = 20;
     let yPosition = margin;
 
+    // Company Header with Logo (if available)
+    const company = data.projects[0]?.company || {};
+    
+    // Company Logo (placeholder for actual logo implementation)
+    if (company.client_logo) {
+      // Note: In a real implementation, you'd load and add the actual logo
+      pdf.setFontSize(8);
+      pdf.text('Logo: ' + company.client_logo, margin, yPosition);
+      yPosition += 8;
+    }
+
     // Header
     pdf.setFontSize(20);
     pdf.text('ConstructTest Pro - Test Reports Export', margin, yPosition);
@@ -113,8 +127,12 @@ export function IntegrationExport() {
     pdf.setFontSize(12);
     pdf.text(`Generated: ${new Date().toLocaleDateString()}`, margin, yPosition);
     yPosition += 10;
-    pdf.text(`Company: ${profile?.name || 'Unknown'}`, margin, yPosition);
+    pdf.text(`Company: ${profile?.name || company.name || 'Unknown'}`, margin, yPosition);
     yPosition += 10;
+    if (company.address) {
+      pdf.text(`Address: ${company.address}`, margin, yPosition);
+      yPosition += 10;
+    }
     pdf.text(`Total Reports: ${data.reports.length}`, margin, yPosition);
     yPosition += 20;
 
@@ -155,7 +173,7 @@ export function IntegrationExport() {
     });
     yPosition += 8;
 
-    // Table data
+    // Table data with final results
     data.reports.slice(0, 50).forEach((report: any) => { // Limit to 50 reports for PDF
       if (yPosition > pdf.internal.pageSize.height - 30) {
         pdf.addPage();
@@ -163,11 +181,19 @@ export function IntegrationExport() {
       }
 
       xPosition = margin;
+      
+      // Get final result from summary or calculate pass/fail
+      let finalResult = 'PENDING';
+      if (report.compliance_status === 'approved') finalResult = 'APPROVED';
+      else if (report.compliance_status === 'rejected') finalResult = 'REJECTED';
+      else if (report.compliance_status === 'pass') finalResult = 'PASS';
+      else if (report.compliance_status === 'fail') finalResult = 'FAIL';
+      
       const rowData = [
         report.report_number || 'N/A',
         report.test_type || 'N/A',
         new Date(report.test_date).toLocaleDateString(),
-        report.compliance_status || 'N/A',
+        finalResult,
         report.projects?.name || 'No Project'
       ];
 

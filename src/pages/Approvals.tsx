@@ -174,25 +174,43 @@ const ReportsList: React.FC<ReportsListProps> = ({ reports, title }) => {
                         Chainage: {report.chainage_from} - {report.chainage_to}
                       </div>
                     )}
-                    {/* Show test results summary if available */}
-                    {(report.data_json || report.results) && (
-                      <div className="mt-2 p-2 bg-background rounded border">
-                        <span className="text-xs font-medium text-muted-foreground">Results Summary:</span>
-                        <div className="text-sm mt-1">
-                          {report.data_json && typeof report.data_json === 'object' ? 
-                            Object.entries(report.data_json).slice(0, 3).map(([key, value]) => (
-                              <div key={key} className="flex justify-between">
-                                <span>{key}:</span>
-                                <span>{String(value)}</span>
-                              </div>
-                            )) : 
-                            report.results ? 
-                              <div>Results: {typeof report.results === 'object' ? JSON.stringify(report.results).slice(0, 100) + '...' : String(report.results)}</div> :
-                              <div className="text-muted-foreground">No detailed results available</div>
-                          }
+                     {/* Final Results Display */}
+                    <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Final Results</span>
+                        <div className="flex items-center space-x-2">
+                          {getStatusBadge(report.compliance_status)}
+                          {report.compliance_status === 'pass' && (
+                            <span className="text-green-600 font-bold text-sm">✓ PASS</span>
+                          )}
+                          {report.compliance_status === 'fail' && (
+                            <span className="text-red-600 font-bold text-sm">✗ FAIL</span>
+                          )}
                         </div>
                       </div>
-                    )}
+                      
+                      {/* Show summary if available */}
+                      {(report.data_json || report.results) && (
+                        <div className="text-xs space-y-1">
+                          {report.data_json && typeof report.data_json === 'object' ? 
+                            Object.entries(report.data_json).slice(0, 2).map(([key, value]) => (
+                              <div key={key} className="flex justify-between">
+                                <span className="text-muted-foreground">{key}:</span>
+                                <span className="font-medium">{String(value)}</span>
+                              </div>
+                            )) : 
+                            report.results && typeof report.results === 'object' ? 
+                              Object.entries(report.results).slice(0, 2).map(([key, value]) => (
+                                <div key={key} className="flex justify-between">
+                                  <span className="text-muted-foreground">{key}:</span>
+                                  <span className="font-medium">{String(value)}</span>
+                                </div>
+                              )) :
+                              <span>Test data available - Click view for details</span>
+                          }
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2 ml-4">
                     <Button
