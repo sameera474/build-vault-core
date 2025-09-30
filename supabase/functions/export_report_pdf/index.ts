@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import jsPDF from "https://esm.sh/jspdf@2.5.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,17 +41,84 @@ serve(async (req) => {
       throw new Error('Report not found');
     }
 
-    // Generate HTML content for the PDF
-    const htmlContent = generateReportHTML(report);
+    // Generate PDF using jsPDF
+    const doc = new jsPDF();
     
-    // For now, we'll create a simple HTML file and upload it
-    // In production, you would use a PDF generation library like Puppeteer
-    const fileName = `${report.report_number || report_id}.html`;
+    // Add header with logos and company info
+    doc.setFontSize(20);
+    doc.text('TEST REPORT', 105, 30, { align: 'center' });
     
-    // Upload to storage bucket
+    doc.setFontSize(14);
+    doc.text(report.report_number || report_id, 105, 40, { align: 'center' });
+    
+    // Project and client information
+    doc.setFontSize(12);
+    doc.text(`Project: ${report.project?.name || 'N/A'}`, 20, 60);
+    doc.text(`Client: ${report.project?.client_name || 'N/A'}`, 20, 70);
+    doc.text(`Contract: ${report.project?.contract_number || 'N/A'}`, 20, 80);
+    
+    // Test information
+    doc.setFontSize(11);
+    let yPos = 100;
+    doc.text('TEST INFORMATION', 20, yPos);
+    yPos += 10;
+    doc.text(`Test Type: ${report.test_type || 'N/A'}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Material: ${report.material || report.custom_material || 'N/A'}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Standard: ${report.standard || 'N/A'}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Test Date: ${new Date(report.test_date).toLocaleDateString()}`, 20, yPos);
+    yPos += 15;
+    
+    // Location information
+    doc.text('LOCATION INFORMATION', 20, yPos);
+    yPos += 10;
+    doc.text(`Road Name: ${report.road_name || 'N/A'}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Chainage: ${report.chainage_from || 'N/A'} - ${report.chainage_to || 'N/A'}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Side: ${report.side || 'N/A'}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Road Offset: ${report.road_offset || 'N/A'}`, 20, yPos);
+    yPos += 15;
+    
+    // Test results
+    doc.text('TEST RESULTS', 20, yPos);
+    yPos += 10;
+    const compaction = report.summary_json?.kpis?.degree_compaction;
+    const complianceStatus = report.compliance_status || 'pending';
+    doc.text(`Compliance Status: ${complianceStatus.toUpperCase()}`, 20, yPos);
+    yPos += 8;
+    if (typeof compaction === 'number') {
+      doc.text(`Compaction: ${compaction.toFixed(1)}%`, 20, yPos);
+      yPos += 8;
+    }
+    doc.text(`Laboratory Test No: ${report.laboratory_test_no || 'N/A'}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Technician: ${report.technician_name || 'N/A'}`, 20, yPos);
+    yPos += 15;
+    
+    // Key Performance Indicators
+    if (report.summary_json?.kpis) {
+      doc.text('KEY PERFORMANCE INDICATORS', 20, yPos);
+      yPos += 10;
+      Object.entries(report.summary_json.kpis).forEach(([key, value]) => {
+        const displayValue = typeof value === 'number' ? value.toFixed(3) : String(value);
+        doc.text(`${key.replace(/_/g, ' ').toUpperCase()}: ${displayValue}`, 20, yPos);
+        yPos += 8;
+      });
+    }
+    
+    // Generate PDF buffer
+    const pdfBuffer = doc.output('arraybuffer');
+    
+    // Upload PDF to storage bucket
+    const fileName = `${report.report_number || report_id}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(`reports/${fileName}`, new Blob([htmlContent], { type: 'text/html' }), {
+      .upload(`reports/${fileName}`, pdfBuffer, {
+        contentType: 'application/pdf',
         upsert: true
       });
 
