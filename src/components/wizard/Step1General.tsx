@@ -25,6 +25,15 @@ const MATERIAL_OPTIONS = [
   { label: 'Custom', value: 'custom' },
 ];
 
+// Mapping from enum values to catalog material types
+const ENUM_TO_CATALOG_MATERIAL: { [key: string]: string } = {
+  'soil': 'Soil',
+  'aggregate': 'Aggregates',
+  'concrete': 'Concrete',
+  'asphalt': 'Asphalt',
+  'steel': 'Steel',
+};
+
 interface Step1GeneralProps {
   data: any;
   onUpdate: (data: any) => void;
@@ -57,8 +66,13 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
 
   useEffect(() => {
     if (data.material && data.material !== 'custom') {
-      const filtered = testCatalogService.getTestsByMaterial(data.material);
-      setFilteredTests(filtered);
+      const catalogMaterialType = ENUM_TO_CATALOG_MATERIAL[data.material];
+      if (catalogMaterialType) {
+        const filtered = testCatalogService.getTestsByMaterial(catalogMaterialType);
+        setFilteredTests(filtered);
+      } else {
+        setFilteredTests([]);
+      }
     } else {
       setFilteredTests([]);
     }
