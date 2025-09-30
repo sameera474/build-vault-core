@@ -281,11 +281,17 @@ export function EnhancedReportEditor() {
   };
 
   const canEdit = () => {
-    return report?.status === 'draft' || report?.status === 'rejected';
+    // Super admin can always edit
+    if (profile?.role === 'super_admin') return true;
+    
+    // For other roles, check status and permissions
+    return (report?.status === 'draft' || report?.status === 'rejected') && 
+           ['admin', 'company_admin'].includes(profile?.role || '');
   };
 
   const canApprove = () => {
-    return report?.status === 'submitted' && ['quality_manager', 'admin'].includes(profile?.role || '');
+    return report?.status === 'submitted' && 
+           ['super_admin', 'admin', 'company_admin'].includes(profile?.role || '');
   };
 
   if (loading) {
@@ -338,7 +344,7 @@ export function EnhancedReportEditor() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            Report Details
+            Complete Report Details
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {saving && (
                 <span className="flex items-center gap-1">
@@ -356,35 +362,168 @@ export function EnhancedReportEditor() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="space-y-6">
+            {/* Basic Information */}
             <div>
-              <span className="font-medium">Project:</span> {report.project?.name}
+              <h4 className="font-semibold mb-3 text-lg">Basic Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Report Number:</span>
+                  <p className="font-mono text-lg">{report.report_number}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Project:</span>
+                  <p>{report.project?.name || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Test Type:</span>
+                  <p>{report.test_type}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Material:</span>
+                  <p className="capitalize">{report.material || report.custom_material || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Test Date:</span>
+                  <p>{new Date(report.test_date).toLocaleDateString()}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Time of Test:</span>
+                  <p>{report.time_of_test || 'N/A'}</p>
+                </div>
+              </div>
             </div>
+
+            {/* Location Information */}
             <div>
-              <span className="font-medium">Material:</span> {report.material}
+              <h4 className="font-semibold mb-3 text-lg">Location Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Road Name:</span>
+                  <p>{report.road_name || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Chainage From:</span>
+                  <p>{report.chainage_from || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Chainage To:</span>
+                  <p>{report.chainage_to || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Side:</span>
+                  <p className="capitalize">{report.side || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Road Offset:</span>
+                  <p>{report.road_offset || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Covered Chainage:</span>
+                  <p>{report.covered_chainage || 'N/A'}</p>
+                </div>
+              </div>
             </div>
+
+            {/* GPS Coordinates */}
+            {(report.gps_latitude || report.gps_longitude) && (
+              <div>
+                <h4 className="font-semibold mb-3 text-lg">GPS Coordinates</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="p-3 border rounded">
+                    <span className="font-medium text-muted-foreground">Latitude:</span>
+                    <p>{report.gps_latitude || 'N/A'}</p>
+                  </div>
+                  <div className="p-3 border rounded">
+                    <span className="font-medium text-muted-foreground">Longitude:</span>
+                    <p>{report.gps_longitude || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Test Details */}
             <div>
-              <span className="font-medium">Test Date:</span> {report.test_date}
+              <h4 className="font-semibold mb-3 text-lg">Test Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Laboratory Test No:</span>
+                  <p>{report.laboratory_test_no || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Technician:</span>
+                  <p>{report.technician_name || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Technician ID:</span>
+                  <p>{report.technician_id || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Standard:</span>
+                  <p>{report.standard || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Document Code:</span>
+                  <p>{report.doc_code || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Sequence Number:</span>
+                  <p>{report.seq || 'N/A'}</p>
+                </div>
+              </div>
             </div>
+
+            {/* Conditions */}
             <div>
-              <span className="font-medium">Lab Test No:</span> {report.laboratory_test_no}
+              <h4 className="font-semibold mb-3 text-lg">Site Conditions</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Weather Conditions:</span>
+                  <p>{report.weather_conditions || 'N/A'}</p>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Site Conditions:</span>
+                  <p>{report.site_conditions || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Information */}
+            <div>
+              <h4 className="font-semibold mb-3 text-lg">Status Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Report Status:</span>
+                  <div className="mt-1">{getStatusBadge(report.status)}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Compliance Status:</span>
+                  <div className="mt-1">{getPassFailBadge()}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <span className="font-medium text-muted-foreground">Created:</span>
+                  <p>{new Date(report.created_at).toLocaleString()}</p>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-2">
-        <Button onClick={handleSave} disabled={!isDirty || saving}>
-          <Save className="h-4 w-4 mr-2" />
-          Save Draft
-        </Button>
-        
+      <div className="flex items-center gap-2 flex-wrap">
         {canEdit() && (
-          <Button onClick={handleSubmitForApproval} disabled={isDirty}>
-            <Send className="h-4 w-4 mr-2" />
-            Submit for Approval
-          </Button>
+          <>
+            <Button onClick={handleSave} disabled={!isDirty || saving}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Draft
+            </Button>
+            
+            <Button onClick={handleSubmitForApproval} disabled={isDirty}>
+              <Send className="h-4 w-4 mr-2" />
+              Submit for Approval
+            </Button>
+          </>
         )}
         
         {canApprove() && (
@@ -404,16 +543,115 @@ export function EnhancedReportEditor() {
           <FileDown className="h-4 w-4 mr-2" />
           Export PDF
         </Button>
+
+        {!canEdit() && !canApprove() && (
+          <div className="text-sm text-muted-foreground">
+            View-only access - Contact administrator for edit permissions
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="sheet">Sheet</TabsTrigger>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="details">Full Details</TabsTrigger>
+          <TabsTrigger value="sheet">Test Data</TabsTrigger>
+          <TabsTrigger value="summary">Results Summary</TabsTrigger>
           <TabsTrigger value="charts">Charts</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="details" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Complete Test Report Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Raw Data Display */}
+                {report.data_json && Array.isArray(report.data_json) && report.data_json.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-3 text-lg">Test Data Entries</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border rounded text-sm">
+                        <thead>
+                          <tr className="bg-muted">
+                            {Object.keys(report.data_json[0] || {}).map((key) => (
+                              <th key={key} className="p-3 text-left border-b">
+                                {key.replace(/_/g, ' ').toUpperCase()}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {report.data_json.map((row: any, index: number) => (
+                            <tr key={index} className="border-b">
+                              {Object.values(row).map((value: any, cellIndex: number) => (
+                                <td key={cellIndex} className="p-3">
+                                  {typeof value === 'number' ? value.toFixed(3) : String(value || 'N/A')}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Results Summary */}
+                {(report as any).results && (
+                  <div>
+                    <h4 className="font-semibold mb-3 text-lg">Test Results</h4>
+                    <div className="p-4 border rounded bg-muted/30">
+                      <pre className="text-sm whitespace-pre-wrap">
+                        {typeof (report as any).results === 'object' 
+                          ? JSON.stringify((report as any).results, null, 2)
+                          : String((report as any).results)
+                        }
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes and Observations */}
+                {report.notes && (
+                  <div>
+                    <h4 className="font-semibold mb-3 text-lg">Notes & Observations</h4>
+                    <div className="p-4 border rounded bg-muted/30">
+                      <p className="whitespace-pre-wrap">{report.notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Template Information */}
+                {report.template && (
+                  <div>
+                    <h4 className="font-semibold mb-3 text-lg">Template Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="p-3 border rounded">
+                        <span className="font-medium text-muted-foreground">Template Name:</span>
+                        <p>{report.template.name}</p>
+                      </div>
+                      <div className="p-3 border rounded">
+                        <span className="font-medium text-muted-foreground">Version:</span>
+                        <p>{report.template.version}</p>
+                      </div>
+                      <div className="p-3 border rounded">
+                        <span className="font-medium text-muted-foreground">Standard:</span>
+                        <p>{report.template.standard || 'N/A'}</p>
+                      </div>
+                      <div className="p-3 border rounded">
+                        <span className="font-medium text-muted-foreground">Units:</span>
+                        <p>{report.template.units || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="sheet" className="space-y-4">
           {report.template?.schema_json ? (
