@@ -113,6 +113,10 @@ export function TeamManagement() {
     if (isSuperAdmin) {
       fetchAllCompanies();
       fetchAllCompanyUsers();
+      // Set current company as default for super admin
+      if (profile?.company_id && !selectedCompany) {
+        setSelectedCompany(profile.company_id);
+      }
     }
   }, [profile?.company_id, isSuperAdmin]);
 
@@ -135,9 +139,8 @@ export function TeamManagement() {
 
       if (membersError) throw membersError;
 
-      // Filter out super admin from team display
-      const filteredMembers = members?.filter(member => !member.is_super_admin) || [];
-      setTeamMembers(filteredMembers);
+      // Show all members including super admin for better team visibility
+      setTeamMembers(members || []);
 
       // Fetch pending invitations
       const { data: invites, error: invitesError } = await supabase
@@ -157,22 +160,26 @@ export function TeamManagement() {
     }
   };
 
-  const fetchAllCompanies = async () => {
-    if (!isSuperAdmin) return;
+   const fetchAllCompanies = async () => {
+     if (!isSuperAdmin) return;
 
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .select('id, name, is_active')
-        .eq('is_active', true)
-        .order('name');
+     try {
+       const { data, error } = await supabase
+         .from('companies')
+         .select('id, name, is_active')
+         .eq('is_active', true)
+         .order('name');
 
-      if (error) throw error;
-      setCompanies(data || []);
-    } catch (error) {
-      console.error('Error fetching companies:', error);
-    }
-  };
+       if (error) throw error;
+       setCompanies(data || []);
+       // For super admin, also set current company as default
+       if (profile?.company_id && !selectedCompany) {
+         setSelectedCompany(profile.company_id);
+       }
+     } catch (error) {
+       console.error('Error fetching companies:', error);
+     }
+   };
 
   const fetchAllCompanyUsers = async () => {
     if (!isSuperAdmin) return;
