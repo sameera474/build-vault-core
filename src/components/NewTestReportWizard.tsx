@@ -97,12 +97,16 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
 
       setIsLoading(true);
       try {
+        // Build enum-safe material fields
+        const materialEnumValue = wizardData.material === 'custom' ? null : wizardData.material;
+        const customMaterial = wizardData.material === 'custom' ? wizardData.custom_material || null : null;
+
         const report = await reportService.createReport({
           project_id: wizardData.project_id,
           report_number: wizardData.report_number,
           doc_code: wizardData.doc_code,
-          material: wizardData.material as any,
-          custom_material: wizardData.custom_material,
+          material: materialEnumValue as any,
+          custom_material: customMaterial,
           test_type: wizardData.test_type,
           road_name: wizardData.road_name,
           chainage_from: wizardData.chainage_from,

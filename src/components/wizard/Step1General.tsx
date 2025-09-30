@@ -15,6 +15,16 @@ import { testCatalogService } from '@/services/testCatalogService';
 import { useReportNumber } from '@/hooks/useReportNumber';
 import { toast } from '@/hooks/use-toast';
 
+// Material options with enum-safe values
+const MATERIAL_OPTIONS = [
+  { label: 'Soil', value: 'soil' },
+  { label: 'Aggregate', value: 'aggregate' },
+  { label: 'Concrete', value: 'concrete' },
+  { label: 'Asphalt', value: 'asphalt' },
+  { label: 'Steel', value: 'steel' },
+  { label: 'Custom', value: 'custom' },
+];
+
 interface Step1GeneralProps {
   data: any;
   onUpdate: (data: any) => void;
@@ -24,7 +34,6 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
   const [projects, setProjects] = useState<any[]>([]);
   const [projectRoads, setProjectRoads] = useState<any[]>([]);
   const [filteredTests, setFilteredTests] = useState<any[]>([]);
-  const [materialTypes] = useState(testCatalogService.getMaterialTypes());
   const [newRoadName, setNewRoadName] = useState('');
   const [showAddRoad, setShowAddRoad] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -47,7 +56,7 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
   }, [data.project_id]);
 
   useEffect(() => {
-    if (data.material && data.material !== 'Custom') {
+    if (data.material && data.material !== 'custom') {
       const filtered = testCatalogService.getTestsByMaterial(data.material);
       setFilteredTests(filtered);
     } else {
@@ -337,17 +346,16 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                   <SelectValue placeholder="Select material..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {materialTypes.map((material) => (
-                    <SelectItem key={material} value={material}>
-                      {material}
+                  {MATERIAL_OPTIONS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
                     </SelectItem>
                   ))}
-                  <SelectItem value="Custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {data.material === 'Custom' && (
+            {data.material === 'custom' && (
               <div className="space-y-2">
                 <Label>Custom Material</Label>
                 <Input
@@ -363,7 +371,7 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
               <Select
                 value={data.test_type || ''}
                 onValueChange={handleTestTypeChange}
-                disabled={!data.material || data.material === 'Custom'}
+                disabled={!data.material || data.material === 'custom'}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select test..." />
