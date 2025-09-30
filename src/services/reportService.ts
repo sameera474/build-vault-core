@@ -173,10 +173,10 @@ class ReportService {
     const { data, error } = await supabase
       .from('test_reports')
       .update({
-        data_json: payload.data_json ?? undefined,
-        summary_json: payload.summary_json ?? undefined,
-        graphs_json: payload.graphs_json ?? undefined,
-        compliance_status: payload.compliance_status ?? undefined,
+        data_json: payload.data_json,
+        summary_json: payload.summary_json,
+        graphs_json: payload.graphs_json,
+        compliance_status: payload.compliance_status,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
