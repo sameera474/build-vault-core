@@ -44,6 +44,28 @@ export default function Companies() {
 
   useEffect(() => {
     fetchCompanies();
+
+    // Set up real-time subscription for companies table
+    const channel = supabase
+      .channel('companies-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'companies'
+        },
+        (payload) => {
+          console.log('Company changed:', payload);
+          // Refetch companies when any change occurs
+          fetchCompanies();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchCompanies = async () => {
