@@ -102,6 +102,12 @@ export function ProjectManagement() {
     try {
       setLoading(true);
 
+      // If tenant user and profile not loaded yet, avoid querying with undefined company_id
+      if (!isSuperAdmin && !profile?.company_id) {
+        setLoading(false);
+        return;
+      }
+
       if (isSuperAdmin) {
         // Super admins must fetch via Edge Function to bypass tenant RLS safely
         const body = selectedCompany && selectedCompany !== 'all' ? { company_id: selectedCompany } : {};
@@ -125,8 +131,12 @@ export function ProjectManagement() {
             *,
             companies(name)
           `)
-          .eq('company_id', profile?.company_id as string)
           .order('created_at', { ascending: false });
+
+        // Only apply filter when company_id is available
+        if (profile?.company_id) {
+          query = query.eq('company_id', profile.company_id as string);
+        }
 
         const { data: projectsData, error } = await query;
         if (error) throw error;
