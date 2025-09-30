@@ -261,9 +261,21 @@ export function EnhancedReportEditor() {
       if (error || !data?.url) {
         throw error || new Error('No URL returned');
       }
-      
-      window.open(data.url, '_blank');
-      toast.success('PDF export generated successfully');
+      // Prefer programmatic click to avoid popup blockers
+      const a = document.createElement('a');
+      a.href = data.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast.success('Export ready. If it did not open, use the link in the notification.', {
+        description: data.url,
+        action: {
+          label: 'Open',
+          onClick: () => window.open(data.url, '_blank')
+        }
+      });
     } catch (error) {
       toast.error('Failed to export PDF');
       console.error('PDF export error:', error);
