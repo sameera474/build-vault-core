@@ -79,9 +79,9 @@ class ReportService {
     let query = supabase
       .from('test_reports')
       .select(`
-        *,
-        project:projects(name),
-        template:test_report_templates(name)
+        id, report_number, status, compliance_status, test_type, material, side, test_date,
+        chainage_from, chainage_to, technician_name, summary_json, project_id,
+        project:projects(id, name, region_code)
       `)
       .eq('company_id', profile.company_id);
 
@@ -164,15 +164,27 @@ class ReportService {
     return data as TestReport;
   }
 
-  async saveReportData(id: string, data: {
+  async saveReportData(id: string, payload: {
     data_json?: any;
     summary_json?: any;
     graphs_json?: any;
+    compliance_status?: 'pass' | 'fail' | 'pending';
   }) {
-    return this.updateReport(id, {
-      ...data,
-      updated_at: new Date().toISOString(),
-    });
+    const { data, error } = await supabase
+      .from('test_reports')
+      .update({
+        data_json: payload.data_json ?? undefined,
+        summary_json: payload.summary_json ?? undefined,
+        graphs_json: payload.graphs_json ?? undefined,
+        compliance_status: payload.compliance_status ?? undefined,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select('*')
+      .single();
+    
+    if (error) throw error;
+    return data as TestReport;
   }
 
   async submitForApproval(id: string) {
@@ -184,14 +196,14 @@ class ReportService {
   async approveReport(id: string) {
     return this.updateReport(id, {
       status: 'approved',
-      compliance_status: 'approved',
+      compliance_status: 'pass',
     });
   }
 
   async rejectReport(id: string, notes?: string) {
     return this.updateReport(id, {
       status: 'rejected',
-      compliance_status: 'rejected',
+      compliance_status: 'fail',
       notes,
     });
   }

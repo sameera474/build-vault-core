@@ -14,6 +14,7 @@ import { reportService, TestReport } from '@/services/reportService';
 import { templateService, TemplateRules } from '@/services/templateService';
 import { useAuth } from '@/contexts/AuthContext';
 import { DetailedReportViewer } from './DetailedReportViewer';
+import { supabase } from '@/integrations/supabase/client';
 
 export function EnhancedReportEditor() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +26,7 @@ export function EnhancedReportEditor() {
   const [isDirty, setIsDirty] = useState(false);
   const [activeTab, setActiveTab] = useState('sheet');
   const [passFailStatus, setPassFailStatus] = useState<'pass' | 'fail' | 'pending'>('pending');
+  const [computedCompliance, setComputedCompliance] = useState<'pass' | 'fail' | 'pending'>('pending');
   const [summaryData, setSummaryData] = useState<any>({});
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
@@ -85,6 +87,7 @@ export function EnhancedReportEditor() {
     try {
       if (!rules.pass_condition || !data?.length) {
         setPassFailStatus('pending');
+        setComputedCompliance('pending');
         return;
       }
 
@@ -98,7 +101,9 @@ export function EnhancedReportEditor() {
 
       // Evaluate pass condition
       const passed = evaluatePassCondition(rules.pass_condition, kpis, rules.thresholds || {});
-      setPassFailStatus(passed ? 'pass' : 'fail');
+      const status: 'pass' | 'fail' = passed ? 'pass' : 'fail';
+      setPassFailStatus(status);
+      setComputedCompliance(status);
       
       // Update summary data
       setSummaryData(prev => ({
@@ -110,6 +115,7 @@ export function EnhancedReportEditor() {
     } catch (error) {
       console.error('Error calculating pass/fail status:', error);
       setPassFailStatus('pending');
+      setComputedCompliance('pending');
     }
   }, []);
 
@@ -134,20 +140,21 @@ export function EnhancedReportEditor() {
   };
 
   const evaluatePassCondition = (condition: string, kpis: any, thresholds: any): boolean => {
-    // Simple condition evaluation
-    // Replace variables in condition with actual values
-    let evaluatedCondition = condition;
+    // Safer formula evaluation without eval
+    let expr = condition;
     
-    Object.entries(kpis).forEach(([key, value]) => {
-      evaluatedCondition = evaluatedCondition.replace(new RegExp(key, 'g'), String(value));
+    // Replace tokens with numbers/booleans
+    [...Object.entries(kpis), ...Object.entries(thresholds)].forEach(([key, val]) => {
+      const safe = typeof val === 'number' ? val : 0;
+      expr = expr.replace(new RegExp(`\\b${key}\\b`, 'g'), String(safe));
     });
     
-    Object.entries(thresholds).forEach(([key, value]) => {
-      evaluatedCondition = evaluatedCondition.replace(new RegExp(key, 'g'), String(value));
-    });
+    // Only allow valid chars for safety
+    if (!/^[\d\s.<>=!&|()+-/*]*$/.test(expr)) return false;
     
     try {
-      return eval(evaluatedCondition);
+      // eslint-disable-next-line no-new-func
+      return Function(`"use strict"; return (${expr});`)();
     } catch {
       return false;
     }
@@ -170,6 +177,7 @@ export function EnhancedReportEditor() {
         data_json: report.data_json,
         summary_json: summaryData,
         graphs_json: report.graphs_json,
+        compliance_status: computedCompliance,
       });
       setIsDirty(false);
       setLastSaved(new Date());
@@ -189,6 +197,7 @@ export function EnhancedReportEditor() {
         data_json: report.data_json,
         summary_json: summaryData,
         graphs_json: report.graphs_json,
+        compliance_status: computedCompliance,
       });
       setIsDirty(false);
       setLastSaved(new Date());
@@ -238,6 +247,26 @@ export function EnhancedReportEditor() {
     } catch (error) {
       toast.error('Failed to reject report');
       console.error('Error rejecting report:', error);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!report) return;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('export_report_pdf', {
+        body: { report_id: report.id }
+      });
+      
+      if (error || !data?.url) {
+        throw error || new Error('No URL returned');
+      }
+      
+      window.open(data.url, '_blank');
+      toast.success('PDF export generated successfully');
+    } catch (error) {
+      toast.error('Failed to export PDF');
+      console.error('PDF export error:', error);
     }
   };
 
@@ -540,7 +569,7 @@ export function EnhancedReportEditor() {
           </>
         )}
         
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExportPdf}>
           <FileDown className="h-4 w-4 mr-2" />
           Export PDF
         </Button>

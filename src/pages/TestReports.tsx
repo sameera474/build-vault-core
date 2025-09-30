@@ -16,6 +16,7 @@ import { CreateTestReportDialog } from '@/components/CreateTestReportDialog';
 import FlowDiagram from '@/components/FlowDiagram';
 import { useTestReportPermissions } from '@/hooks/usePermissions';
 import { RoleBadge } from '@/components/RoleBadge';
+import { TestReportsListItem } from '@/components/TestReportsListItem';
 
 interface Project {
   id: string;
@@ -505,8 +506,8 @@ export default function TestReports() {
                   </CardContent>
                 </Card>
 
-                {/* Reports Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {/* Reports List */}
+                <div className="space-y-4">
                   {loading ? (
                     Array.from({ length: 6 }).map((_, i) => (
                       <Card key={i} className="animate-pulse">
@@ -542,106 +543,13 @@ export default function TestReports() {
                       </CardContent>
                     </Card>
                   ) : (
-                    reports.map((report) => (
-                      <Card key={report.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <CardTitle className="text-lg">{report.report_number}</CardTitle>
-                              <p className="text-sm text-muted-foreground">
-                                {report.projects?.name || 'No project'}
-                              </p>
-                              {report.road_name && (
-                                <p className="text-xs text-muted-foreground">
-                                  {report.road_name} • {report.chainage_from} - {report.chainage_to}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              {getStatusBadge(report.status)}
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Material:</span>
-                              <span className="capitalize">{report.material || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Test Type:</span>
-                              <span>{report.test_type}</span>
-                            </div>
-                            {report.side && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Side:</span>
-                                <span className="capitalize">{report.side}</span>
-                              </div>
-                            )}
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Date:</span>
-                              <span>{new Date(report.test_date).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2 mt-4 flex-wrap">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/test-reports/${report.id}/edit`)}
-                            >
-                              <Eye className="h-3 w-3 mr-1" />
-                              View
-                            </Button>
-                            
-                            {report.status === 'draft' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleSubmitForApproval(report.id)}
-                              >
-                                <Send className="h-3 w-3 mr-1" />
-                                Submit
-                              </Button>
-                            )}
-                            
-                            {report.status === 'submitted' && profile?.role === 'admin' && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleApprove(report.id)}
-                                  className="text-green-600 hover:text-green-700"
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleReject(report.id)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                            
-                            {report.status === 'approved' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/barchart/${report.project_id}`)}
-                              >
-                                <BarChart3 className="h-3 w-3 mr-1" />
-                                Chart
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                     reports.map((report) => (
+                       <TestReportsListItem
+                         key={report.id}
+                         r={report}
+                         onOpen={() => navigate(`/test-reports/${report.id}/edit`)}
+                       />
+                     ))
                   )}
                 </div>
               </div>
