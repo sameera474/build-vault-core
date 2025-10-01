@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Building2, FileText, DollarSign, Activity, Shield, Settings, BarChart3 } from 'lucide-react';
+import SuperAdminDemoUsers from '@/pages/SuperAdminDemoUsers';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -312,10 +313,15 @@ export default function SuperAdmin() {
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Analytics</TabsTrigger>
+          <TabsTrigger value="demo-users">Demo Users</TabsTrigger>
           <TabsTrigger value="companies">Companies</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="settings">System Settings</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="demo-users" className="space-y-4">
+          <SuperAdminDemoUsers />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">

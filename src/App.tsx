@@ -22,6 +22,11 @@ import InviteAccept from "./pages/InviteAccept";
 
 // Protected pages
 import Dashboard from "./pages/Dashboard";
+import ProjectManagerDashboard from "./pages/dashboard/ProjectManagerDashboard";
+import QualityManagerDashboard from "./pages/dashboard/QualityManagerDashboard";
+import TechnicianDashboard from "./pages/dashboard/TechnicianDashboard";
+import AdminDashboard from "./pages/dashboard/AdminDashboard";
+import SupervisorDashboard from "./pages/dashboard/SupervisorDashboard";
 import TestReports from "./pages/TestReports";
 import { Templates } from "./pages/Templates";
 import { EnhancedReportEditor } from "./components/EnhancedReportEditor";
@@ -74,6 +79,54 @@ const App = () => (
           
           {/* Protected routes with app layout */}
           <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/pm" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ProjectManagerDashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/qm" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <QualityManagerDashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/tech" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <TechnicianDashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/admin" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <AdminDashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/supervisor" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <SupervisorDashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/consultant" element={
             <ProtectedRoute>
               <AppLayout>
                 <Dashboard />

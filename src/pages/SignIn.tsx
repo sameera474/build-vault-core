@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { signIn } from '@/lib/auth';
+import { signIn, getUserProfile } from '@/lib/auth';
 import { z } from 'zod';
+import { AppRole, getDashboardRoute } from '@/lib/permissions';
 
 const signInSchema = z.object({
   email: z.string().trim().email('Invalid email address'),
@@ -42,11 +43,19 @@ export default function SignIn() {
           variant: "destructive",
         });
       } else if (data.user) {
+        // Fetch user profile to get role
+        const { data: profileData } = await getUserProfile(data.user.id);
+        const role = profileData?.role as AppRole;
+        
+        // Redirect based on role
+        const dashboardRoute = getDashboardRoute(role);
+        
         toast({
           title: "Welcome back!",
           description: "You have successfully signed in.",
         });
-        navigate(from, { replace: true });
+        
+        navigate(dashboardRoute, { replace: true });
       }
     } catch (error) {
       if (error instanceof z.ZodError) {

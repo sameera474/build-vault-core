@@ -24,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
+import { AppRole, canAccessMenuItem } from '@/lib/permissions';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -59,18 +60,25 @@ const navigationItems: NavigationItem[] = [
 function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { profile } = useAuth();
   const { hasPermission, hasAnyPermission, isSuperAdmin } = usePermissions();
 
   const isActive = (path: string) => currentPath === path;
 
   const shouldShowMenuItem = (item: NavigationItem) => {
-    // Super admin can see everything except specific restrictions
+    // Super admin can see everything
     if (isSuperAdmin) {
       return true;
     }
 
     // Check if super admin is required
     if (item.requireSuperAdmin) {
+      return false;
+    }
+
+    // Role-based menu filtering
+    const userRole = profile?.role as AppRole;
+    if (userRole && !canAccessMenuItem(userRole, item.title)) {
       return false;
     }
 
