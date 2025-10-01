@@ -217,13 +217,10 @@ export const menuItemsByRole: Record<AppRole, string[]> = {
     'Dashboard',
     'Test Reports',
     'Analytics',
-    'Monthly Summaries',
-    'Chainage Charts',
   ],
   consultant_technician: [
     'Dashboard',
     'Test Reports',
-    'Analytics',
   ],
 };
 

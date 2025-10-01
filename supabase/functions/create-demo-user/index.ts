@@ -97,7 +97,7 @@ serve(async (req) => {
         user_id: authData.user.id,
         company_id: companyId,
         name,
-        role,
+        role: role, // Use the actual role from the request
         email,
         is_active: true,
       });
