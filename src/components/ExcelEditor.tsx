@@ -737,7 +737,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
 
 
   const renderToolbar = () => (
-    <div className="border-b bg-white p-2 space-y-2">
+    <div className="border-b bg-card p-2 space-y-2">
       {/* Main Toolbar */}
       <div className="flex items-center gap-1 flex-wrap">
         <Button size="sm" variant="ghost" onClick={undo} disabled={historyIndex <= 0}>
@@ -786,7 +786,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
           <SelectTrigger className="w-20 h-8">
             <SelectValue placeholder="12" />
           </SelectTrigger>
-          <SelectContent className="bg-white z-50">
+          <SelectContent className="z-50">
             <SelectItem value="10px">10</SelectItem>
             <SelectItem value="12px">12</SelectItem>
             <SelectItem value="14px">14</SelectItem>
@@ -805,7 +805,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
               Templates
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl bg-white">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Select Template</DialogTitle>
             </DialogHeader>
@@ -816,7 +816,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
+                  <SelectContent className="z-50">
                     <SelectItem value="all">All Categories</SelectItem>
                     <SelectItem value="concrete">Concrete Testing</SelectItem>
                     <SelectItem value="soil">Soil Testing</SelectItem>
@@ -860,7 +860,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
               Import
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-white">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>Import Data</DialogTitle>
               <DialogDescription>
@@ -921,7 +921,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
               Save Template
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-white">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>Save as Template</DialogTitle>
             </DialogHeader>
@@ -941,7 +941,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
+                  <SelectContent className="z-50">
                     <SelectItem value="concrete">Concrete Testing</SelectItem>
                     <SelectItem value="soil">Soil Testing</SelectItem>
                     <SelectItem value="steel">Steel Testing</SelectItem>
@@ -980,7 +980,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
               Chart
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-white">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>Create Chart</DialogTitle>
               <DialogDescription>
@@ -1153,7 +1153,7 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-background">
       {renderToolbar()}
       
       <div className="flex-1 overflow-auto">
@@ -1169,8 +1169,8 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
         <div className="border-t p-4 bg-gray-50">
           <h3 className="text-lg font-semibold mb-4">Charts</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {charts.map((chart) => (
-              <div key={chart.id} className="border rounded-lg p-4 bg-white">
+          {charts.map((chart) => (
+              <div key={chart.id} className="border rounded-lg p-4 bg-card">
                 <h4 className="font-medium mb-2">{chart.title}</h4>
                 {renderChart(chart)}
               </div>
@@ -1192,10 +1192,10 @@ const ChartDialog: React.FC<{ onCreateChart: (type: any, range: string, title: s
       <div>
         <Label htmlFor="chartType">Chart Type</Label>
         <Select value={chartType} onValueChange={(value: any) => setChartType(value)}>
-          <SelectTrigger className="bg-white">
+          <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-white z-50">
+          <SelectContent className="z-50">
             <SelectItem value="bar">Bar Chart</SelectItem>
             <SelectItem value="pie">Pie Chart</SelectItem>
             <SelectItem value="line">Line Chart</SelectItem>

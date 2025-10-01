@@ -229,36 +229,38 @@ export default function Companies() {
               </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Company Name</TableHead>
-                  <TableHead>Registration Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {companies.map((company) => (
-                  <TableRow key={company.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium">{company.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            ID: {company.id.slice(0, 8)}...
+            <div className="overflow-x-auto -mx-6 sm:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Company Name</TableHead>
+                      <TableHead className="hidden sm:table-cell">Registration Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[50px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {companies.map((company) => (
+                      <TableRow key={company.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium">{company.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                ID: {company.id.slice(0, 8)}...
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(company.created_at)}
-                    </TableCell>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {formatDate(company.created_at)}
+                        </TableCell>
                     <TableCell>
                       <Badge 
-                        variant="secondary" 
-                        className={company.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                        variant={company.is_active ? "default" : "secondary"}
+                        className={company.is_active ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"}
                       >
                         {company.is_active ? 'Active' : 'Inactive'}
                       </Badge>
@@ -297,6 +299,8 @@ export default function Companies() {
                 ))}
               </TableBody>
             </Table>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -321,8 +325,8 @@ export default function Companies() {
                   <label className="text-sm font-medium text-muted-foreground">Status</label>
                   <p className="text-sm">
                     <Badge 
-                      variant="secondary" 
-                      className={selectedCompany.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                      variant={selectedCompany.is_active ? "default" : "secondary"}
+                      className={selectedCompany.is_active ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"}
                     >
                       {selectedCompany.is_active ? 'Active' : 'Inactive'}
                     </Badge>

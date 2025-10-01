@@ -111,7 +111,7 @@ export default function Home() {
                 alt="ConstructTest Pro dashboard preview"
                 width={800}
                 height={600}
-                className="w-[76rem] rounded-xl shadow-2xl ring-1 ring-border"
+                className="w-full max-w-5xl rounded-xl shadow-2xl ring-1 ring-border"
               />
             </div>
           </div>

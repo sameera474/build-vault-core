@@ -329,7 +329,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       </div>
 
       {/* Canvas */}
-      <div className="border border-gray-200 rounded-lg shadow-lg overflow-hidden bg-white">
+      <div className="border rounded-lg shadow-lg overflow-hidden bg-card">
         <canvas ref={canvasRef} className="max-w-full" />
       </div>
     </div>

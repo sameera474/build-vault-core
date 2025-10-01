@@ -172,8 +172,8 @@ export function Templates() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 p-4 bg-muted/50 rounded-lg">
-        <div className="flex-1 min-w-[200px]">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 p-4 bg-muted/50 rounded-lg">
+        <div className="flex-1 min-w-[200px] sm:min-w-[250px]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -186,7 +186,7 @@ export function Templates() {
         </div>
 
         <Select value={materialFilter} onValueChange={setMaterialFilter}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Material" />
           </SelectTrigger>
           <SelectContent>
@@ -200,7 +200,7 @@ export function Templates() {
         </Select>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-full sm:w-[120px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>

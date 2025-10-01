@@ -176,9 +176,9 @@ export function TestReportTemplate({ reportId, onClose, onSave }: TestReportTemp
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[95vh] overflow-auto">
-        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-card rounded-lg shadow-xl w-full max-w-7xl max-h-[95vh] overflow-auto">
+        <div className="sticky top-0 bg-card border-b p-4 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold">In-Situ Dry Density Test Report</h2>
             <p className="text-sm text-gray-600">BS 1377 TEST NO. 15</p>

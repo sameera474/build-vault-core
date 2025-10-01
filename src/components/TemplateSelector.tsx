@@ -128,7 +128,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] bg-white">
+      <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FolderOpen className="h-5 w-5" />
@@ -161,7 +161,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
-                <SelectContent className="bg-white z-50">
+                <SelectContent className="z-50">
                   {TEMPLATE_CATEGORIES.map((category) => (
                     <SelectItem key={category.value} value={category.value}>
                       {category.label}
