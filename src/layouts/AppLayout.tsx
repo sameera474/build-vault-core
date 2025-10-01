@@ -24,7 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
-import { AppRole, canAccessMenuItem } from '@/lib/permissions';
+import { canSeeMenuItem } from '@/lib/rbac';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -76,9 +76,9 @@ function AppSidebar() {
       return false;
     }
 
-    // Role-based menu filtering
-    const userRole = profile?.role as AppRole;
-    if (userRole && !canAccessMenuItem(userRole, item.title)) {
+    // Role-based menu filtering using RBAC
+    const userRole = profile?.role;
+    if (userRole && !canSeeMenuItem(userRole, item.title)) {
       return false;
     }
 

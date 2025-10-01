@@ -1,16 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { 
+  AppRole, 
+  Permission, 
+  hasPermission as rbacHasPermission,
+  hasAnyPermission as rbacHasAnyPermission,
+  hasAllPermissions as rbacHasAllPermissions
+} from '@/lib/rbac';
 
-// Type for user roles
-export type UserRole = 'super_admin' | 'company_admin' | 'admin' | 'staff' | 'project_manager';
-
-interface Permission {
-  id: string;
-  role: string;
-  permission: string;
-  created_at: string;
-}
+// Type for user roles (exported for backward compatibility)
+export type UserRole = AppRole;
 
 // New hook for test report permissions
 interface TestReportPermissions {
@@ -22,146 +21,56 @@ interface TestReportPermissions {
   canSubmitReport: boolean;
   canViewReports: boolean;
   isViewOnly: boolean;
-  role: UserRole | null;
+  role: string | null;
 }
 
 export function useTestReportPermissions(): TestReportPermissions {
   const { profile } = useAuth();
   
   return useMemo(() => {
-    const role = profile?.role as UserRole || null;
+    const role = profile?.role;
     
-    // Super admin can do everything
-    if (role === 'super_admin') {
-      return {
-        canCreateReport: true,
-        canEditReport: true,
-        canDeleteReport: true,
-        canApproveReport: true,
-        canRejectReport: true,
-        canSubmitReport: true,
-        canViewReports: true,
-        isViewOnly: false,
-        role,
-      };
-    }
-    
-    // Company admin and admin have full access within their company
-    if (role === 'company_admin' || role === 'admin') {
-      return {
-        canCreateReport: true,
-        canEditReport: true,
-        canDeleteReport: true,
-        canApproveReport: true,
-        canRejectReport: true,
-        canSubmitReport: true,
-        canViewReports: true,
-        isViewOnly: false,
-        role,
-      };
-    }
-    
-    // Staff can create/edit/submit but not approve/reject
-    if (role === 'staff') {
-      return {
-        canCreateReport: true,
-        canEditReport: true,
-        canDeleteReport: false,
-        canApproveReport: false,
-        canRejectReport: false,
-        canSubmitReport: true,
-        canViewReports: true,
-        isViewOnly: false,
-        role,
-      };
-    }
-    
-    // Project manager is view-only
-    if (role === 'project_manager') {
-      return {
-        canCreateReport: false,
-        canEditReport: false,
-        canDeleteReport: false,
-        canApproveReport: false,
-        canRejectReport: false,
-        canSubmitReport: false,
-        canViewReports: true,
-        isViewOnly: true,
-        role,
-      };
-    }
-    
-    // Default: no permissions
+    // Map RBAC permissions to test report permissions
     return {
-      canCreateReport: false,
-      canEditReport: false,
-      canDeleteReport: false,
-      canApproveReport: false,
-      canRejectReport: false,
-      canSubmitReport: false,
-      canViewReports: false,
-      isViewOnly: true,
+      canCreateReport: rbacHasPermission(role, 'create_reports'),
+      canEditReport: rbacHasAnyPermission(role, ['create_reports', 'edit_own_reports']),
+      canDeleteReport: rbacHasAnyPermission(role, ['manage_all_companies', 'manage_projects']),
+      canApproveReport: rbacHasPermission(role, 'approve_reports'),
+      canRejectReport: rbacHasPermission(role, 'approve_reports'),
+      canSubmitReport: rbacHasAnyPermission(role, ['create_reports', 'review_reports']),
+      canViewReports: rbacHasAnyPermission(role, ['view_company_reports', 'view_all_reports']),
+      isViewOnly: !rbacHasAnyPermission(role, ['create_reports', 'edit_own_reports', 'approve_reports']),
       role,
     };
   }, [profile?.role]);
 }
 
-// Original hook for backward compatibility
+// Main permissions hook using RBAC
 export function usePermissions() {
   const { profile } = useAuth();
-  const [permissions, setPermissions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const role = profile?.role;
 
-  useEffect(() => {
-    if (profile?.role) {
-      fetchPermissions(profile.role);
-    } else {
-      setLoading(false);
-    }
-  }, [profile?.role]);
+  return useMemo(() => {
+    const hasPermission = (permission: string): boolean => {
+      return rbacHasPermission(role, permission as Permission);
+    };
 
-  const fetchPermissions = async (role: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('role_permissions')
-        .select('permission')
-        .eq('role', role);
+    const hasAnyPermission = (permissionList: string[]): boolean => {
+      return rbacHasAnyPermission(role, permissionList as Permission[]);
+    };
 
-      if (error) throw error;
+    const hasAllPermissions = (permissionList: string[]): boolean => {
+      return rbacHasAllPermissions(role, permissionList as Permission[]);
+    };
 
-      const userPermissions = data?.map(p => p.permission) || [];
-      setPermissions(userPermissions);
-    } catch (error) {
-      console.error('Error fetching permissions:', error);
-      setPermissions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const hasPermission = (permission: string): boolean => {
-    // Super admin always has all permissions
-    if ((profile as any)?.is_super_admin) {
-      return true;
-    }
-    return permissions.includes(permission);
-  };
-
-  const hasAnyPermission = (permissionList: string[]): boolean => {
-    // Super admin always has all permissions
-    if ((profile as any)?.is_super_admin) {
-      return true;
-    }
-    return permissionList.some(permission => permissions.includes(permission));
-  };
-
-  return {
-    permissions,
-    hasPermission,
-    hasAnyPermission,
-    loading,
-    isAdmin: (profile as any)?.is_super_admin || false,
-    isSuperAdmin: (profile as any)?.is_super_admin || false,
-    userRole: profile?.role || '',
-  };
+    return {
+      hasPermission,
+      hasAnyPermission,
+      hasAllPermissions,
+      loading: false, // No longer async since we're using in-memory maps
+      isAdmin: role === 'admin' || role === 'super_admin',
+      isSuperAdmin: role === 'super_admin',
+      userRole: role || '',
+    };
+  }, [role]);
 }

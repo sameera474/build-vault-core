@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { signIn, getUserProfile } from '@/lib/auth';
 import { z } from 'zod';
-import { AppRole, getDashboardRoute } from '@/lib/permissions';
+import { getRoleRedirect } from '@/lib/rbac';
 
 const signInSchema = z.object({
   email: z.string().trim().email('Invalid email address'),
@@ -45,10 +45,9 @@ export default function SignIn() {
       } else if (data.user) {
         // Fetch user profile to get role
         const { data: profileData } = await getUserProfile(data.user.id);
-        const role = profileData?.role as AppRole;
         
         // Redirect based on role
-        const dashboardRoute = getDashboardRoute(role);
+        const dashboardRoute = getRoleRedirect(profileData?.role);
         
         toast({
           title: "Welcome back!",
