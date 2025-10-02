@@ -71,13 +71,6 @@ export type Database = {
             foreignKeyName: "chainage_points_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chainage_points_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -325,13 +318,6 @@ export type Database = {
             foreignKeyName: "project_members_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -363,13 +349,6 @@ export type Database = {
           project_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "project_roads_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "project_roads_project_id_fkey"
             columns: ["project_id"]
@@ -856,13 +835,6 @@ export type Database = {
             foreignKeyName: "test_reports_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "test_reports_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -924,80 +896,6 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
-      }
-      me: {
-        Row: {
-          company_id: string | null
-          role: string | null
-          user_id: string | null
-        }
-        Insert: {
-          company_id?: string | null
-          role?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          company_id?: string | null
-          role?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_for_registration"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      my_projects: {
-        Row: {
-          client_logo: string | null
-          client_name: string | null
-          company_id: string | null
-          consultant_logo: string | null
-          consultant_name: string | null
-          contract_number: string | null
-          contractor_logo: string | null
-          contractor_name: string | null
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          end_date: string | null
-          id: string | null
-          lab_code: string | null
-          location: string | null
-          name: string | null
-          project_prefix: string | null
-          region_code: string | null
-          start_date: string | null
-          status: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_projects_company_id"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_projects_company_id"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_for_registration"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Functions: {
