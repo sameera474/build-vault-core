@@ -379,51 +379,6 @@ export type Database = {
           },
         ]
       }
-      project_roles: {
-        Row: {
-          assigned_at: string | null
-          assigned_by: string | null
-          company_id: string
-          id: string
-          project_id: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          assigned_at?: string | null
-          assigned_by?: string | null
-          company_id: string
-          id?: string
-          project_id: string
-          role: string
-          user_id: string
-        }
-        Update: {
-          assigned_at?: string | null
-          assigned_by?: string | null
-          company_id?: string
-          id?: string
-          project_id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_roles_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "my_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_roles_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       projects: {
         Row: {
           client_logo: string | null
@@ -510,27 +465,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      role_permissions: {
-        Row: {
-          created_at: string | null
-          id: string
-          permission: string
-          role: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          permission: string
-          role: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          permission?: string
-          role?: string
-        }
-        Relationships: []
       }
       spreadsheet_data: {
         Row: {
@@ -941,6 +875,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       companies_for_registration: {
@@ -1074,13 +1029,20 @@ export type Database = {
           user_id: string
         }[]
       }
-      current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
       get_user_company: {
         Args: { user_uuid: string }
         Returns: string
+      }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       is_super_admin: {
         Args: { user_uuid: string }
@@ -1122,6 +1084,15 @@ export type Database = {
       }
     }
     Enums: {
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "project_manager"
+        | "quality_manager"
+        | "technician"
+        | "supervisor"
+        | "consultant_engineer"
+        | "consultant_technician"
       material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
       report_status_enum: "draft" | "submitted" | "approved" | "rejected"
       side_enum: "left" | "right" | "middle"
@@ -1260,6 +1231,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: [
+        "super_admin",
+        "admin",
+        "project_manager",
+        "quality_manager",
+        "technician",
+        "supervisor",
+        "consultant_engineer",
+        "consultant_technician",
+      ],
       material_enum: ["soil", "concrete", "aggregates", "asphalt", "custom"],
       report_status_enum: ["draft", "submitted", "approved", "rejected"],
       side_enum: ["left", "right", "middle"],
