@@ -56,12 +56,11 @@ export function ProjectRoles({ projectId }: ProjectRolesProps) {
     if (!profile?.company_id) return;
 
     try {
-      // First get the project roles
+      // First get the project members
       const { data: rolesData, error } = await supabase
-        .from('project_roles')
-        .select('*')
+        .from('project_members')
+        .select('project_id, user_id, role, assigned_at')
         .eq('project_id', projectId)
-        .eq('company_id', profile.company_id)
         .order('assigned_at', { ascending: false });
 
       if (error) throw error;
@@ -74,9 +73,12 @@ export function ProjectRoles({ projectId }: ProjectRolesProps) {
           .select('user_id, name')
           .in('user_id', userIds);
 
-        // Combine the data
+        // Combine the data and create composite IDs
         const rolesWithProfiles = rolesData.map(role => ({
-          ...role,
+          id: `${role.project_id}-${role.user_id}`,
+          user_id: role.user_id,
+          role: role.role,
+          assigned_at: role.assigned_at,
           profiles: profilesData?.find(p => p.user_id === role.user_id) || { name: 'Unknown User' }
         }));
 
@@ -120,10 +122,9 @@ export function ProjectRoles({ projectId }: ProjectRolesProps) {
       const { data: { user } } = await supabase.auth.getUser();
       
       const { error } = await supabase
-        .from('project_roles')
+        .from('project_members')
         .insert({
           project_id: projectId,
-          company_id: profile.company_id,
           user_id: selectedUser,
           role: selectedRole,
           assigned_by: user?.id,
@@ -153,10 +154,14 @@ export function ProjectRoles({ projectId }: ProjectRolesProps) {
 
   const handleRemoveRole = async (roleId: string) => {
     try {
+      // Parse the composite ID (format: "projectId-userId")
+      const [projectId, userId] = roleId.split('-');
+      
       const { error } = await supabase
-        .from('project_roles')
+        .from('project_members')
         .delete()
-        .eq('id', roleId);
+        .eq('project_id', projectId)
+        .eq('user_id', userId);
 
       if (error) throw error;
 

@@ -141,10 +141,9 @@ export default function TestReports() {
   const fetchProjects = async () => {
     if (!profile?.user_id) return;
     
-    // Use my_projects view which respects RLS and role-based access
+    // Use user_accessible_projects function which respects RLS and role-based access
     const { data, error } = await supabase
-      .from('my_projects')
-      .select('id, name, description');
+      .rpc('user_accessible_projects');
 
     if (error) {
       console.error('Error fetching projects:', error);

@@ -49,10 +49,9 @@ class ProjectService {
   }
 
   async fetchProjects() {
-    // Use my_projects view which respects RLS and role-based access
+    // Use user_accessible_projects function which respects RLS and role-based access
     const { data, error } = await supabase
-      .from('my_projects')
-      .select('*')
+      .rpc('user_accessible_projects')
       .order('created_at', { ascending: false });
     
     if (error) throw error;

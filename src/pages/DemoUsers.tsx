@@ -103,25 +103,8 @@ export default function DemoUsers() {
   };
 
   const fetchRolePermissions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('role_permissions')
-        .select('*')
-        .order('role', { ascending: true })
-        .order('permission', { ascending: true });
-
-      if (error) throw error;
-      setRolePermissions(data || []);
-    } catch (error) {
-      console.error('Error fetching role permissions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load role permissions",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingPermissions(false);
-    }
+    // Role permissions table was removed - skip this fetch
+    setLoadingPermissions(false);
   };
 
   const togglePasswordVisibility = (email: string) => {

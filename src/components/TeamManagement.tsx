@@ -23,6 +23,7 @@ interface TeamMember {
   avatar_url?: string;
   phone?: string;
   department?: string;
+  company_id?: string;
 }
 
 interface ProjectAssignment {
@@ -134,7 +135,7 @@ export function TeamManagement() {
       // Fetch team members (exclude super admin from display)
       const { data: members, error: membersError } = await supabase
         .from('profiles')
-        .select('user_id, name, role, tenant_role, created_at, is_super_admin, phone, department, avatar_url')
+        .select('user_id, name, role, tenant_role, created_at, is_super_admin, phone, department, avatar_url, company_id')
         .eq('company_id', profile.company_id);
 
       if (membersError) throw membersError;
@@ -246,22 +247,13 @@ export function TeamManagement() {
   const fetchProjectAssignments = async () => {
     try {
       let query = supabase
-        .from('project_roles')
+        .from('project_members')
         .select(`
-          id,
           project_id,
           user_id,
           role,
-          assigned_at,
-          company_id
+          assigned_at
         `);
-
-       // For super admin, optionally filter by selected company  
-       if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
-         query = query.eq('company_id', selectedCompany);
-       } else if (!isSuperAdmin && profile?.company_id) {
-         query = query.eq('company_id', profile.company_id);
-       }
 
       const { data: assignments, error } = await query;
       if (error) throw error;
@@ -276,22 +268,38 @@ export function TeamManagement() {
       const userIds = [...new Set(assignments.map(a => a.user_id))];
 
       const [projectsRes, usersRes] = await Promise.all([
-        supabase.from('projects').select('id, name').in('id', projectIds),
+        supabase.from('projects').select('id, name, company_id').in('id', projectIds),
         supabase.from('profiles').select('user_id, name').in('user_id', userIds)
       ]);
 
-      const projectsMap = new Map(projectsRes.data?.map(p => [p.id, p.name]) || []);
+      const projectsMap = new Map(projectsRes.data?.map(p => [p.id, { name: p.name, company_id: p.company_id }]) || []);
       const usersMap = new Map(usersRes.data?.map(u => [u.user_id, u.name]) || []);
 
-      const formattedAssignments = assignments.map(assignment => ({
-        id: assignment.id,
-        project_id: assignment.project_id,
-        user_id: assignment.user_id,
-        role: assignment.role,
-        assigned_at: assignment.assigned_at,
-        project_name: projectsMap.get(assignment.project_id) || 'Unknown Project',
-        user_name: usersMap.get(assignment.user_id) || 'Unknown User',
-      }));
+      // Filter by company if needed
+      const filteredAssignments = assignments.filter(assignment => {
+        const project = projectsMap.get(assignment.project_id);
+        if (!project) return false;
+        
+        if (isSuperAdmin && selectedCompany && selectedCompany !== 'all') {
+          return project.company_id === selectedCompany;
+        } else if (!isSuperAdmin && profile?.company_id) {
+          return project.company_id === profile.company_id;
+        }
+        return true;
+      });
+
+      const formattedAssignments = filteredAssignments.map(assignment => {
+        const project = projectsMap.get(assignment.project_id);
+        return {
+          id: `${assignment.project_id}-${assignment.user_id}`,
+          project_id: assignment.project_id,
+          user_id: assignment.user_id,
+          role: assignment.role,
+          assigned_at: assignment.assigned_at,
+          project_name: project?.name || 'Unknown Project',
+          user_name: usersMap.get(assignment.user_id) || 'Unknown User',
+        };
+      });
 
       setProjectAssignments(formattedAssignments);
     } catch (error) {
@@ -361,21 +369,9 @@ export function TeamManagement() {
     setIsAssigning(true);
 
     try {
-      // Determine the company_id based on whether it's super admin or regular user
-      let companyId = profile?.company_id;
-      
-      if (isSuperAdmin && selectedCompany) {
-        companyId = selectedCompany;
-      }
-
-      if (!companyId) {
-        throw new Error('Company ID is required');
-      }
-
       const { error } = await supabase
-        .from('project_roles')
+        .from('project_members')
         .insert({
-          company_id: companyId,
           project_id: selectedProject,
           user_id: selectedMember,
           role: selectedRole,
@@ -411,10 +407,14 @@ export function TeamManagement() {
 
   const removeAssignment = async (assignmentId: string) => {
     try {
+      // Parse the composite ID (format: "projectId-userId")
+      const [projectId, userId] = assignmentId.split('-');
+      
       const { error } = await supabase
-        .from('project_roles')
+        .from('project_members')
         .delete()
-        .eq('id', assignmentId);
+        .eq('project_id', projectId)
+        .eq('user_id', userId);
 
       if (error) throw error;
 
@@ -584,22 +584,28 @@ const editMember = (member: TeamMember) => {
 };
 
 const updateMember = async () => {
-  if (!editingMember || !profile?.company_id) return;
+  if (!editingMember) return;
 
   setIsSaving(true);
 
   try {
+    const updateData: any = {
+      name: editingMember.name,
+      tenant_role: editingMember.tenant_role as any,
+      phone: editingMember.phone,
+      department: editingMember.department,
+      avatar_url: editingMember.avatar_url
+    };
+
+    // Super admins can change company assignment
+    if (isSuperAdmin && editingMember.company_id) {
+      updateData.company_id = editingMember.company_id;
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        name: editingMember.name,
-        tenant_role: editingMember.tenant_role as any,
-        phone: editingMember.phone,
-        department: editingMember.department,
-        avatar_url: editingMember.avatar_url
-      })
-      .eq('user_id', editingMember.user_id)
-      .eq('company_id', profile.company_id);
+      .update(updateData)
+      .eq('user_id', editingMember.user_id);
 
     if (error) throw error;
 
@@ -611,6 +617,9 @@ const updateMember = async () => {
     setIsEditMemberOpen(false);
     setEditingMember(null);
     fetchTeamData();
+    if (isSuperAdmin) {
+      fetchAllCompanyUsers();
+    }
   } catch (error: any) {
     toast({
       title: "Error",
@@ -1276,6 +1285,27 @@ const deleteMember = async (memberId: string) => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {isSuperAdmin && (
+                  <div>
+                    <Label htmlFor="edit-company">Company</Label>
+                    <Select 
+                      value={editingMember.company_id || ''} 
+                      onValueChange={(value) => setEditingMember({...editingMember, company_id: value})}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select company" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies.map(company => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button
