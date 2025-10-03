@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { BarChart3, MapPin, Settings, Download, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -85,6 +85,7 @@ const testTypeConfigs = {
 
 export default function ChainageBarChart() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [chainageData, setChainageData] = useState<ChainagePoint[]>([]);
@@ -371,7 +372,7 @@ export default function ChainageBarChart() {
                     </div>
                     <Button 
                       className="w-full" 
-                      onClick={() => window.location.href = `/barchart/${proj.id}`}
+                      onClick={() => navigate(`/barchart/${proj.id}`)}
                     >
                       View Chainage Chart
                     </Button>
