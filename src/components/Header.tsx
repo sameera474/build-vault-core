@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, HardHat } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Menu, X, HardHat } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'About', href: '/about' },
-  { name: 'Pricing', href: '/pricing' },
-  { name: 'Contact', href: '/contact' },
+  { name: "Home", href: "/" },
+  { name: "About", href: "/about" },
+  { name: "Pricing", href: "/pricing" },
+  { name: "Contact", href: "/contact" },
 ];
 
 export function Header() {
@@ -17,7 +17,7 @@ export function Header() {
   const location = useLocation();
 
   const isActivePath = (path: string) => {
-    if (path === '/') return location.pathname === '/';
+    if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
   };
 
@@ -25,14 +25,19 @@ export function Header() {
 
   return (
     <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-b border-border">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
+      <nav
+        className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"
+        aria-label="Global"
+      >
         <div className="flex lg:flex-1">
           <Link to="/" className="-m-1.5 p-1.5 flex items-center gap-2">
             <HardHat className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-foreground">ConstructTest Pro</span>
+            <span className="text-xl font-bold text-foreground">
+              ConstructTest Pro
+            </span>
           </Link>
         </div>
-        
+
         <div className="flex lg:hidden items-center gap-2">
           <ThemeToggle />
           <button
@@ -43,7 +48,11 @@ export function Header() {
             aria-controls="mobile-navigation"
           >
             <span className="sr-only">Toggle main menu</span>
-            {mobileMenuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
+            {mobileMenuOpen ? (
+              <X className="h-6 w-6" aria-hidden="true" />
+            ) : (
+              <Menu className="h-6 w-6" aria-hidden="true" />
+            )}
           </button>
         </div>
 
@@ -80,25 +89,10 @@ export function Header() {
         id="mobile-navigation"
         className={cn(
           "lg:hidden border-t border-border bg-card shadow-lg transition-smooth origin-top",
-          mobileMenuOpen ? 'block' : 'hidden'
+          mobileMenuOpen ? "block" : "hidden"
         )}
       >
         <div className="px-6 pb-6 pt-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="-m-1.5 p-1.5 flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-              <HardHat className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold text-foreground">ConstructTest Pro</span>
-            </Link>
-            <button
-              type="button"
-              className="-m-2.5 rounded-md p-2.5 text-foreground hover:bg-muted transition-smooth"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="sr-only">Close menu</span>
-              <X className="h-6 w-6" aria-hidden="true" />
-            </button>
-          </div>
-
           <div className="space-y-6">
             {/* Navigation Links */}
             <div className="space-y-2">
@@ -121,12 +115,20 @@ export function Header() {
 
             {/* Action Buttons */}
             <div className="pt-4 space-y-3 border-t border-border">
-              <Link to="/signin" onClick={() => setMobileMenuOpen(false)} className="block">
+              <Link
+                to="/signin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block"
+              >
                 <Button variant="outline" className="w-full" size="lg">
                   Sign in
                 </Button>
               </Link>
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block">
+              <Link
+                to="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block"
+              >
                 <Button variant="cta" className="w-full" size="lg">
                   Get Started
                 </Button>

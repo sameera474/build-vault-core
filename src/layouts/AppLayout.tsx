@@ -219,6 +219,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { profile, signOut: authSignOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { hasAnyPermission, isSuperAdmin } = usePermissions();
   const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
@@ -237,6 +238,82 @@ export function AppLayout({ children }: AppLayoutProps) {
       });
     }
   };
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 sm:px-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {navigationItems
+                .filter((item) => {
+                  // Super admin can see everything
+                  if (isSuperAdmin) {
+                    return true;
+                  }
+
+                  // Check if super admin is required
+                  if (item.requireSuperAdmin) {
+                    return false;
+                  }
+
+                  // Role-based menu filtering using RBAC
+                  const userRole = profile?.role;
+                  if (userRole && !canSeeMenuItem(userRole, item.title)) {
+                    return false;
+                  }
+
+                  // Check permissions
+                  if (item.requiredPermissions) {
+                    return hasAnyPermission(item.requiredPermissions);
+                  }
+
+                  // Default to show if no restrictions
+                  return true;
+                })
+                .map((item) => (
+                  <DropdownMenuItem key={item.title} asChild>
+                    <Link to={item.url} className="flex items-center gap-2">
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {profile?.name || "User"}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 sm:p-6">{children}</main>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
