@@ -638,14 +638,11 @@ const updateMember = async () => {
 };
 
 const deleteMember = async (memberId: string) => {
-  if (!profile?.company_id) return;
-
   try {
     const { error } = await supabase
       .from('profiles')
       .delete()
-      .eq('user_id', memberId)
-      .eq('company_id', profile.company_id);
+      .eq('user_id', memberId);
 
     if (error) throw error;
 
@@ -655,6 +652,9 @@ const deleteMember = async (memberId: string) => {
     });
 
     fetchTeamData();
+    if (isSuperAdmin) {
+      fetchAllCompanyUsers();
+    }
   } catch (error: any) {
     toast({
       title: "Error",
@@ -1027,20 +1027,33 @@ const deleteMember = async (memberId: string) => {
                            </p>
                          </div>
                        </div>
-                       <div className="flex items-center gap-2">
-                         <Badge className={getRoleColor(member.tenant_role || member.role)}>
-                           {formatRole(member.tenant_role || member.role)}
-                         </Badge>
-                         {(profile?.role === 'admin' || isSuperAdmin) && (
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={() => editMember(member)}
-                           >
-                             <Edit className="h-4 w-4" />
-                           </Button>
-                         )}
-                       </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getRoleColor(member.tenant_role || member.role)}>
+                            {formatRole(member.tenant_role || member.role)}
+                          </Badge>
+                          {(profile?.role === 'admin' || isSuperAdmin) && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => editMember(member)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to delete ${member.name}?`)) {
+                                    deleteMember(member.user_id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                      </div>
                   ))}
                 </div>
@@ -1190,6 +1203,28 @@ const deleteMember = async (memberId: string) => {
                               <Badge className="bg-red-100 text-red-800">
                                 Super Admin
                               </Badge>
+                            )}
+                            {isSuperAdmin && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => editMember(user)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (confirm(`Are you sure you want to delete ${user.name}?`)) {
+                                      deleteMember(user.user_id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
                             )}
                           </div>
                         </div>
