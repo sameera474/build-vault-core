@@ -109,6 +109,22 @@ serve(async (req) => {
 
     console.log('Created profile for user:', authData.user.id);
 
+    // Insert role into user_roles table for RBAC system
+    const { error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .insert({
+        user_id: authData.user.id,
+        role: role, // This should match the app_role enum values
+      });
+
+    if (roleError) {
+      console.error('Error creating user role:', roleError);
+      // Don't throw - continue even if role insert fails
+      console.log('Continuing despite role error...');
+    } else {
+      console.log('Created role entry for user:', authData.user.id, 'with role:', role);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
