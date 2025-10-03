@@ -1,51 +1,57 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, Trash2, Wrench } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { AlertTriangle, Trash2, Wrench } from "lucide-react";
 
 const demoUsersToFix = [
   {
-    email: 'john.manager@alpha.com',
-    correct_name: 'John Smith - Project Manager',
-    correct_role: 'project_manager',
-    correct_tenant_role: 'project_manager',
-    correct_department: 'Project Management',
-    correct_job_title: 'Project Manager'
+    email: "john.manager@alpha.com",
+    correct_name: "John Smith - Project Manager",
+    correct_role: "project_manager",
+    correct_tenant_role: "project_manager",
+    correct_department: "Project Management",
+    correct_job_title: "Project Manager",
   },
   {
-    email: 'sarah.quality@alpha.com',
-    correct_name: 'Sarah Johnson - Quality Manager',
-    correct_role: 'quality_manager',
-    correct_tenant_role: 'quality_manager',
-    correct_department: 'Quality Control',
-    correct_job_title: 'Quality Manager'
+    email: "sarah.quality@alpha.com",
+    correct_name: "Sarah Johnson - Quality Manager",
+    correct_role: "quality_manager",
+    correct_tenant_role: "quality_manager",
+    correct_department: "Quality Control",
+    correct_job_title: "Quality Manager",
   },
   {
-    email: 'mike.tech@beta.com',
-    correct_name: 'Mike Davis - Lab Technician',
-    correct_role: 'technician',
-    correct_tenant_role: 'technician',
-    correct_department: 'Laboratory',
-    correct_job_title: 'Lab Technician'
+    email: "mike.tech@beta.com",
+    correct_name: "Mike Davis - Lab Technician",
+    correct_role: "technician",
+    correct_tenant_role: "technician",
+    correct_department: "Laboratory",
+    correct_job_title: "Lab Technician",
   },
   {
-    email: 'emily.admin@beta.com',
-    correct_name: 'Emily Chen - Admin',
-    correct_role: 'admin',
-    correct_tenant_role: 'admin',
-    correct_department: 'Administration',
-    correct_job_title: 'Administrator'
+    email: "emily.admin@beta.com",
+    correct_name: "Emily Chen - Admin",
+    correct_role: "admin",
+    correct_tenant_role: "admin",
+    correct_department: "Administration",
+    correct_job_title: "Administrator",
   },
   {
-    email: 'robert.supervisor@gamma.com',
-    correct_name: 'Robert Wilson - Site Supervisor',
-    correct_role: 'supervisor',
-    correct_tenant_role: 'supervisor',
-    correct_department: 'Site Operations',
-    correct_job_title: 'Site Supervisor'
-  }
+    email: "robert.supervisor@gamma.com",
+    correct_name: "Robert Wilson - Site Supervisor",
+    correct_role: "supervisor",
+    correct_tenant_role: "supervisor",
+    correct_department: "Site Operations",
+    correct_job_title: "Site Supervisor",
+  },
 ];
 
 export default function FixDemoUsers() {
@@ -60,30 +66,61 @@ export default function FixDemoUsers() {
 
     for (const user of demoUsersToFix) {
       try {
-        const { data, error } = await supabase.functions.invoke('fix-demo-users', {
-          body: {
-            action: 'fix_user',
-            email: user.email,
-            correct_name: user.correct_name,
-            correct_role: user.correct_role,
-            correct_tenant_role: user.correct_tenant_role,
-            correct_department: user.correct_department,
-            correct_job_title: user.correct_job_title,
-          },
-        });
+        // Find the user by email in profiles table
+        const { data: profile, error: profileQueryError } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("email", user.email)
+          .single();
 
-        if (error) throw error;
-
-        if (data?.error) {
-          console.error(`Error fixing ${user.email}:`, data.error);
+        if (profileQueryError || !profile) {
+          console.error(
+            `User ${user.email} not found in profiles:`,
+            profileQueryError
+          );
           errorCount++;
-        } else {
-          console.log(`Fixed ${user.email}`);
-          successCount++;
+          continue;
         }
 
+        const userId = profile.user_id;
+
+        // Update the profiles table
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({
+            name: user.correct_name,
+            role: user.correct_role,
+            department: user.correct_department,
+            job_title: user.correct_job_title,
+          })
+          .eq("user_id", userId);
+
+        if (profileError) {
+          console.error(
+            `Error updating profile for ${user.email}:`,
+            profileError
+          );
+          errorCount++;
+          continue;
+        }
+
+        // Update or insert user_roles table
+        const { error: roleError } = await supabase.from("user_roles").upsert({
+          user_id: userId,
+          role: user.correct_role as any, // Cast to app_role enum
+        });
+
+        if (roleError) {
+          console.error(`Error updating role for ${user.email}:`, roleError);
+          errorCount++;
+          continue;
+        }
+
+        console.log(`Fixed ${user.email}`);
+        successCount++;
+
         // Small delay between requests
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error: any) {
         console.error(`Error fixing ${user.email}:`, error);
         errorCount++;
@@ -93,38 +130,45 @@ export default function FixDemoUsers() {
     setFixing(false);
 
     toast({
-      title: 'Fix Complete',
+      title: "Fix Complete",
       description: `Fixed ${successCount} users. ${errorCount} errors.`,
-      variant: errorCount > 0 ? 'destructive' : 'default',
+      variant: errorCount > 0 ? "destructive" : "default",
     });
   };
 
   const deleteAllUsers = async () => {
-    if (!confirm('Are you sure you want to delete all demo users? This cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to delete all demo users? This cannot be undone."
+      )
+    ) {
       return;
     }
 
     setDeleting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('fix-demo-users', {
-        body: {
-          action: 'delete_all',
-        },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "fix-demo-users",
+        {
+          body: {
+            action: "delete_all",
+          },
+        }
+      );
 
       if (error) throw error;
 
       toast({
-        title: 'Success',
-        description: 'All demo users have been deleted',
+        title: "Success",
+        description: "All demo users have been deleted",
       });
     } catch (error: any) {
-      console.error('Error deleting users:', error);
+      console.error("Error deleting users:", error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete users',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to delete users",
+        variant: "destructive",
       });
     } finally {
       setDeleting(false);
@@ -144,7 +188,9 @@ export default function FixDemoUsers() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-600" />
-            <CardTitle className="text-orange-900 dark:text-orange-100">Data Corruption Detected</CardTitle>
+            <CardTitle className="text-orange-900 dark:text-orange-100">
+              Data Corruption Detected
+            </CardTitle>
           </div>
           <CardDescription className="text-orange-800 dark:text-orange-200">
             Some demo users have incorrect names and roles in the database
@@ -152,11 +198,14 @@ export default function FixDemoUsers() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <h3 className="font-semibold text-orange-900 dark:text-orange-100">Corrupted Users:</h3>
+            <h3 className="font-semibold text-orange-900 dark:text-orange-100">
+              Corrupted Users:
+            </h3>
             <ul className="space-y-1 text-sm text-orange-800 dark:text-orange-200">
-              {demoUsersToFix.map(user => (
+              {demoUsersToFix.map((user) => (
                 <li key={user.email}>
-                  • {user.email} → should be "{user.correct_name}" with role "{user.correct_role}"
+                  • {user.email} → should be "{user.correct_name}" with role "
+                  {user.correct_role}"
                 </li>
               ))}
             </ul>
@@ -201,7 +250,8 @@ export default function FixDemoUsers() {
           </div>
 
           <p className="text-xs text-orange-700 dark:text-orange-300 pt-2">
-            After fixing or deleting, you'll need to recreate demo users from the Demo Users page if you deleted them.
+            After fixing or deleting, you'll need to recreate demo users from
+            the Demo Users page if you deleted them.
           </p>
         </CardContent>
       </Card>
@@ -214,14 +264,16 @@ export default function FixDemoUsers() {
           <div>
             <h4 className="font-semibold mb-1">Fix All Users:</h4>
             <p className="text-muted-foreground">
-              Updates the profiles and user_roles tables with correct names and roles for existing demo users.
+              Updates the profiles and user_roles tables with correct names and
+              roles for existing demo users.
             </p>
           </div>
           <div>
             <h4 className="font-semibold mb-1">Delete All & Recreate:</h4>
             <p className="text-muted-foreground">
-              Completely removes all demo users from profiles, user_roles, and auth.users tables.
-              After deletion, go to the Demo Users page to create fresh accounts.
+              Completely removes all demo users from profiles, user_roles, and
+              auth.users tables. After deletion, go to the Demo Users page to
+              create fresh accounts.
             </p>
           </div>
         </CardContent>
