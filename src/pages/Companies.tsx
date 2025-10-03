@@ -140,6 +140,31 @@ export default function Companies() {
     }
   };
 
+  const handleActivate = async (company: Company) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ is_active: true })
+        .eq('id', company.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${company.name} has been activated successfully`,
+      });
+
+      fetchCompanies();
+    } catch (error: any) {
+      console.error('Error activating company:', error);
+      toast({
+        title: "Error",
+        description: "Failed to activate company",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEditSuccess = () => {
     fetchCompanies();
     setShowEditDialog(false);
@@ -283,13 +308,21 @@ export default function Companies() {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          {company.is_active && (
+                          {company.is_active ? (
                             <DropdownMenuItem 
                               onClick={() => handleDelete(company)}
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Deactivate
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem 
+                              onClick={() => handleActivate(company)}
+                              className="text-green-600"
+                            >
+                              <Building2 className="mr-2 h-4 w-4" />
+                              Activate
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
