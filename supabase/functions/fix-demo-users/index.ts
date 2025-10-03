@@ -88,6 +88,7 @@ serve(async (req) => {
         .update({
           name: correct_name,
           role: correct_role,
+          is_demo_user: true,
         })
         .eq('user_id', profile.user_id);
 

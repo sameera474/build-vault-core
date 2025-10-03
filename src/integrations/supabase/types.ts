@@ -229,6 +229,7 @@ export type Database = {
           employee_id: string | null
           hire_date: string | null
           is_active: boolean | null
+          is_demo_user: boolean | null
           is_super_admin: boolean | null
           job_title: string | null
           name: string | null
@@ -247,6 +248,7 @@ export type Database = {
           employee_id?: string | null
           hire_date?: string | null
           is_active?: boolean | null
+          is_demo_user?: boolean | null
           is_super_admin?: boolean | null
           job_title?: string | null
           name?: string | null
@@ -265,6 +267,7 @@ export type Database = {
           employee_id?: string | null
           hire_date?: string | null
           is_active?: boolean | null
+          is_demo_user?: boolean | null
           is_super_admin?: boolean | null
           job_title?: string | null
           name?: string | null

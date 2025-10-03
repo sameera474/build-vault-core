@@ -100,6 +100,7 @@ serve(async (req) => {
         role: role, // Use the actual role from the request
         email,
         is_active: true,
+        is_demo_user: true,
       });
 
     if (profileError) {
