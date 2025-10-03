@@ -109,7 +109,8 @@ export default function ChainageBarChart() {
 
   useEffect(() => {
     fetchProjects();
-    if (projectId) {
+    // Only fetch if projectId is a valid UUID (not undefined, not ":projectId")
+    if (projectId && projectId !== ':projectId' && !projectId.includes(':')) {
       fetchProjectData(projectId);
       fetchChainageData(projectId);
     }
@@ -133,7 +134,7 @@ export default function ChainageBarChart() {
   };
 
   const fetchProjectData = async (id: string) => {
-    if (!profile?.company_id) return;
+    if (!profile?.company_id || !id || id.includes(':')) return;
 
     try {
       const { data, error } = await supabase
@@ -156,7 +157,7 @@ export default function ChainageBarChart() {
   };
 
   const fetchChainageData = async (id: string) => {
-    if (!profile?.company_id) return;
+    if (!profile?.company_id || !id || id.includes(':')) return;
 
     try {
       const { data, error } = await supabase
@@ -342,7 +343,7 @@ export default function ChainageBarChart() {
     );
   }
 
-  if (!projectId) {
+  if (!projectId || projectId === ':projectId' || projectId.includes(':')) {
     return (
       <div className="space-y-6">
         <div>
