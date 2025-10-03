@@ -73,38 +73,43 @@ export function Header() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden">
+        <>
+          {/* Backdrop */}
           <div 
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" 
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm lg:hidden animate-fade-in" 
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 right-0 z-[60] w-full overflow-y-auto bg-background px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-border shadow-2xl animate-slide-in-right">
+          
+          {/* Menu Panel */}
+          <div className="fixed inset-y-0 right-0 z-[110] w-full overflow-y-auto bg-card border-l border-border px-6 py-6 sm:max-w-sm shadow-2xl lg:hidden animate-slide-in-right">
             <div className="flex items-center justify-between">
-              <Link to="/" className="-m-1.5 p-1.5 flex items-center gap-2">
+              <Link to="/" className="-m-1.5 p-1.5 flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
                 <HardHat className="h-8 w-8 text-primary" />
                 <span className="text-xl font-bold text-foreground">ConstructTest Pro</span>
               </Link>
               <button
                 type="button"
-                className="-m-2.5 rounded-md p-2.5 text-foreground"
+                className="-m-2.5 rounded-md p-2.5 text-foreground hover:bg-muted transition-smooth"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <span className="sr-only">Close menu</span>
                 <X className="h-6 w-6" aria-hidden="true" />
               </button>
             </div>
-            <div className="mt-6 flow-root">
-              <div className="-my-6 divide-y divide-border">
-                <div className="space-y-2 py-6">
+            
+            <div className="mt-8 flow-root">
+              <div className="space-y-6">
+                {/* Navigation Links */}
+                <div className="space-y-2">
                   {navigation.map((item) => (
                     <Link
                       key={item.name}
                       to={item.href}
                       className={cn(
-                        "-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 transition-smooth",
+                        "block rounded-lg px-4 py-3 text-base font-semibold transition-smooth",
                         isActivePath(item.href)
-                          ? "bg-muted text-primary"
+                          ? "bg-primary/10 text-primary"
                           : "text-foreground hover:bg-muted"
                       )}
                       onClick={() => setMobileMenuOpen(false)}
@@ -113,14 +118,16 @@ export function Header() {
                     </Link>
                   ))}
                 </div>
-                <div className="py-6 space-y-4">
-                  <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full">
+                
+                {/* Action Buttons */}
+                <div className="pt-4 space-y-3 border-t border-border">
+                  <Link to="/signin" onClick={() => setMobileMenuOpen(false)} className="block">
+                    <Button variant="outline" className="w-full" size="lg">
                       Sign in
                     </Button>
                   </Link>
-                  <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="cta" className="w-full">
+                  <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block">
+                    <Button variant="cta" className="w-full" size="lg">
                       Get Started
                     </Button>
                   </Link>
@@ -128,7 +135,7 @@ export function Header() {
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
