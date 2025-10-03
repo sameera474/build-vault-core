@@ -82,6 +82,16 @@ serve(async (req) => {
         throw new Error('User not found');
       }
 
+      // Confirm the user's email in auth system
+      const { error: emailConfirmError } = await supabaseAdmin.auth.admin.updateUserById(
+        profile.user_id,
+        { email_confirm: true }
+      );
+
+      if (emailConfirmError) {
+        console.error('Error confirming email:', emailConfirmError);
+      }
+
       // Update profile
       const { error: profileError } = await supabaseAdmin
         .from('profiles')

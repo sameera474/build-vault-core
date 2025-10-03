@@ -72,7 +72,7 @@ serve(async (req) => {
       console.log('Created new company:', companyId);
     }
 
-    // Create auth user
+    // Create auth user with confirmed email
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
