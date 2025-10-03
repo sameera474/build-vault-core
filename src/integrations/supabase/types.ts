@@ -927,6 +927,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_current_user_company: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_company: {
         Args: { user_uuid: string }
         Returns: string
