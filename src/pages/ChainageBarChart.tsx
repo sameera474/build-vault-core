@@ -158,29 +158,27 @@ export default function ChainageBarChart() {
     if (!profile?.company_id) return;
 
     try {
-      // For now, we'll simulate chainage data since we don't have a chainage table yet
-      // In a real implementation, you'd create a chainages table
-      const { data: reports, error } = await supabase
-        .from('test_reports')
+      const { data, error } = await supabase
+        .from('chainage_points')
         .select('*')
         .eq('project_id', id)
-        .eq('company_id', profile.company_id);
+        .eq('company_id', profile.company_id)
+        .order('chainage');
 
       if (error) throw error;
 
-      // Convert test reports to chainage points (simulated)
-      const chainagePoints: ChainagePoint[] = reports?.map((report, index) => ({
-        id: report.id,
-        project_id: report.project_id,
-        chainage: (index + 1) * 100, // Simulate chainages at 100m intervals
-        description: `Test point at ${(index + 1) * 100}m`,
-        test_type: report.test_type,
-        test_value: generateTestValue(report.test_type),
-        compliance_status: report.compliance_status,
-        test_date: report.test_date,
-        specification_min: getSpecMin(report.test_type),
-        specification_max: getSpecMax(report.test_type),
-        created_at: report.created_at
+      const chainagePoints: ChainagePoint[] = data?.map((point) => ({
+        id: point.id,
+        project_id: point.project_id || id,
+        chainage: Number(point.chainage),
+        description: point.description || '',
+        test_type: point.test_type,
+        test_value: Number(point.test_value),
+        compliance_status: point.compliance_status,
+        test_date: point.test_date,
+        specification_min: point.specification_min ? Number(point.specification_min) : undefined,
+        specification_max: point.specification_max ? Number(point.specification_max) : undefined,
+        created_at: point.created_at
       })) || [];
 
       setChainageData(chainagePoints);
@@ -189,6 +187,11 @@ export default function ChainageBarChart() {
       setAvailableTestTypes(testTypes);
     } catch (error) {
       console.error('Error fetching chainage data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load chainage data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -247,11 +250,39 @@ export default function ChainageBarChart() {
   const addChainagePoint = async () => {
     if (!projectId || !profile?.company_id) return;
 
-    try {
-      // In a real implementation, you'd insert into a chainages table
-      // For now, we'll show a success message
+    // Validate required fields
+    if (!newPoint.chainage || !newPoint.test_type || !newPoint.test_value) {
       toast({
-        title: "Point added",
+        title: "Validation Error",
+        description: "Please fill in all required fields (Chainage, Test Type, Test Value)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const config = testTypeConfigs[newPoint.test_type as keyof typeof testTypeConfigs] || testTypeConfigs.Default;
+      
+      const { error } = await supabase
+        .from('chainage_points')
+        .insert({
+          project_id: projectId,
+          company_id: profile.company_id,
+          chainage: parseFloat(newPoint.chainage),
+          test_type: newPoint.test_type,
+          test_value: parseFloat(newPoint.test_value),
+          test_date: newPoint.test_date,
+          description: newPoint.description || `Test point at ${newPoint.chainage}m`,
+          compliance_status: newPoint.compliance_status,
+          specification_min: newPoint.specification_min ? parseFloat(newPoint.specification_min) : config.minValue,
+          specification_max: newPoint.specification_max ? parseFloat(newPoint.specification_max) : config.maxValue,
+          created_by: profile.user_id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
         description: "Chainage point has been added successfully.",
       });
 
@@ -272,7 +303,7 @@ export default function ChainageBarChart() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to add chainage point",
         variant: "destructive",
       });
     }
