@@ -38,6 +38,7 @@ export const roleMenuMap: Record<AppRole, string[]> = {
     'Super Admin',
     'Companies',
     'Demo Users',
+    'Fix Demo Users',
     'Test Reports',
     'Analytics',
     'Monthly Summaries',
