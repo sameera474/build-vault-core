@@ -638,6 +638,16 @@ const updateMember = async () => {
 };
 
 const deleteMember = async (memberId: string) => {
+  // Prevent users from deleting themselves
+  if (memberId === profile?.user_id) {
+    toast({
+      title: "Cannot delete yourself",
+      description: "You cannot delete your own account. Please ask another admin.",
+      variant: "destructive",
+    });
+    return;
+  }
+
   try {
     const { error } = await supabase
       .from('profiles')
@@ -1044,10 +1054,17 @@ const deleteMember = async (memberId: string) => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  if (confirm(`Are you sure you want to delete ${member.name}?`)) {
+                                  const isSuperAdminTarget = member.is_super_admin;
+                                  const confirmMsg = isSuperAdminTarget 
+                                    ? `⚠️ WARNING: You are about to delete a SUPER ADMIN account (${member.name})!\n\nThis is a critical action. Are you absolutely sure?`
+                                    : `Are you sure you want to delete ${member.name}?`;
+                                  
+                                  if (confirm(confirmMsg)) {
                                     deleteMember(member.user_id);
                                   }
                                 }}
+                                disabled={member.user_id === profile?.user_id}
+                                title={member.user_id === profile?.user_id ? "You cannot delete yourself" : "Delete member"}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1217,10 +1234,17 @@ const deleteMember = async (memberId: string) => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    if (confirm(`Are you sure you want to delete ${user.name}?`)) {
+                                    const isSuperAdminTarget = user.is_super_admin;
+                                    const confirmMsg = isSuperAdminTarget 
+                                      ? `⚠️ WARNING: You are about to delete a SUPER ADMIN account (${user.name})!\n\nThis is a critical action. Are you absolutely sure?`
+                                      : `Are you sure you want to delete ${user.name}?`;
+                                    
+                                    if (confirm(confirmMsg)) {
                                       deleteMember(user.user_id);
                                     }
                                   }}
+                                  disabled={user.user_id === profile?.user_id}
+                                  title={user.user_id === profile?.user_id ? "You cannot delete yourself" : "Delete member"}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
