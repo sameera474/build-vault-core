@@ -139,22 +139,35 @@ export default function MonthlySummaries() {
         description: 'Your monthly summary is being generated...',
       });
 
-      // Here you would integrate with your PDF generation service
-      // For now, we'll just show a success message
-      setTimeout(() => {
+      const { data, error } = await supabase.functions.invoke('export_monthly_summary_pdf', {
+        body: {
+          project_id: selectedProject,
+          year: selectedYear,
+          month: selectedMonth,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Open the PDF in a new tab
+        window.open(data.url, '_blank');
+        
         toast({
           title: 'Success',
-          description: 'Monthly summary PDF has been generated',
+          description: 'Monthly summary PDF has been generated and downloaded',
         });
-        setGeneratingPdf(false);
-      }, 2000);
+      } else {
+        throw new Error('No download URL returned');
+      }
     } catch (error: any) {
       console.error('Error generating PDF:', error);
       toast({
         title: 'Error',
-        description: 'Failed to generate PDF',
+        description: error.message || 'Failed to generate PDF',
         variant: 'destructive',
       });
+    } finally {
       setGeneratingPdf(false);
     }
   };
