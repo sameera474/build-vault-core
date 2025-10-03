@@ -17,7 +17,8 @@ serve(async (req) => {
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action } = await req.json();
+    const payload = await req.json();
+    const { action } = payload;
 
     if (action === 'delete_all') {
       // Delete all demo users
@@ -66,7 +67,7 @@ serve(async (req) => {
     }
 
     if (action === 'fix_user') {
-      const { email, correct_name, correct_role } = await req.json();
+      const { email, correct_name, correct_role } = payload;
 
       console.log('Fixing user:', { email, correct_name, correct_role });
 
