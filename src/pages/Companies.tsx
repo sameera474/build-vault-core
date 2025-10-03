@@ -115,7 +115,7 @@ export default function Companies() {
     try {
       const { error } = await supabase
         .from('companies')
-        .update({ is_active: false })
+        .update({ is_active: false }, { returning: 'minimal' })
         .eq('id', selectedCompany.id);
 
       if (error) throw error;
