@@ -72,7 +72,7 @@ serve(async (req) => {
       console.log('Created new company:', companyId);
     }
 
-    // Create auth user
+    // Create auth user with confirmed email
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -100,6 +100,7 @@ serve(async (req) => {
         role: role, // Use the actual role from the request
         email,
         is_active: true,
+        is_demo_user: true,
       });
 
     if (profileError) {
@@ -108,6 +109,22 @@ serve(async (req) => {
     }
 
     console.log('Created profile for user:', authData.user.id);
+
+    // Insert role into user_roles table for RBAC system
+    const { error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .insert({
+        user_id: authData.user.id,
+        role: role, // This should match the app_role enum values
+      });
+
+    if (roleError) {
+      console.error('Error creating user role:', roleError);
+      // Don't throw - continue even if role insert fails
+      console.log('Continuing despite role error...');
+    } else {
+      console.log('Created role entry for user:', authData.user.id, 'with role:', role);
+    }
 
     return new Response(
       JSON.stringify({

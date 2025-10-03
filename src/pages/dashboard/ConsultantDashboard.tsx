@@ -1,0 +1,185 @@
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileText, CheckCircle, AlertCircle, Eye } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+export default function ConsultantDashboard() {
+  const { profile } = useAuth();
+  const [stats, setStats] = useState({
+    totalReports: 0,
+    passedTests: 0,
+    failedTests: 0,
+    recentReviews: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!profile?.company_id) return;
+
+      try {
+        // Total reports (read-only access)
+        const { count: totalCount } = await supabase
+          .from('test_reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', profile.company_id);
+
+        // Passed tests
+        const { count: passedCount } = await supabase
+          .from('test_reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', profile.company_id)
+          .eq('compliance_status', 'pass');
+
+        // Failed tests
+        const { count: failedCount } = await supabase
+          .from('test_reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', profile.company_id)
+          .eq('compliance_status', 'fail');
+
+        // Recent reports (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const { count: recentCount } = await supabase
+          .from('test_reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', profile.company_id)
+          .gte('created_at', sevenDaysAgo.toISOString());
+
+        setStats({
+          totalReports: totalCount || 0,
+          passedTests: passedCount || 0,
+          failedTests: failedCount || 0,
+          recentReviews: recentCount || 0,
+        });
+      } catch (error) {
+        console.error('Error fetching consultant stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, [profile?.company_id]);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Consultant Dashboard
+        </h1>
+        <p className="text-muted-foreground">
+          Review and monitor test reports for {profile?.role === 'consultant_engineer' ? 'engineering compliance' : 'technical accuracy'}.
+        </p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalReports}</div>
+            <p className="text-xs text-muted-foreground">Available for review</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Passed Tests</CardTitle>
+            <CheckCircle className="h-4 w-4 text-success" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.passedTests}</div>
+            <p className="text-xs text-muted-foreground">Meeting standards</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Failed Tests</CardTitle>
+            <AlertCircle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.failedTests}</div>
+            <p className="text-xs text-muted-foreground">Require attention</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.recentReviews}</div>
+            <p className="text-xs text-muted-foreground">Last 7 days</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Info Cards */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle>Your Access Level</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-sm">
+              <span className="font-medium">Role:</span>{' '}
+              <span className="text-muted-foreground capitalize">
+                {profile?.role === 'consultant_engineer' ? 'Consultant Engineer' : 'Consultant Technician'}
+              </span>
+            </div>
+            <div className="text-sm">
+              <span className="font-medium">Access Type:</span>{' '}
+              <span className="text-muted-foreground">Read-Only</span>
+            </div>
+            <ul className="space-y-1 text-sm text-muted-foreground mt-4">
+              <li>• View all test reports</li>
+              <li>• Access analytics</li>
+              {profile?.role === 'consultant_engineer' && (
+                <li>• Provide final approval if required</li>
+              )}
+              <li>• No editing permissions</li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Access test reports to review technical data and compliance status.
+            </p>
+            <div className="space-y-2">
+              <a href="/test-reports" className="block">
+                <Card className="hover:bg-muted/50 transition-smooth cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <span className="font-medium">View Test Reports</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
+              <a href="/analytics" className="block">
+                <Card className="hover:bg-muted/50 transition-smooth cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-primary" />
+                      <span className="font-medium">View Analytics</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

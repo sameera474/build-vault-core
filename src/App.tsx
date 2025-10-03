@@ -27,6 +27,7 @@ import QualityManagerDashboard from "./pages/dashboard/QualityManagerDashboard";
 import TechnicianDashboard from "./pages/dashboard/TechnicianDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import SupervisorDashboard from "./pages/dashboard/SupervisorDashboard";
+import ConsultantDashboard from "./pages/dashboard/ConsultantDashboard";
 import TestReports from "./pages/TestReports";
 import { Templates } from "./pages/Templates";
 import { EnhancedReportEditor } from "./components/EnhancedReportEditor";
@@ -45,6 +46,7 @@ import Subscription from "./pages/Subscription";
 import SuperAdmin from "./pages/SuperAdmin";
 import Companies from "./pages/Companies";
 import DemoUsers from "./pages/DemoUsers";
+import FixDemoUsers from "./pages/FixDemoUsers";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -129,7 +131,7 @@ const App = () => (
           <Route path="/dashboard/consultant" element={
             <ProtectedRoute>
               <AppLayout>
-                <Dashboard />
+                <ConsultantDashboard />
               </AppLayout>
             </ProtectedRoute>
           } />
@@ -306,6 +308,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <DemoUsers />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/fix-demo-users" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <FixDemoUsers />
               </AppLayout>
             </ProtectedRoute>
           } />

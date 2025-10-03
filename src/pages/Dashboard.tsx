@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart3, FileText, Users, CheckCircle, Upload, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { FileUpload } from '@/components/FileUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { TeamManagement } from '@/components/TeamManagement';
 import { supabase } from '@/integrations/supabase/client';
+import { getRoleRedirect } from '@/lib/rbac';
 
 interface DashboardStats {
   projectCount: number;
@@ -32,6 +34,7 @@ interface TestReport {
 
 export default function Dashboard() {
   const { profile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     projectCount: 0,
     testReportCount: 0,
@@ -41,6 +44,16 @@ export default function Dashboard() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [recentReports, setRecentReports] = useState<TestReport[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Redirect users to their role-specific dashboard
+  useEffect(() => {
+    if (!authLoading && profile?.role) {
+      const roleRedirect = getRoleRedirect(profile.role);
+      if (roleRedirect !== '/dashboard') {
+        navigate(roleRedirect, { replace: true });
+      }
+    }
+  }, [profile?.role, authLoading, navigate]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
