@@ -222,9 +222,12 @@ export const rolePermissionMap: Record<AppRole, Permission[]> = {
   consultant_engineer: [
     'review_reports_readonly',
     'final_approval_if_required',
+    'view_company_reports',
+    'view_analytics',
   ],
   consultant_technician: [
     'review_technical_readonly',
+    'view_company_reports',
   ],
 };
 

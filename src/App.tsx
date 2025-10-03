@@ -27,6 +27,7 @@ import QualityManagerDashboard from "./pages/dashboard/QualityManagerDashboard";
 import TechnicianDashboard from "./pages/dashboard/TechnicianDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import SupervisorDashboard from "./pages/dashboard/SupervisorDashboard";
+import ConsultantDashboard from "./pages/dashboard/ConsultantDashboard";
 import TestReports from "./pages/TestReports";
 import { Templates } from "./pages/Templates";
 import { EnhancedReportEditor } from "./components/EnhancedReportEditor";
@@ -129,7 +130,7 @@ const App = () => (
           <Route path="/dashboard/consultant" element={
             <ProtectedRoute>
               <AppLayout>
-                <Dashboard />
+                <ConsultantDashboard />
               </AppLayout>
             </ProtectedRoute>
           } />
