@@ -602,10 +602,16 @@ const updateMember = async () => {
       updateData.company_id = editingMember.company_id;
     }
 
-    const { error } = await supabase
+    console.log('Updating member:', editingMember.user_id, 'with data:', updateData);
+    console.log('Is super admin:', isSuperAdmin);
+
+    const { data, error } = await supabase
       .from('profiles')
       .update(updateData)
-      .eq('user_id', editingMember.user_id);
+      .eq('user_id', editingMember.user_id)
+      .select();
+
+    console.log('Update result:', { data, error });
 
     if (error) throw error;
 
