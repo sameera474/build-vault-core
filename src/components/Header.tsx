@@ -21,6 +21,8 @@ export function Header() {
     return location.pathname.startsWith(path);
   };
 
+  const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
+
   return (
     <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-b border-border">
       <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
@@ -36,10 +38,12 @@ export function Header() {
           <button
             type="button"
             className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-foreground"
-            onClick={() => setMobileMenuOpen(true)}
+            onClick={toggleMobileMenu}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
-            <span className="sr-only">Open main menu</span>
-            <Menu className="h-6 w-6" aria-hidden="true" />
+            <span className="sr-only">Toggle main menu</span>
+            {mobileMenuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
           </button>
         </div>
 
@@ -72,71 +76,65 @@ export function Header() {
       </nav>
 
       {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm lg:hidden animate-fade-in" 
-            onClick={() => setMobileMenuOpen(false)}
-            aria-hidden="true"
-          />
-          
-          {/* Menu Panel */}
-          <div className="fixed inset-y-0 right-0 z-[110] w-full overflow-y-auto bg-card border-l border-border px-6 py-6 sm:max-w-sm shadow-2xl lg:hidden animate-slide-in-right">
-            <div className="flex items-center justify-between">
-              <Link to="/" className="-m-1.5 p-1.5 flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                <HardHat className="h-8 w-8 text-primary" />
-                <span className="text-xl font-bold text-foreground">ConstructTest Pro</span>
-              </Link>
-              <button
-                type="button"
-                className="-m-2.5 rounded-md p-2.5 text-foreground hover:bg-muted transition-smooth"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span className="sr-only">Close menu</span>
-                <X className="h-6 w-6" aria-hidden="true" />
-              </button>
+      <div
+        id="mobile-navigation"
+        className={cn(
+          "lg:hidden border-t border-border bg-card shadow-lg transition-smooth origin-top",
+          mobileMenuOpen ? 'block' : 'hidden'
+        )}
+      >
+        <div className="px-6 pb-6 pt-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="-m-1.5 p-1.5 flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
+              <HardHat className="h-8 w-8 text-primary" />
+              <span className="text-xl font-bold text-foreground">ConstructTest Pro</span>
+            </Link>
+            <button
+              type="button"
+              className="-m-2.5 rounded-md p-2.5 text-foreground hover:bg-muted transition-smooth"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="sr-only">Close menu</span>
+              <X className="h-6 w-6" aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {/* Navigation Links */}
+            <div className="space-y-2">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    "block rounded-lg px-4 py-3 text-base font-semibold transition-smooth",
+                    isActivePath(item.href)
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-muted"
+                  )}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
             </div>
-            
-            <div className="mt-8 flow-root">
-              <div className="space-y-6">
-                {/* Navigation Links */}
-                <div className="space-y-2">
-                  {navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={cn(
-                        "block rounded-lg px-4 py-3 text-base font-semibold transition-smooth",
-                        isActivePath(item.href)
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-muted"
-                      )}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="pt-4 space-y-3 border-t border-border">
-                  <Link to="/signin" onClick={() => setMobileMenuOpen(false)} className="block">
-                    <Button variant="outline" className="w-full" size="lg">
-                      Sign in
-                    </Button>
-                  </Link>
-                  <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block">
-                    <Button variant="cta" className="w-full" size="lg">
-                      Get Started
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+
+            {/* Action Buttons */}
+            <div className="pt-4 space-y-3 border-t border-border">
+              <Link to="/signin" onClick={() => setMobileMenuOpen(false)} className="block">
+                <Button variant="outline" className="w-full" size="lg">
+                  Sign in
+                </Button>
+              </Link>
+              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block">
+                <Button variant="cta" className="w-full" size="lg">
+                  Get Started
+                </Button>
+              </Link>
             </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
     </header>
   );
 }
