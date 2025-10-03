@@ -9,27 +9,42 @@ const demoUsersToFix = [
   {
     email: 'john.manager@alpha.com',
     correct_name: 'John Smith - Project Manager',
-    correct_role: 'project_manager'
+    correct_role: 'project_manager',
+    correct_tenant_role: 'project_manager',
+    correct_department: 'Project Management',
+    correct_job_title: 'Project Manager'
   },
   {
     email: 'sarah.quality@alpha.com',
     correct_name: 'Sarah Johnson - Quality Manager',
-    correct_role: 'quality_manager'
+    correct_role: 'quality_manager',
+    correct_tenant_role: 'quality_manager',
+    correct_department: 'Quality Control',
+    correct_job_title: 'Quality Manager'
   },
   {
     email: 'mike.tech@beta.com',
     correct_name: 'Mike Davis - Lab Technician',
-    correct_role: 'technician'
+    correct_role: 'technician',
+    correct_tenant_role: 'technician',
+    correct_department: 'Laboratory',
+    correct_job_title: 'Lab Technician'
   },
   {
     email: 'emily.admin@beta.com',
     correct_name: 'Emily Chen - Admin',
-    correct_role: 'admin'
+    correct_role: 'admin',
+    correct_tenant_role: 'admin',
+    correct_department: 'Administration',
+    correct_job_title: 'Administrator'
   },
   {
     email: 'robert.supervisor@gamma.com',
     correct_name: 'Robert Wilson - Site Supervisor',
-    correct_role: 'supervisor'
+    correct_role: 'supervisor',
+    correct_tenant_role: 'supervisor',
+    correct_department: 'Site Operations',
+    correct_job_title: 'Site Supervisor'
   }
 ];
 
@@ -51,6 +66,9 @@ export default function FixDemoUsers() {
             email: user.email,
             correct_name: user.correct_name,
             correct_role: user.correct_role,
+            correct_tenant_role: user.correct_tenant_role,
+            correct_department: user.correct_department,
+            correct_job_title: user.correct_job_title,
           },
         });
 

@@ -67,9 +67,9 @@ serve(async (req) => {
     }
 
     if (action === 'fix_user') {
-      const { email, correct_name, correct_role } = payload;
+      const { email, correct_name, correct_role, correct_tenant_role, correct_department, correct_job_title } = payload;
 
-      console.log('Fixing user:', { email, correct_name, correct_role });
+      console.log('Fixing user:', { email, correct_name, correct_role, correct_tenant_role, correct_department, correct_job_title });
 
       // Get user from profiles
       const { data: profile } = await supabaseAdmin
@@ -98,6 +98,9 @@ serve(async (req) => {
         .update({
           name: correct_name,
           role: correct_role,
+          tenant_role: correct_tenant_role,
+          department: correct_department,
+          job_title: correct_job_title,
           is_demo_user: true,
         })
         .eq('user_id', profile.user_id);
