@@ -118,26 +118,35 @@ export default function DemoUsers() {
     setCreating(prev => ({ ...prev, [user.email]: true }));
     
     try {
-      // Sign up the user
-      const { data, error } = await supabase.auth.signUp({
-        email: user.email,
-        password: user.password,
-        options: {
-          data: {
-            name: user.name,
-            company_name: user.company_name
-          }
+      // Call edge function to create user with proper role setup
+      const { data, error } = await supabase.functions.invoke('create-demo-user', {
+        body: {
+          email: user.email,
+          password: user.password,
+          name: user.name,
+          role: user.role,
+          company_name: user.company_name,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        if (data.error.includes('already exists') || data.error.includes('already registered')) {
+          toast({
+            title: "User already exists",
+            description: `${user.name} is already registered`,
+            variant: "default",
+          });
+        } else {
+          throw new Error(data.error);
         }
-      });
-
-      if (error) {
-        throw error;
+      } else {
+        toast({
+          title: "Demo user created",
+          description: `${user.name} has been created successfully with ${user.role} role`,
+        });
       }
-
-      toast({
-        title: "Demo user created",
-        description: `${user.name} has been created successfully`,
-      });
 
     } catch (error: any) {
       console.error('Error creating demo user:', error);
