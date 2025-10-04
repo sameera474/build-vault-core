@@ -82,35 +82,9 @@ serve(async (req) => {
         throw new Error('User not found');
       }
 
-      // Get or create the correct company
-      let targetCompanyId = profile.company_id;
-      
-      if (correct_company_name) {
-        const { data: company } = await supabaseAdmin
-          .from('companies')
-          .select('id')
-          .eq('name', correct_company_name)
-          .maybeSingle();
-
-        if (company) {
-          targetCompanyId = company.id;
-        } else {
-          // Create the company if it doesn't exist
-          const { data: newCompany, error: companyError } = await supabaseAdmin
-            .from('companies')
-            .insert({
-              name: correct_company_name,
-              description: 'Demo company',
-              country: 'South Africa',
-              is_active: true
-            })
-            .select('id')
-            .single();
-
-          if (companyError) throw companyError;
-          targetCompanyId = newCompany.id;
-        }
-      }
+      // Find the Alpha Construction Ltd company that has existing demo users
+      // We'll use the one with ID cf8e9777-1d1b-4c67-8845-668008a0401c
+      const targetCompanyId = 'cf8e9777-1d1b-4c67-8845-668008a0401c';
 
       // Confirm the user's email in auth system
       const { error: emailConfirmError } = await supabaseAdmin.auth.admin.updateUserById(
@@ -122,7 +96,7 @@ serve(async (req) => {
         console.error('Error confirming email:', emailConfirmError);
       }
 
-      // Update profile
+      // Update profile with correct company
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({
