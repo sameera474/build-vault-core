@@ -998,6 +998,7 @@ export type Database = {
         | "supervisor"
         | "consultant_engineer"
         | "consultant_technician"
+        | "client_admin"
       material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
       report_status_enum: "draft" | "submitted" | "approved" | "rejected"
       side_enum: "left" | "right" | "middle"
@@ -1146,6 +1147,7 @@ export const Constants = {
         "supervisor",
         "consultant_engineer",
         "consultant_technician",
+        "client_admin",
       ],
       material_enum: ["soil", "concrete", "aggregates", "asphalt", "custom"],
       report_status_enum: ["draft", "submitted", "approved", "rejected"],

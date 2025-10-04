@@ -487,6 +487,7 @@ export function SuperAdminTeamManagement() {
                   <SelectContent>
                     <SelectItem value="super_admin">Super Admin</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="client_admin">Client Admin</SelectItem>
                     <SelectItem value="project_manager">Project Manager</SelectItem>
                     <SelectItem value="quality_manager">Quality Manager</SelectItem>
                     <SelectItem value="supervisor">Supervisor</SelectItem>
