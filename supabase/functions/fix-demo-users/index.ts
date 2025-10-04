@@ -67,9 +67,9 @@ serve(async (req) => {
     }
 
     if (action === 'fix_user') {
-      const { email, correct_name, correct_role, correct_tenant_role, correct_department, correct_job_title } = payload;
+      const { email, correct_name, correct_role, correct_tenant_role, correct_department, correct_job_title, correct_company_name } = payload;
 
-      console.log('Fixing user:', { email, correct_name, correct_role, correct_tenant_role, correct_department, correct_job_title });
+      console.log('Fixing user:', { email, correct_name, correct_role, correct_tenant_role, correct_department, correct_job_title, correct_company_name });
 
       // Get user from profiles
       const { data: profile } = await supabaseAdmin
@@ -80,6 +80,36 @@ serve(async (req) => {
 
       if (!profile) {
         throw new Error('User not found');
+      }
+
+      // Get or create the correct company
+      let targetCompanyId = profile.company_id;
+      
+      if (correct_company_name) {
+        const { data: company } = await supabaseAdmin
+          .from('companies')
+          .select('id')
+          .eq('name', correct_company_name)
+          .maybeSingle();
+
+        if (company) {
+          targetCompanyId = company.id;
+        } else {
+          // Create the company if it doesn't exist
+          const { data: newCompany, error: companyError } = await supabaseAdmin
+            .from('companies')
+            .insert({
+              name: correct_company_name,
+              description: 'Demo company',
+              country: 'South Africa',
+              is_active: true
+            })
+            .select('id')
+            .single();
+
+          if (companyError) throw companyError;
+          targetCompanyId = newCompany.id;
+        }
       }
 
       // Confirm the user's email in auth system
@@ -101,6 +131,7 @@ serve(async (req) => {
           tenant_role: correct_tenant_role,
           department: correct_department,
           job_title: correct_job_title,
+          company_id: targetCompanyId,
           is_demo_user: true,
         })
         .eq('user_id', profile.user_id);

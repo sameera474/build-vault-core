@@ -26,12 +26,12 @@ const demoUsersToFix = [
     correct_name: "Sarah Johnson - Quality Manager",
     correct_role: "quality_manager",
     correct_tenant_role: "quality_manager",
-    correct_department: "Quality Control",
+    correct_department: "Quality Assurance",
     correct_job_title: "Quality Manager",
     correct_company: "Alpha Construction Ltd",
   },
   {
-    email: "mike.tech@alpha.com",
+    email: "mike.tech@beta.com",
     correct_name: "Mike Davis - Lab Technician",
     correct_role: "technician",
     correct_tenant_role: "technician",
@@ -40,7 +40,7 @@ const demoUsersToFix = [
     correct_company: "Alpha Construction Ltd",
   },
   {
-    email: "emily.admin@alpha.com",
+    email: "emily.admin@beta.com",
     correct_name: "Emily Chen - Admin",
     correct_role: "admin",
     correct_tenant_role: "admin",
@@ -49,7 +49,7 @@ const demoUsersToFix = [
     correct_company: "Alpha Construction Ltd",
   },
   {
-    email: "robert.supervisor@alpha.com",
+    email: "robert.supervisor@gamma.com",
     correct_name: "Robert Wilson - Site Supervisor",
     correct_role: "supervisor",
     correct_tenant_role: "supervisor",
