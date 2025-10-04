@@ -485,10 +485,13 @@ export function SuperAdminTeamManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="project_manager">Project Manager</SelectItem>
                     <SelectItem value="quality_manager">Quality Manager</SelectItem>
                     <SelectItem value="supervisor">Supervisor</SelectItem>
+                    <SelectItem value="consultant_engineer">Consultant Engineer</SelectItem>
+                    <SelectItem value="consultant_technician">Consultant Technician</SelectItem>
                     <SelectItem value="technician">Technician</SelectItem>
                   </SelectContent>
                 </Select>
