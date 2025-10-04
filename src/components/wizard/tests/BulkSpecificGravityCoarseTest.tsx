@@ -109,7 +109,7 @@ export function BulkSpecificGravityCoarseTest({
     }
 
     const newFormData = { ...formData, sampleData: newData };
-    setFormData(newData);
+    setFormData(newFormData);
     onUpdate(newFormData);
   };
 
