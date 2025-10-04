@@ -101,7 +101,6 @@ export function SuperAdminTeamManagement() {
         .select(`
           user_id, 
           name, 
-          role, 
           tenant_role, 
           created_at, 
           is_super_admin, 
@@ -110,7 +109,8 @@ export function SuperAdminTeamManagement() {
           company_id,
           job_title,
           is_active,
-          companies(name)
+          companies(name),
+          user_roles(role)
         `)
         .order('name');
 
@@ -124,6 +124,7 @@ export function SuperAdminTeamManagement() {
 
       const formattedUsers = users?.map(user => ({
         ...user,
+        role: (user as any).user_roles?.[0]?.role || user.tenant_role || 'technician',
         company_name: (user as any).companies?.name || 'Unknown Company'
       })) || [];
 
