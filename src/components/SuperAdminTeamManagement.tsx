@@ -173,6 +173,7 @@ export function SuperAdminTeamManagement() {
           department: editForm.department,
           job_title: editForm.job_title,
           company_id: editForm.company_id,
+          tenant_role: editForm.tenant_role as any,
         })
         .eq('user_id', editingUser.user_id);
 
@@ -461,7 +462,24 @@ export function SuperAdminTeamManagement() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="tenant_role">Designation</Label>
+                <Select value={editForm.tenant_role} onValueChange={(value) => setEditForm({ ...editForm, tenant_role: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select designation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="technician">Technician</SelectItem>
+                    <SelectItem value="project_manager">Project Manager</SelectItem>
+                    <SelectItem value="quality_manager">Quality Manager</SelectItem>
+                    <SelectItem value="supervisor">Supervisor</SelectItem>
+                    <SelectItem value="material_engineer">Material Engineer</SelectItem>
+                    <SelectItem value="consultant_engineer">Consultant Engineer</SelectItem>
+                    <SelectItem value="consultant_technician">Consultant Technician</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="role">App Role (RBAC)</Label>
                 <Select value={editForm.role} onValueChange={(value) => setEditForm({ ...editForm, role: value })}>
                   <SelectTrigger>
                     <SelectValue />
