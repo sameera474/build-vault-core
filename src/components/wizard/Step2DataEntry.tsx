@@ -1,8 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { FieldDensityTest } from './tests/FieldDensityTest';
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { FieldDensityTest } from "./tests/FieldDensityTest";
+import { ConcreteCompressionTest } from "./tests/ConcreteCompressionTest";
+import { AtterbergLimitsTest } from "./tests/AtterbergLimitsTest";
+import { ProctorCompactionTest } from "./tests/ProctorCompactionTest";
+import { CBRTest } from "./tests/CBRTest";
+import { SieveAnalysisTest } from "./tests/SieveAnalysisTest";
+import { AggregateImpactValueTest } from "./tests/AggregateImpactValueTest";
+import { WaterAbsorptionTest } from "./tests/WaterAbsorptionTest";
+import { LosAngelesAbrasionTest } from "./tests/LosAngelesAbrasionTest";
+import { MarshallStabilityTest } from "./tests/MarshallStabilityTest";
+import { SpreadRateOfBinderTest } from "./tests/SpreadRateOfBinderTest";
+import { UnitWeightSandConeTest } from "./tests/UnitWeightSandConeTest";
+import { AsphaltLayingRecordTest } from "./tests/AsphaltLayingRecordTest";
+import { AsphaltCoreDensityTest } from "./tests/AsphaltCoreDensityTest";
+import { QuantitativeExtractionTest } from "./tests/QuantitativeExtractionTest";
+import { IndividualGradationsTest } from "./tests/IndividualGradationsTest";
+import { HotMixDesignTest } from "./tests/HotMixDesignTest";
 
 interface Step2DataEntryProps {
   data: any;
@@ -10,7 +26,11 @@ interface Step2DataEntryProps {
   testType?: string;
 }
 
-export function Step2DataEntry({ data, onUpdate, testType }: Step2DataEntryProps) {
+export function Step2DataEntry({
+  data,
+  onUpdate,
+  testType,
+}: Step2DataEntryProps) {
   const [testData, setTestData] = useState(data.data_json || {});
 
   // Auto-save functionality
@@ -24,31 +44,107 @@ export function Step2DataEntry({ data, onUpdate, testType }: Step2DataEntryProps
   }, [testData, autoSave]);
 
   const updateTestData = (newData: any) => {
-    setTestData(prev => ({ ...prev, ...newData }));
+    setTestData((prev) => ({ ...prev, ...newData }));
   };
 
   const renderTestInterface = () => {
     switch (testType) {
-      case 'Field Density':
+      case "Field Density":
+        return <FieldDensityTest data={testData} onUpdate={updateTestData} />;
+
+      case "Compressive Strength of Concrete":
         return (
-          <FieldDensityTest
+          <ConcreteCompressionTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Atterberg Limits":
+        return (
+          <AtterbergLimitsTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Proctor Compaction":
+        return (
+          <ProctorCompactionTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "CBR":
+        return <CBRTest data={testData} onUpdate={updateTestData} />;
+
+      case "Sieve Analysis":
+        return <SieveAnalysisTest data={testData} onUpdate={updateTestData} />;
+
+      case "Aggregate Impact Value":
+        return (
+          <AggregateImpactValueTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Water Absorption":
+        return (
+          <WaterAbsorptionTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Los Angeles Abrasion":
+        return (
+          <LosAngelesAbrasionTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Marshall Stability":
+        return (
+          <MarshallStabilityTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Spread Rate of Binder":
+        return (
+          <SpreadRateOfBinderTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Unit Weight of Sand Cone":
+        return (
+          <UnitWeightSandConeTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Asphalt Laying Record":
+        return (
+          <AsphaltLayingRecordTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Asphalt Core Density":
+        return (
+          <AsphaltCoreDensityTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Quantitative Extraction":
+        return (
+          <QuantitativeExtractionTest
             data={testData}
             onUpdate={updateTestData}
           />
         );
-      
+
+      case "Individual Gradations":
+        return (
+          <IndividualGradationsTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Hot Mix Design":
+        return <HotMixDesignTest data={testData} onUpdate={updateTestData} />;
+
       default:
         return (
           <div className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-2">Excel-like Grid Interface</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              Excel-like Grid Interface
+            </h3>
             <p className="text-muted-foreground mb-4">
               Advanced Excel-like data entry grid for "{testType}" test.
             </p>
             <div className="bg-muted/30 border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
               <p className="text-muted-foreground">
-                Excel-like grid with formulas, validation, copy/paste, undo/redo features will be implemented here.
+                Excel-like grid with formulas, validation, copy/paste, undo/redo
+                features will be implemented here.
                 <br />
-                Features: SUM, AVG, MIN, MAX formulas • Typed columns • Freeze headers • Add/remove rows
+                Features: SUM, AVG, MIN, MAX formulas • Typed columns • Freeze
+                headers • Add/remove rows
               </p>
             </div>
           </div>
@@ -63,31 +159,36 @@ export function Step2DataEntry({ data, onUpdate, testType }: Step2DataEntryProps
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Test Data Entry</CardTitle>
-            <Badge variant="outline">{testType || 'Unknown Test'}</Badge>
+            <Badge variant="outline">{testType || "Unknown Test"}</Badge>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="font-medium">Report Number:</span>
-              <p className="text-muted-foreground">{data.report_number || 'Not generated'}</p>
+              <p className="text-muted-foreground">
+                {data.report_number || "Not generated"}
+              </p>
             </div>
             <div>
               <span className="font-medium">Road:</span>
-              <p className="text-muted-foreground">{data.road_name || 'Not specified'}</p>
+              <p className="text-muted-foreground">
+                {data.road_name || "Not specified"}
+              </p>
             </div>
             <div>
               <span className="font-medium">Chainage:</span>
               <p className="text-muted-foreground">
-                {data.chainage_from && data.chainage_to 
+                {data.chainage_from && data.chainage_to
                   ? `${data.chainage_from} to ${data.chainage_to}`
-                  : 'Not specified'
-                }
+                  : "Not specified"}
               </p>
             </div>
             <div>
               <span className="font-medium">Date:</span>
-              <p className="text-muted-foreground">{data.test_date || 'Not specified'}</p>
+              <p className="text-muted-foreground">
+                {data.test_date || "Not specified"}
+              </p>
             </div>
           </div>
         </CardContent>
