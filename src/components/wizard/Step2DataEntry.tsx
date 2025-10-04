@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { CheckCircle, Clock } from "lucide-react";
 import { FieldDensityTest } from "./tests/FieldDensityTest";
 import { ConcreteCompressionTest } from "./tests/ConcreteCompressionTest";
 import { AtterbergLimitsTest } from "./tests/AtterbergLimitsTest";
@@ -19,6 +21,12 @@ import { AsphaltCoreDensityTest } from "./tests/AsphaltCoreDensityTest";
 import { QuantitativeExtractionTest } from "./tests/QuantitativeExtractionTest";
 import { IndividualGradationsTest } from "./tests/IndividualGradationsTest";
 import { HotMixDesignTest } from "./tests/HotMixDesignTest";
+import { ShapeIndexTest } from "./tests/ShapeIndexTest";
+import { BulkSpecificGravityFineTest } from "./tests/BulkSpecificGravityFineTest";
+import { BulkSpecificGravityCoarseTest } from "./tests/BulkSpecificGravityCoarseTest";
+import { ClaySiltDustFractionTest } from "./tests/ClaySiltDustFractionTest";
+import { AggregateCrushingValueTest } from "./tests/AggregateCrushingValueTest";
+import { BulkDensityTest } from "./tests/BulkDensityTest";
 
 interface Step2DataEntryProps {
   data: any;
@@ -32,11 +40,38 @@ export function Step2DataEntry({
   testType,
 }: Step2DataEntryProps) {
   const [testData, setTestData] = useState(data.data_json || {});
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle"
+  );
+  const { toast } = useToast();
 
   // Auto-save functionality
-  const autoSave = useCallback(() => {
-    onUpdate({ data_json: testData });
-  }, [testData, onUpdate]);
+  const autoSave = useCallback(async () => {
+    setSaveStatus("saving");
+    try {
+      onUpdate({ data_json: testData });
+      setSaveStatus("saved");
+
+      // Show success toast for first save or after errors
+      if (saveStatus !== "saved") {
+        toast({
+          title: "Auto-saved",
+          description: "Your test data has been automatically saved.",
+          duration: 2000,
+        });
+      }
+
+      // Reset to idle after showing saved status briefly
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (error) {
+      setSaveStatus("idle");
+      toast({
+        title: "Save Error",
+        description: "Failed to save your data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [testData, onUpdate, saveStatus, toast]);
 
   useEffect(() => {
     const timer = setTimeout(autoSave, 2000); // Auto-save after 2 seconds of inactivity
@@ -129,14 +164,50 @@ export function Step2DataEntry({
       case "Hot Mix Design":
         return <HotMixDesignTest data={testData} onUpdate={updateTestData} />;
 
+      case "Shape Index (Flakiness/Elongation)":
+        return <ShapeIndexTest data={testData} onUpdate={updateTestData} />;
+
+      case "Bulk Specific Gravity (Fine)":
+        return (
+          <BulkSpecificGravityFineTest
+            data={testData}
+            onUpdate={updateTestData}
+          />
+        );
+
+      case "Bulk Specific Gravity (Coarse)":
+        return (
+          <BulkSpecificGravityCoarseTest
+            data={testData}
+            onUpdate={updateTestData}
+          />
+        );
+
+      case "Clay Silt Dust Fraction":
+        return (
+          <ClaySiltDustFractionTest data={testData} onUpdate={updateTestData} />
+        );
+
+      case "Aggregate Crushing Value":
+        return (
+          <AggregateCrushingValueTest
+            data={testData}
+            onUpdate={updateTestData}
+          />
+        );
+
+      case "Bulk Density":
+        return <BulkDensityTest data={testData} onUpdate={updateTestData} />;
+
       default:
         return (
           <div className="text-center py-12">
             <h3 className="text-lg font-semibold mb-2">
-              Excel-like Grid Interface
+              Debug: Test Type = "{testType}"
             </h3>
             <p className="text-muted-foreground mb-4">
-              Advanced Excel-like data entry grid for "{testType}" test.
+              Test type received:{" "}
+              {testType ? `"${testType}"` : "undefined/null"}
             </p>
             <div className="bg-muted/30 border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
               <p className="text-muted-foreground">
@@ -158,7 +229,21 @@ export function Step2DataEntry({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Test Data Entry</CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle>Test Data Entry</CardTitle>
+              {saveStatus === "saving" && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4 animate-spin" />
+                  Saving...
+                </div>
+              )}
+              {saveStatus === "saved" && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  Auto-saved
+                </div>
+              )}
+            </div>
             <Badge variant="outline">{testType || "Unknown Test"}</Badge>
           </div>
         </CardHeader>
@@ -205,7 +290,8 @@ export function Step2DataEntry({
           <h4 className="font-semibold mb-2">Instructions:</h4>
           <ul className="text-sm text-muted-foreground space-y-1">
             <li>• Enter test data in the fields above</li>
-            <li>• Data is automatically saved every 2 seconds</li>
+            <li>• Data is automatically saved every 2 seconds (look for the green checkmark)</li>
+            <li>• Auto-save notifications appear when data is successfully saved</li>
             <li>• Use Tab to navigate between fields quickly</li>
             <li>• Required calculations are performed automatically</li>
             <li>• Red fields indicate validation errors</li>

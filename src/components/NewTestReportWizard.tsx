@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, X } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { reportService } from '@/services/reportService';
-import { Step1General } from './wizard/Step1General';
-import { Step2DataEntry } from './wizard/Step2DataEntry';
-import { Step3Summary } from './wizard/Step3Summary';
-import { Step4Review } from './wizard/Step4Review';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { reportService } from "@/services/reportService";
+import { Step1General } from "./wizard/Step1General";
+import { Step2DataEntry } from "./wizard/Step2DataEntry";
+import { Step3Summary } from "./wizard/Step3Summary";
+import { Step4Review } from "./wizard/Step4Review";
 
 interface WizardData {
   // Step 1 - General Info
@@ -31,49 +31,135 @@ interface WizardData {
   technician_id?: string;
   weather_conditions?: string;
   site_conditions?: string;
-  
+
   // Step 2 - Test Data
   data_json?: any;
-  
+
   // Step 3 - Summary & Results
   summary_json?: any;
   compliance_status?: string;
   notes?: string;
-  
+
   // Step 4 - Review (read-only)
 }
 
 interface NewTestReportWizardProps {
   onClose?: () => void;
+  existingReportId?: string;
 }
 
-export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
+export function NewTestReportWizard({
+  onClose,
+  existingReportId,
+}: NewTestReportWizardProps) {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [wizardData, setWizardData] = useState<WizardData>({});
-  const [reportId, setReportId] = useState<string | null>(null);
+  const [reportId, setReportId] = useState<string | null>(
+    existingReportId || null
+  );
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingExisting, setIsLoadingExisting] = useState(
+    !!existingReportId
+  );
 
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
 
+  // Load existing report data if editing
+  useEffect(() => {
+    if (existingReportId) {
+      const loadExistingReport = async () => {
+        setIsLoadingExisting(true);
+        try {
+          const report = await reportService.fetchReport(existingReportId);
+
+          // Populate wizard data from existing report
+          const loadedData: WizardData = {
+            project_id: report.project_id,
+            gps_latitude: report.gps_latitude,
+            gps_longitude: report.gps_longitude,
+            road_name: report.road_name,
+            material:
+              report.material ||
+              (report.custom_material ? "custom" : undefined),
+            custom_material: report.custom_material,
+            test_type: report.test_type,
+            doc_code: report.doc_code,
+            report_number: report.report_number,
+            chainage_from: report.chainage_from,
+            chainage_to: report.chainage_to,
+            test_date: report.test_date,
+            time_of_test: report.time_of_test,
+            side: report.side,
+            technician_name: report.technician_name,
+            technician_id: report.technician_id,
+            weather_conditions: report.weather_conditions,
+            site_conditions: report.site_conditions,
+            data_json: report.data_json || {},
+            summary_json: report.summary_json || {},
+            compliance_status: report.compliance_status,
+            notes: report.notes,
+          };
+
+          setWizardData(loadedData);
+
+          // Determine which step to start from based on completion
+          let startStep = 1;
+          if (
+            loadedData.data_json &&
+            Object.keys(loadedData.data_json).length > 0
+          ) {
+            startStep = 3; // Has test data, start at summary
+          } else if (loadedData.test_type && loadedData.project_id) {
+            startStep = 2; // Has basic info, start at data entry
+          }
+
+          setCurrentStep(startStep);
+
+          toast({
+            title: "Draft Loaded",
+            description:
+              "Continue editing your test report from where you left off.",
+          });
+        } catch (error) {
+          console.error("Error loading existing report:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load the draft report. Please try again.",
+            variant: "destructive",
+          });
+          if (onClose) {
+            onClose();
+          } else {
+            navigate("/test-reports");
+          }
+        } finally {
+          setIsLoadingExisting(false);
+        }
+      };
+
+      loadExistingReport();
+    }
+  }, [existingReportId, navigate, onClose]);
+
   // Auto-save when moving between steps
   const autoSave = async (data: WizardData) => {
     if (!reportId) return;
-    
+
     try {
       await reportService.saveReportData(reportId, {
         data_json: data.data_json || {},
         summary_json: data.summary_json || {},
-        graphs_json: {}
+        graphs_json: {},
       });
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      console.error("Auto-save failed:", error);
     }
   };
 
   const updateWizardData = (stepData: Partial<WizardData>) => {
-    setWizardData(prev => {
+    setWizardData((prev) => {
       const updated = { ...prev, ...stepData };
       // Auto-save on data changes
       if (reportId && (stepData.data_json || stepData.summary_json)) {
@@ -88,9 +174,9 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
       // Create the test report when moving from step 1 to step 2
       if (!wizardData.project_id || !wizardData.test_date) {
         toast({
-          title: 'Required Fields Missing',
-          description: 'Please fill in all required fields before proceeding.',
-          variant: 'destructive'
+          title: "Required Fields Missing",
+          description: "Please fill in all required fields before proceeding.",
+          variant: "destructive",
         });
         return;
       }
@@ -98,8 +184,12 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
       setIsLoading(true);
       try {
         // Build enum-safe material fields
-        const materialEnumValue = wizardData.material === 'custom' ? null : wizardData.material;
-        const customMaterial = wizardData.material === 'custom' ? wizardData.custom_material || null : null;
+        const materialEnumValue =
+          wizardData.material === "custom" ? null : wizardData.material;
+        const customMaterial =
+          wizardData.material === "custom"
+            ? wizardData.custom_material || null
+            : null;
 
         const report = await reportService.createReport({
           project_id: wizardData.project_id,
@@ -120,21 +210,21 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
           site_conditions: wizardData.site_conditions,
           gps_latitude: wizardData.gps_latitude,
           gps_longitude: wizardData.gps_longitude,
-          status: 'draft' as any
+          status: "draft" as any,
         });
-        
+
         setReportId(report.id);
-        
+
         toast({
-          title: 'Test Report Created',
-          description: `Report ${report.report_number} has been created successfully.`
+          title: "Test Report Created",
+          description: `Report ${report.report_number} has been created successfully.`,
         });
       } catch (error) {
-        console.error('Error creating report:', error);
+        console.error("Error creating report:", error);
         toast({
-          title: 'Error',
-          description: 'Failed to create test report. Please try again.',
-          variant: 'destructive'
+          title: "Error",
+          description: "Failed to create test report. Please try again.",
+          variant: "destructive",
         });
         return;
       } finally {
@@ -143,31 +233,31 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
     }
 
     if (currentStep < totalSteps) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
   const handleSaveDraft = async () => {
     if (!reportId) return;
-    
+
     setIsLoading(true);
     try {
       await autoSave(wizardData);
       toast({
-        title: 'Draft Saved',
-        description: 'Your test report has been saved as a draft.'
+        title: "Draft Saved",
+        description: "Your test report has been saved as a draft.",
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to save draft. Please try again.',
-        variant: 'destructive'
+        title: "Error",
+        description: "Failed to save draft. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -176,24 +266,25 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
 
   const handleSubmitForApproval = async () => {
     if (!reportId) return;
-    
+
     setIsLoading(true);
     try {
       await reportService.submitForApproval(reportId);
       toast({
-        title: 'Submitted for Approval',
-        description: 'Your test report has been submitted for quality manager approval.'
+        title: "Submitted for Approval",
+        description:
+          "Your test report has been submitted for quality manager approval.",
       });
       if (onClose) {
         onClose();
       } else {
-        navigate('/test-reports');
+        navigate("/test-reports");
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to submit report. Please try again.',
-        variant: 'destructive'
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -203,12 +294,7 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 1:
-        return (
-          <Step1General
-            data={wizardData}
-            onUpdate={updateWizardData}
-          />
-        );
+        return <Step1General data={wizardData} onUpdate={updateWizardData} />;
       case 2:
         return (
           <Step2DataEntry
@@ -218,12 +304,7 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
           />
         );
       case 3:
-        return (
-          <Step3Summary
-            data={wizardData}
-            onUpdate={updateWizardData}
-          />
-        );
+        return <Step3Summary data={wizardData} onUpdate={updateWizardData} />;
       case 4:
         return (
           <Step4Review
@@ -240,11 +321,16 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 1: return 'General Project Information';
-      case 2: return 'Test Data Entry';
-      case 3: return 'Summary & Results';
-      case 4: return 'Final Review';
-      default: return '';
+      case 1:
+        return "General Project Information";
+      case 2:
+        return "Test Data Entry";
+      case 3:
+        return "Summary & Results";
+      case 4:
+        return "Final Review";
+      default:
+        return "";
     }
   };
 
@@ -258,18 +344,12 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
           </p>
         </div>
         {onClose ? (
-          <Button
-            variant="outline"
-            onClick={onClose}
-          >
+          <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
             Close
           </Button>
         ) : (
-          <Button
-            variant="outline"
-            onClick={() => navigate('/test-reports')}
-          >
+          <Button variant="outline" onClick={() => navigate("/test-reports")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Reports
           </Button>
@@ -281,7 +361,9 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Step {currentStep} of {totalSteps}</span>
+              <span>
+                Step {currentStep} of {totalSteps}
+              </span>
               <span>{Math.round(progress)}% Complete</span>
             </div>
             <Progress value={progress} className="h-2" />
@@ -294,9 +376,7 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
 
       {/* Step Content */}
       <Card>
-        <CardContent className="pt-6">
-          {renderCurrentStep()}
-        </CardContent>
+        <CardContent className="pt-6">{renderCurrentStep()}</CardContent>
       </Card>
 
       {/* Navigation */}
@@ -310,13 +390,10 @@ export function NewTestReportWizard({ onClose }: NewTestReportWizardProps) {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
-          
-          <Button
-            onClick={handleNext}
-            disabled={isLoading}
-          >
+
+          <Button onClick={handleNext} disabled={isLoading}>
             {isLoading ? (
-              'Creating...'
+              "Creating..."
             ) : (
               <>
                 Next
