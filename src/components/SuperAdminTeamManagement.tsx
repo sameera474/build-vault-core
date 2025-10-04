@@ -109,8 +109,7 @@ export function SuperAdminTeamManagement() {
           company_id,
           job_title,
           is_active,
-          companies(name),
-          user_roles(role)
+          companies(name)
         `)
         .order('name');
 
@@ -122,9 +121,16 @@ export function SuperAdminTeamManagement() {
 
       if (error) throw error;
 
+      // Fetch user_roles separately
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      const rolesMap = new Map(userRoles?.map(ur => [ur.user_id, ur.role]) || []);
+
       const formattedUsers = users?.map(user => ({
         ...user,
-        role: (user as any).user_roles?.[0]?.role || user.tenant_role || 'technician',
+        role: rolesMap.get(user.user_id) || user.tenant_role || 'technician',
         company_name: (user as any).companies?.name || 'Unknown Company'
       })) || [];
 
