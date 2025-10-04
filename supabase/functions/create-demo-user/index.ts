@@ -17,9 +17,9 @@ serve(async (req) => {
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { email, password, name, role, company_name } = await req.json();
+    const { email, password, name, role, tenant_role, company_name } = await req.json();
 
-    console.log('Creating demo user:', { email, name, role, company_name });
+    console.log('Creating demo user:', { email, name, role, tenant_role, company_name });
 
     // Check if user already exists by checking profiles table
     const { data: existingProfile } = await supabaseAdmin
@@ -97,7 +97,8 @@ serve(async (req) => {
         user_id: authData.user.id,
         company_id: companyId,
         name,
-        role: role, // Use the actual role from the request
+        role: role,
+        tenant_role: tenant_role,
         email,
         is_active: true,
         is_demo_user: true,

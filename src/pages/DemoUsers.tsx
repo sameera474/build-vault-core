@@ -78,7 +78,7 @@ const DEMO_USERS: DemoUser[] = [
     company_name: "Alpha Construction Ltd",
   },
   {
-    email: "mike.tech@alpha.com",
+    email: "mike.tech@beta.com",
     password: "DemoPass123!",
     name: "Mike Davis - Lab Technician",
     role: "technician",
@@ -86,19 +86,19 @@ const DEMO_USERS: DemoUser[] = [
     company_name: "Alpha Construction Ltd",
   },
   {
-    email: "emily.admin@alpha.com",
+    email: "emily.admin@beta.com",
     password: "DemoPass123!",
     name: "Emily Chen - Admin",
     role: "admin",
-    tenant_role: "project_manager",
+    tenant_role: "admin",
     company_name: "Alpha Construction Ltd",
   },
   {
-    email: "robert.supervisor@alpha.com",
+    email: "robert.supervisor@gamma.com",
     password: "DemoPass123!",
     name: "Robert Wilson - Site Supervisor",
     role: "supervisor",
-    tenant_role: "technician",
+    tenant_role: "supervisor",
     company_name: "Alpha Construction Ltd",
   },
 ];
@@ -157,6 +157,7 @@ export default function DemoUsers() {
             password: user.password,
             name: user.name,
             role: user.role,
+            tenant_role: user.tenant_role,
             company_name: user.company_name,
           },
         }
