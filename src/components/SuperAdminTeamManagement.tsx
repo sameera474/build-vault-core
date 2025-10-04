@@ -58,6 +58,7 @@ export function SuperAdminTeamManagement() {
     tenant_role: '',
     department: '',
     job_title: '',
+    company_id: '',
   });
   const { profile } = useAuth();
   const { isSuperAdmin } = usePermissions();
@@ -150,6 +151,7 @@ export function SuperAdminTeamManagement() {
       tenant_role: user.tenant_role || '',
       department: user.department || '',
       job_title: user.job_title || '',
+      company_id: user.company_id || '',
     });
   };
 
@@ -163,6 +165,7 @@ export function SuperAdminTeamManagement() {
           name: editForm.name,
           department: editForm.department,
           job_title: editForm.job_title,
+          company_id: editForm.company_id,
         })
         .eq('user_id', editingUser.user_id);
 
@@ -434,6 +437,21 @@ export function SuperAdminTeamManagement() {
                   value={editForm.department}
                   onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
                 />
+              </div>
+              <div>
+                <Label htmlFor="company">Company</Label>
+                <Select value={editForm.company_id} onValueChange={(value) => setEditForm({ ...editForm, company_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map(company => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="role">Role</Label>
