@@ -175,15 +175,34 @@ export default function TestReports() {
   const fetchProjects = async () => {
     if (!profile?.user_id) return;
 
-    // Use user_accessible_projects function which respects RLS and role-based access
-    const { data, error } = await supabase.rpc("user_accessible_projects");
+    try {
+      // For project managers, allow access to all company projects for report management
+      // For other roles, use the standard user_accessible_projects function
+      let query = supabase
+        .from("projects")
+        .select("id, name, description")
+        .order("name");
 
-    if (error) {
+      if (profile.role === "project_manager" && profile.company_id) {
+        // Project managers can see all projects in their company
+        query = query.eq("company_id", profile.company_id);
+      } else {
+        // For other roles, use the standard access control
+        const { data, error } = await supabase.rpc("user_accessible_projects");
+        if (error) {
+          console.error("Error fetching projects:", error);
+          return;
+        }
+        setProjects(data || []);
+        return;
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
       console.error("Error fetching projects:", error);
-      return;
     }
-
-    setProjects(data || []);
   };
 
   const handleSubmitForApproval = async (reportId: string) => {
@@ -351,30 +370,17 @@ export default function TestReports() {
         </div>
       </div>
 
-      {/* View-only alert for project managers */}
-      {permissions.isViewOnly && permissions.role === "project_manager" && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            You have view-only access to assigned projects. Contact your
-            administrator to request edit permissions.
-          </AlertDescription>
-        </Alert>
-      )}
-
       {projects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FolderPlus className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold">
-              {permissions.role === "project_manager" ||
-              permissions.role === "staff"
+              {permissions.role === "staff"
                 ? "No Assigned Projects"
                 : "No Projects Found"}
             </h3>
             <p className="text-muted-foreground mt-2 text-center">
-              {permissions.role === "project_manager" ||
-              permissions.role === "staff"
+              {permissions.role === "staff"
                 ? "You have not been assigned to any projects yet. Contact your administrator."
                 : "You need to create a project before you can create test reports."}
             </p>

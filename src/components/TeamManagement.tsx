@@ -698,7 +698,7 @@ const deleteMember = async (memberId: string) => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            {(profile?.role === 'admin' || isSuperAdmin) && (
+            {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
               <>
                 <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
                   <DialogTrigger asChild>
@@ -1041,7 +1041,7 @@ const deleteMember = async (memberId: string) => {
                           <Badge className={getRoleColor(member.tenant_role || member.role)}>
                             {formatRole(member.tenant_role || member.role)}
                           </Badge>
-                          {(profile?.role === 'admin' || isSuperAdmin) && (
+                          {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
                             <>
                               <Button
                                 variant="outline"

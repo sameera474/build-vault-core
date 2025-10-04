@@ -19,6 +19,7 @@ const demoUsersToFix = [
     correct_tenant_role: "project_manager",
     correct_department: "Project Management",
     correct_job_title: "Project Manager",
+    correct_company: "Alpha Construction Ltd",
   },
   {
     email: "sarah.quality@alpha.com",
@@ -27,30 +28,34 @@ const demoUsersToFix = [
     correct_tenant_role: "quality_manager",
     correct_department: "Quality Control",
     correct_job_title: "Quality Manager",
+    correct_company: "Alpha Construction Ltd",
   },
   {
-    email: "mike.tech@beta.com",
+    email: "mike.tech@alpha.com",
     correct_name: "Mike Davis - Lab Technician",
     correct_role: "technician",
     correct_tenant_role: "technician",
     correct_department: "Laboratory",
     correct_job_title: "Lab Technician",
+    correct_company: "Alpha Construction Ltd",
   },
   {
-    email: "emily.admin@beta.com",
+    email: "emily.admin@alpha.com",
     correct_name: "Emily Chen - Admin",
     correct_role: "admin",
     correct_tenant_role: "admin",
     correct_department: "Administration",
     correct_job_title: "Administrator",
+    correct_company: "Alpha Construction Ltd",
   },
   {
-    email: "robert.supervisor@gamma.com",
+    email: "robert.supervisor@alpha.com",
     correct_name: "Robert Wilson - Site Supervisor",
     correct_role: "supervisor",
     correct_tenant_role: "supervisor",
     correct_department: "Site Operations",
     correct_job_title: "Site Supervisor",
+    correct_company: "Alpha Construction Ltd",
   },
 ];
 
@@ -84,6 +89,22 @@ export default function FixDemoUsers() {
 
         const userId = profile.user_id;
 
+        // Find the correct company
+        const { data: company, error: companyError } = await supabase
+          .from("companies")
+          .select("id")
+          .eq("name", user.correct_company)
+          .single();
+
+        if (companyError || !company) {
+          console.error(
+            `Company ${user.correct_company} not found:`,
+            companyError
+          );
+          errorCount++;
+          continue;
+        }
+
         // Update the profiles table
         const { error: profileError } = await supabase
           .from("profiles")
@@ -92,6 +113,7 @@ export default function FixDemoUsers() {
             role: user.correct_role,
             department: user.correct_department,
             job_title: user.correct_job_title,
+            company_id: company.id,
           })
           .eq("user_id", userId);
 
@@ -193,7 +215,8 @@ export default function FixDemoUsers() {
             </CardTitle>
           </div>
           <CardDescription className="text-orange-800 dark:text-orange-200">
-            Some demo users have incorrect names and roles in the database
+            Some demo users have incorrect names, roles, and company assignments
+            in the database
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

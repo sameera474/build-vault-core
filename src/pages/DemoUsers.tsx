@@ -1,14 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, Shield, Mail, Key, Eye, EyeOff, Database } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from "react";
+import {
+  Users,
+  Plus,
+  Shield,
+  Mail,
+  Key,
+  Eye,
+  EyeOff,
+  Database,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DemoUser {
   email: string;
@@ -34,50 +62,52 @@ interface Company {
 
 const DEMO_USERS: DemoUser[] = [
   {
-    email: 'john.manager@alpha.com',
-    password: 'DemoPass123!',
-    name: 'John Smith - Project Manager',
-    role: 'project_manager',
-    tenant_role: 'project_manager',
-    company_name: 'Alpha Construction Ltd'
+    email: "john.manager@alpha.com",
+    password: "DemoPass123!",
+    name: "John Smith - Project Manager",
+    role: "project_manager",
+    tenant_role: "project_manager",
+    company_name: "Alpha Construction Ltd",
   },
   {
-    email: 'sarah.quality@alpha.com',
-    password: 'DemoPass123!',
-    name: 'Sarah Johnson - Quality Manager',
-    role: 'quality_manager',
-    tenant_role: 'quality_manager',
-    company_name: 'Alpha Construction Ltd'
+    email: "sarah.quality@alpha.com",
+    password: "DemoPass123!",
+    name: "Sarah Johnson - Quality Manager",
+    role: "quality_manager",
+    tenant_role: "quality_manager",
+    company_name: "Alpha Construction Ltd",
   },
   {
-    email: 'mike.tech@beta.com',
-    password: 'DemoPass123!',
-    name: 'Mike Davis - Lab Technician',
-    role: 'technician',
-    tenant_role: 'technician',
-    company_name: 'Beta Engineering Corp'
+    email: "mike.tech@alpha.com",
+    password: "DemoPass123!",
+    name: "Mike Davis - Lab Technician",
+    role: "technician",
+    tenant_role: "technician",
+    company_name: "Alpha Construction Ltd",
   },
   {
-    email: 'emily.admin@beta.com',
-    password: 'DemoPass123!',
-    name: 'Emily Chen - Admin',
-    role: 'admin',
-    tenant_role: 'project_manager',
-    company_name: 'Beta Engineering Corp'
+    email: "emily.admin@alpha.com",
+    password: "DemoPass123!",
+    name: "Emily Chen - Admin",
+    role: "admin",
+    tenant_role: "project_manager",
+    company_name: "Alpha Construction Ltd",
   },
   {
-    email: 'robert.supervisor@gamma.com',
-    password: 'DemoPass123!',
-    name: 'Robert Wilson - Site Supervisor',
-    role: 'supervisor',
-    tenant_role: 'technician',
-    company_name: 'Gamma Materials Inc'
-  }
+    email: "robert.supervisor@alpha.com",
+    password: "DemoPass123!",
+    name: "Robert Wilson - Site Supervisor",
+    role: "supervisor",
+    tenant_role: "technician",
+    company_name: "Alpha Construction Ltd",
+  },
 ];
 
 export default function DemoUsers() {
-  const [showPasswords, setShowPasswords] = useState<{[key: string]: boolean}>({});
-  const [creating, setCreating] = useState<{[key: string]: boolean}>({});
+  const [showPasswords, setShowPasswords] = useState<{
+    [key: string]: boolean;
+  }>({});
+  const [creating, setCreating] = useState<{ [key: string]: boolean }>({});
   const [rolePermissions, setRolePermissions] = useState<RolePermission[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loadingPermissions, setLoadingPermissions] = useState(true);
@@ -91,14 +121,14 @@ export default function DemoUsers() {
   const fetchCompanies = async () => {
     try {
       const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .order('name', { ascending: true });
+        .from("companies")
+        .select("*")
+        .order("name", { ascending: true });
 
       if (error) throw error;
       setCompanies(data || []);
     } catch (error) {
-      console.error('Error fetching companies:', error);
+      console.error("Error fetching companies:", error);
     }
   };
 
@@ -108,31 +138,37 @@ export default function DemoUsers() {
   };
 
   const togglePasswordVisibility = (email: string) => {
-    setShowPasswords(prev => ({
+    setShowPasswords((prev) => ({
       ...prev,
-      [email]: !prev[email]
+      [email]: !prev[email],
     }));
   };
 
   const createDemoUser = async (user: DemoUser) => {
-    setCreating(prev => ({ ...prev, [user.email]: true }));
-    
+    setCreating((prev) => ({ ...prev, [user.email]: true }));
+
     try {
       // Call edge function to create user with proper role setup
-      const { data, error } = await supabase.functions.invoke('create-demo-user', {
-        body: {
-          email: user.email,
-          password: user.password,
-          name: user.name,
-          role: user.role,
-          company_name: user.company_name,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "create-demo-user",
+        {
+          body: {
+            email: user.email,
+            password: user.password,
+            name: user.name,
+            role: user.role,
+            company_name: user.company_name,
+          },
+        }
+      );
 
       if (error) throw error;
 
       if (data?.error) {
-        if (data.error.includes('already exists') || data.error.includes('already registered')) {
+        if (
+          data.error.includes("already exists") ||
+          data.error.includes("already registered")
+        ) {
           toast({
             title: "User already exists",
             description: `${user.name} is already registered`,
@@ -147,33 +183,32 @@ export default function DemoUsers() {
           description: `${user.name} has been created successfully with ${user.role} role`,
         });
       }
-
     } catch (error: any) {
-      console.error('Error creating demo user:', error);
+      console.error("Error creating demo user:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create demo user",
         variant: "destructive",
       });
     } finally {
-      setCreating(prev => ({ ...prev, [user.email]: false }));
+      setCreating((prev) => ({ ...prev, [user.email]: false }));
     }
   };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'project_manager':
-        return 'bg-blue-100 text-blue-800';
-      case 'quality_manager':
-        return 'bg-green-100 text-green-800';
-      case 'supervisor':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'technician':
-        return 'bg-gray-100 text-gray-800';
+      case "admin":
+        return "bg-red-100 text-red-800";
+      case "project_manager":
+        return "bg-blue-100 text-blue-800";
+      case "quality_manager":
+        return "bg-green-100 text-green-800";
+      case "supervisor":
+        return "bg-yellow-100 text-yellow-800";
+      case "technician":
+        return "bg-gray-100 text-gray-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -192,7 +227,9 @@ export default function DemoUsers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Users Management
+          </h1>
           <p className="text-muted-foreground">
             Create demo users for testing role-based access control
           </p>
@@ -207,7 +244,8 @@ export default function DemoUsers() {
         <CardHeader>
           <CardTitle>Demo User Accounts</CardTitle>
           <CardDescription>
-            Pre-configured user accounts with different roles and permissions for testing
+            Pre-configured user accounts with different roles and permissions
+            for testing
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -228,11 +266,11 @@ export default function DemoUsers() {
                   <TableCell>
                     <div>
                       <div className="font-medium">{user.name}</div>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={`mt-1 ${getRoleBadgeColor(user.role)}`}
                       >
-                        {user.role.replace('_', ' ').toUpperCase()}
+                        {user.role.replace("_", " ").toUpperCase()}
                       </Badge>
                     </div>
                   </TableCell>
@@ -248,7 +286,9 @@ export default function DemoUsers() {
                     <div className="flex items-center gap-2">
                       <Key className="h-4 w-4 text-muted-foreground" />
                       <code className="text-sm bg-muted px-2 py-1 rounded">
-                        {showPasswords[user.email] ? user.password : '••••••••••••'}
+                        {showPasswords[user.email]
+                          ? user.password
+                          : "••••••••••••"}
                       </code>
                       <Button
                         size="sm"
@@ -268,11 +308,11 @@ export default function DemoUsers() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-muted-foreground">
-                      {user.role === 'admin' && 'Full company access'}
-                      {user.role === 'project_manager' && 'Project & reports'}
-                      {user.role === 'quality_manager' && 'Quality & templates'}
-                      {user.role === 'supervisor' && 'Team & approvals'}
-                      {user.role === 'technician' && 'Create reports only'}
+                      {user.role === "admin" && "Full company access"}
+                      {user.role === "project_manager" && "Project & reports"}
+                      {user.role === "quality_manager" && "Quality & templates"}
+                      {user.role === "supervisor" && "Team & approvals"}
+                      {user.role === "technician" && "Create reports only"}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -416,32 +456,34 @@ export default function DemoUsers() {
               <div>
                 <h4 className="font-medium mb-3">Global Role Permissions</h4>
                 <div className="grid gap-4 md:grid-cols-2">
-                  {Object.entries(groupPermissionsByRole()).map(([role, permissions]) => (
-                    <Card key={role}>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <Badge 
-                            variant="secondary" 
-                            className={`${getRoleBadgeColor(role)}`}
-                          >
-                            {role.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            ({permissions.length} permissions)
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        {permissions.map((permission) => (
-                          <div key={permission.id} className="text-xs">
-                            <code className="bg-muted px-2 py-1 rounded text-xs">
-                              {permission.permission}
-                            </code>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {Object.entries(groupPermissionsByRole()).map(
+                    ([role, permissions]) => (
+                      <Card key={role}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Badge
+                              variant="secondary"
+                              className={`${getRoleBadgeColor(role)}`}
+                            >
+                              {role.replace("_", " ").toUpperCase()}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              ({permissions.length} permissions)
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          {permissions.map((permission) => (
+                            <div key={permission.id} className="text-xs">
+                              <code className="bg-muted px-2 py-1 rounded text-xs">
+                                {permission.permission}
+                              </code>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )
+                  )}
                 </div>
               </div>
             </div>
