@@ -147,20 +147,13 @@ Once Phase 0 acceptance tests pass, Phase 1 will include:
 
 ## Deployment
 
-### Via Lovable
-1. Open [Lovable Project](https://lovable.dev/projects/9641073b-7f30-44c8-9efa-ac877659c9c7)
+1. Open https://constructiontestpro-85ko01frw-sameeras-projects-7a5677db.vercel.app/
 2. Click **Share** → **Publish**
 
 ### Custom Domain
 1. Navigate to **Project** → **Settings** → **Domains**
 2. Click **Connect Domain**
 3. Follow setup instructions
-
-## Support
-
-- [Lovable Documentation](https://docs.lovable.dev/)
-- [Supabase Documentation](https://docs.supabase.com/)
-- [Project Settings](https://lovable.dev/projects/9641073b-7f30-44c8-9efa-ac877659c9c7?settings)
 
 ---
 
