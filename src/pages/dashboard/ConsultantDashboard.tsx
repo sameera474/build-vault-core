@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, CheckCircle, AlertCircle, Eye, Loader2 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -74,18 +82,23 @@ export default function ConsultantDashboard() {
     );
   }
 
+  const pieData = [
+    { name: "Passed", value: stats.passedTests },
+    { name: "Failed", value: stats.failedTests },
+  ];
+  const COLORS = ["#22c55e", "#ef4444"];
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="text-3xl font-bold tracking-tight">
           Consultant Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Review and monitor test reports for{" "}
-          {profile?.role === "consultant_engineer"
-            ? "engineering compliance"
-            : "technical accuracy"}
-          .
+          Monitoring dashboard for{" "}
+          <span className="font-semibold text-primary">
+            {profile?.company_name}
+          </span>
         </p>
       </div>
 
@@ -201,6 +214,68 @@ export default function ConsultantDashboard() {
                 </Card>
               </a>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Test Compliance Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) =>
+                      `${name} ${(percent * 100).toFixed(0)}%`
+                    }
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--background))",
+                      borderColor: "hsl(var(--border))",
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Access</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              className="w-full"
+              onClick={() => (window.location.href = "/test-reports")}
+            >
+              View All Reports
+            </Button>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => (window.location.href = "/analytics")}
+            >
+              Go to Analytics
+            </Button>
           </CardContent>
         </Card>
       </div>

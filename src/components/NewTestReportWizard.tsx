@@ -172,7 +172,11 @@ export function NewTestReportWizard({
   const handleNext = async () => {
     if (currentStep === 1) {
       // Create the test report when moving from step 1 to step 2
-      if (!wizardData.project_id || !wizardData.test_date) {
+      if (
+        !wizardData.project_id ||
+        !wizardData.test_date ||
+        !wizardData.test_type
+      ) {
         toast({
           title: "Required Fields Missing",
           description: "Please fill in all required fields before proceeding.",
@@ -210,7 +214,7 @@ export function NewTestReportWizard({
           site_conditions: wizardData.site_conditions,
           gps_latitude: wizardData.gps_latitude,
           gps_longitude: wizardData.gps_longitude,
-          status: "draft" as any,
+          status: "submitted" as any,
         });
 
         setReportId(report.id);
@@ -269,11 +273,12 @@ export function NewTestReportWizard({
 
     setIsLoading(true);
     try {
-      await reportService.submitForApproval(reportId);
+      // The report is already submitted on creation, so we just close the wizard
+      // await reportService.submitForApproval(reportId);
       toast({
-        title: "Submitted for Approval",
+        title: "Report Created & Submitted",
         description:
-          "Your test report has been submitted for quality manager approval.",
+          "Your test report has been created and submitted for approval.",
       });
       if (onClose) {
         onClose();

@@ -437,10 +437,14 @@ export function ProjectManagement() {
               </Select>
             </div>
           )}
-          <Button onClick={() => navigate("/projects/new")}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Project
-          </Button>
+          {(isSuperAdmin ||
+            profile?.role === "admin" ||
+            profile?.role === "project_manager") && (
+            <Button onClick={() => navigate("/projects/new")}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Project
+            </Button>
+          )}
         </div>
       </div>
 

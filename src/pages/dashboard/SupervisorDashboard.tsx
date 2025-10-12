@@ -7,6 +7,15 @@ import {
   ClipboardCheck,
   Loader2,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -86,7 +95,10 @@ export default function SupervisorDashboard() {
           Supervisor Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Site overview, team management, and approval workflows
+          Team and approval overview for{" "}
+          <span className="font-semibold text-primary">
+            {profile?.company_name}
+          </span>
         </p>
       </div>
 
@@ -139,6 +151,37 @@ export default function SupervisorDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Team & Workload Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: "Pending Approvals", value: stats.pendingApprovals },
+                  { name: "Approved Today", value: stats.approvedToday },
+                  { name: "Total Reports", value: stats.totalReports },
+                  { name: "Team Size", value: stats.teamSize },
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    borderColor: "hsl(var(--border))",
+                  }}
+                />
+                <Bar dataKey="value" fill="hsl(var(--primary))" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Building2, FileText, DollarSign, Loader2 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -81,7 +90,10 @@ export default function AdminDashboard() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Company overview, usage metrics, and team management
+          Company-wide overview for{" "}
+          <span className="font-semibold text-primary">
+            {profile?.company_name}
+          </span>
         </p>
       </div>
 
@@ -132,6 +144,37 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Company Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: "Team Members", value: stats.teamMembers },
+                  { name: "Active Projects", value: stats.activeProjects },
+                  { name: "Total Reports", value: stats.totalReports },
+                  { name: "Monthly Usage", value: stats.monthlyUsage },
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    borderColor: "hsl(var(--border))",
+                  }}
+                />
+                <Bar dataKey="value" fill="hsl(var(--primary))" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

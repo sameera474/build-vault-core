@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Clock, Plus } from "lucide-react";
+import { MapPin, Clock, Plus, Trash2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -24,6 +24,7 @@ import { projectService } from "@/services/projectService";
 import { testCatalogService } from "@/services/testCatalogService";
 import { useReportNumber } from "@/hooks/useReportNumber";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Material options with enum-safe values
 const MATERIAL_OPTIONS = [
@@ -50,6 +51,7 @@ interface Step1GeneralProps {
 }
 
 export function Step1General({ data, onUpdate }: Step1GeneralProps) {
+  const { profile } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [projectRoads, setProjectRoads] = useState<any[]>([]);
   const [filteredTests, setFilteredTests] = useState<any[]>([]);
@@ -117,14 +119,17 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
     if (!newRoadName.trim() || !data.project_id) return;
 
     try {
-      await projectService.createProjectRoad({
+      const newRoad = await projectService.createProjectRoad({
         project_id: data.project_id,
         name: newRoadName.trim(),
       });
 
+      onUpdate({ road_name: newRoad.name }); // Select the new road
+
       setNewRoadName("");
       setShowAddRoad(false);
-      loadProjectRoads(data.project_id);
+      // Use a callback with setProjectRoads to ensure it updates with the latest data
+      loadProjectRoads(data.project_id).then(() => {});
 
       toast({
         title: "Road Added",
@@ -134,6 +139,46 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
       toast({
         title: "Error",
         description: "Failed to add road. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRoad = async () => {
+    if (!data.road_name || !data.project_id) {
+      toast({
+        title: "No road selected",
+        description: "Please select a road to delete.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const roadToDelete = projectRoads.find(
+      (road) => road.name === data.road_name
+    );
+    if (!roadToDelete) return;
+
+    if (
+      !confirm(
+        `Are you sure you want to delete the road "${data.road_name}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await projectService.deleteProjectRoad(roadToDelete.id);
+      onUpdate({ road_name: "" }); // Clear selection
+      loadProjectRoads(data.project_id);
+      toast({
+        title: "Road Deleted",
+        description: `"${data.road_name}" has been deleted.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete road.",
         variant: "destructive",
       });
     }
@@ -339,15 +384,31 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setShowAddRoad(!showAddRoad)}
-                disabled={!data.project_id}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              {(profile?.role === "admin" ||
+                profile?.role === "project_manager") && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAddRoad(!showAddRoad)}
+                  disabled={!data.project_id}
+                  title="Add new road"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
+              {(profile?.role === "admin" ||
+                profile?.role === "project_manager") && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  onClick={handleDeleteRoad}
+                  disabled={!data.road_name}
+                  title="Delete selected road"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
 
             {showAddRoad && (
@@ -417,8 +478,8 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                   <SelectValue placeholder="Select test..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredTests.map((test) => (
-                    <SelectItem key={test.id} value={test.name}>
+                  {filteredTests.map((test, index) => (
+                    <SelectItem key={`${test.id}-${index}`} value={test.name}>
                       {test.name} ({test.code})
                     </SelectItem>
                   ))}

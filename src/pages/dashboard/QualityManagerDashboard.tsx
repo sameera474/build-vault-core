@@ -7,6 +7,16 @@ import {
   TrendingUp,
   Loader2,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -82,7 +92,10 @@ export default function QualityManagerDashboard() {
           Quality Manager Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Monitor quality metrics, compliance trends, and NCRs
+          Quality metrics for{" "}
+          <span className="font-semibold text-primary">
+            {profile?.company_name}
+          </span>
         </p>
       </div>
 
@@ -139,6 +152,52 @@ export default function QualityManagerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Quality Metrics Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: "Pass Rate", value: stats.passRate, fill: "#22c55e" },
+                  {
+                    name: "Failed Tests",
+                    value: stats.failedTests,
+                    fill: "#ef4444",
+                  },
+                  { name: "NCRs", value: stats.ncrs, fill: "#f97316" },
+                  {
+                    name: "Queued Tests",
+                    value: stats.queuedTests,
+                    fill: "#3b82f6",
+                  },
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    borderColor: "hsl(var(--border))",
+                  }}
+                  formatter={(value, name) => {
+                    if (name === "Pass Rate") {
+                      return [`${value}%`, name];
+                    }
+                    return [value, name];
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="value" name="Value" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   BarChart3,
   FileText,
@@ -7,6 +13,15 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -19,6 +34,9 @@ export default function ProjectManagerDashboard() {
     completedTests: 0,
     complianceRate: 100,
   });
+  const [complianceTrend, setComplianceTrend] = useState<
+    { month: string; rate: number }[]
+  >([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -30,7 +48,7 @@ export default function ProjectManagerDashboard() {
           { count: projectCount },
           { count: pendingCount },
           { count: completedCount },
-          { data: complianceData },
+          { data: allReports },
         ] = await Promise.all([
           supabase
             .from("projects")
@@ -49,17 +67,47 @@ export default function ProjectManagerDashboard() {
             .eq("status", "approved"),
           supabase
             .from("test_reports")
-            .select("compliance_status")
+            .select("compliance_status, created_at")
             .eq("company_id", profile.company_id),
         ]);
 
         let complianceRate = 100;
-        if (complianceData && complianceData.length > 0) {
-          const passed = complianceData.filter(
+        if (allReports && allReports.length > 0) {
+          const passed = allReports.filter(
             (r) => r.compliance_status === "pass"
           ).length;
-          complianceRate = Math.round((passed / complianceData.length) * 100);
+          complianceRate = Math.round((passed / allReports.length) * 100);
         }
+
+        // Calculate compliance trend
+        const monthlyData: {
+          [key: string]: { total: number; passed: number };
+        } = {};
+        allReports?.forEach((report) => {
+          const month = new Date(report.created_at).toLocaleDateString(
+            "en-US",
+            { month: "short", year: "numeric" }
+          );
+          if (!monthlyData[month]) {
+            monthlyData[month] = { total: 0, passed: 0 };
+          }
+          monthlyData[month].total++;
+          if (report.compliance_status === "pass") {
+            monthlyData[month].passed++;
+          }
+        });
+
+        const trend = Object.entries(monthlyData).map(([month, data]) => ({
+          month,
+          date: new Date(month), // Create a date object for sorting
+          rate:
+            data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0,
+        }));
+
+        // Sort the trend data by date
+        trend.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+        setComplianceTrend(trend);
 
         setStats({
           activeProjects: projectCount || 0,
@@ -92,7 +140,10 @@ export default function ProjectManagerDashboard() {
           Project Manager Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Monitor project progress, approvals, and team performance
+          Project overview for{" "}
+          <span className="font-semibold text-primary">
+            {profile?.company_name}
+          </span>
         </p>
       </div>
 
@@ -155,6 +206,39 @@ export default function ProjectManagerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Compliance Rate Trend</CardTitle>
+          <CardDescription>
+            Monthly compliance rate of all tests.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={complianceTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis domain={[0, 100]} unit="%" />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    borderColor: "hsl(var(--border))",
+                  }}
+                  formatter={(value) => [`${value}%`, "Compliance Rate"]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="rate"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

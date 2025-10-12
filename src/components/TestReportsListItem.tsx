@@ -85,6 +85,7 @@ export function TestReportsListItem({
   const isDraft = (r.status || "draft") === "draft";
 
   return (
+  return (  
     <div className="border rounded-lg p-4 hover:bg-muted/40 transition-colors">
       <div className="flex items-start justify-between">
         <div
@@ -92,6 +93,7 @@ export function TestReportsListItem({
           onClick={onOpen}
           style={{ cursor: isDraft ? "default" : "pointer" }}
         >
+        <div className="flex-1 cursor-pointer" onClick={onOpen}>
           <div className="text-sm font-mono font-semibold">
             {r.report_number || r.id}
           </div>
@@ -121,6 +123,24 @@ export function TestReportsListItem({
                 <DropdownMenuItem onClick={onOpen}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="mt-2 h-7 w-7 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onOpen}>
+                <Edit className="h-4 w-4 mr-2" />
+                {isDraft ? "Edit Draft" : "View/Edit"}
+              </DropdownMenuItem>
+              {onDelete && (
+                <DropdownMenuItem
+                  onClick={onDelete}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
                 </DropdownMenuItem>
                 {onDelete && (
                   <DropdownMenuItem
@@ -134,6 +154,9 @@ export function TestReportsListItem({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
