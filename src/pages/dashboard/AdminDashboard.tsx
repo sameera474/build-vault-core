@@ -1,11 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, FileText, DollarSign } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Building2, FileText, DollarSign, Loader2 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     teamMembers: 0,
     activeProjects: 0,
@@ -16,44 +26,74 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       if (!profile?.company_id) return;
+      setLoading(true);
 
       try {
-        const { count: userCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id);
+        const today = new Date();
+        const firstDayOfMonth = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          1
+        ).toISOString();
 
-        const { count: projectCount } = await supabase
-          .from('projects')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id)
-          .eq('status', 'active');
-
-        const { count: reportCount } = await supabase
-          .from('test_reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id);
+        const [
+          { count: userCount },
+          { count: projectCount },
+          { count: reportCount },
+          { count: monthlyReportCount },
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id),
+          supabase
+            .from("projects")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id)
+            .eq("status", "active"),
+          supabase
+            .from("test_reports")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id),
+          supabase
+            .from("test_reports")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id)
+            .gte("created_at", firstDayOfMonth),
+        ]);
 
         setStats({
           teamMembers: userCount || 0,
           activeProjects: projectCount || 0,
           totalReports: reportCount || 0,
-          monthlyUsage: reportCount || 0,
+          monthlyUsage: monthlyReportCount || 0,
         });
       } catch (error) {
-        console.error('Error fetching admin stats:', error);
+        console.error("Error fetching admin stats:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchStats();
   }, [profile?.company_id]);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Company overview, usage metrics, and team management
+          Company-wide overview for{" "}
+          <span className="font-semibold text-primary">
+            {profile?.company_name}
+          </span>
         </p>
       </div>
 
@@ -71,7 +111,9 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Projects
+            </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -102,6 +144,37 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Company Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: "Team Members", value: stats.teamMembers },
+                  { name: "Active Projects", value: stats.activeProjects },
+                  { name: "Total Reports", value: stats.totalReports },
+                  { name: "Monthly Usage", value: stats.monthlyUsage },
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    borderColor: "hsl(var(--border))",
+                  }}
+                />
+                <Bar dataKey="value" fill="hsl(var(--primary))" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,11 +1,26 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, CheckCircle, Clock, TrendingUp } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  FileText,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  Loader2,
+} from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function TechnicianDashboard() {
   const { profile } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     testsToday: 0,
     passingTests: 0,
@@ -16,23 +31,33 @@ export default function TechnicianDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       if (!profile?.user_id) return;
+      setLoading(true);
 
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
 
-        const { count: todayCount } = await supabase
-          .from('test_reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('created_by', profile.user_id)
-          .gte('test_date', today);
+        const [
+          { count: todayCount, error: todayError },
+          { data: allTests, error: allTestsError },
+        ] = await Promise.all([
+          supabase
+            .from("test_reports")
+            .select("*", { count: "exact", head: true })
+            .eq("created_by", profile.user_id)
+            .gte("test_date", today),
+          supabase
+            .from("test_reports")
+            .select("compliance_status, status")
+            .eq("created_by", profile.user_id),
+        ]);
 
-        const { data: allTests } = await supabase
-          .from('test_reports')
-          .select('compliance_status, status')
-          .eq('created_by', profile.user_id);
+        if (todayError) throw todayError;
+        if (allTestsError) throw allTestsError;
 
-        const passing = allTests?.filter(r => r.compliance_status === 'pass').length || 0;
-        const pending = allTests?.filter(r => r.status === 'draft').length || 0;
+        const passing =
+          allTests?.filter((r) => r.compliance_status === "pass").length || 0;
+        const pending =
+          allTests?.filter((r) => r.status === "draft").length || 0;
 
         setStats({
           testsToday: todayCount || 0,
@@ -41,17 +66,35 @@ export default function TechnicianDashboard() {
           totalTests: allTests?.length || 0,
         });
       } catch (error) {
-        console.error('Error fetching technician stats:', error);
+        console.error("Error fetching technician stats:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchStats();
   }, [profile?.user_id]);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const pieData = [
+    { name: "Passing", value: stats.passingTests },
+    { name: "Pending", value: stats.pendingTests },
+  ];
+  const COLORS = ["#22c55e", "#f97316"];
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Technician Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Technician Dashboard
+        </h1>
         <p className="text-muted-foreground">
           Your testing activity and performance summary
         </p>
@@ -102,6 +145,46 @@ export default function TechnicianDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Test Status Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    borderColor: "hsl(var(--border))",
+                  }}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -56,18 +56,38 @@ export function TestReportsListItem({
   onOpen,
   onDelete,
 }: TestReportsListItemProps) {
-  const compaction = r.summary_json?.kpis?.degree_compaction;
+  const getPrimaryKpi = () => {
+    const kpis = r.summary_json?.kpis;
+    if (!kpis || typeof kpis !== "object" || Object.keys(kpis).length === 0) {
+      return { name: "Result", value: "—" };
+    }
+
+    const primaryKey =
+      Object.keys(kpis).find(
+        (k) =>
+          k.toLowerCase().includes("strength") ||
+          k.toLowerCase().includes("density") ||
+          k.toLowerCase().includes("compaction")
+      ) || Object.keys(kpis)[0];
+
+    const value = kpis[primaryKey];
+    const name = primaryKey
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+    return {
+      name,
+      value: typeof value === "number" ? value.toFixed(2) : value || "—",
+    };
+  };
+
+  const primaryKpi = getPrimaryKpi();
 
   const isDraft = (r.status || "draft") === "draft";
 
   return (
     <div className="border rounded-lg p-4 hover:bg-muted/40 transition-colors">
       <div className="flex items-start justify-between">
-        <div
-          className="flex-1"
-          onClick={onOpen}
-          style={{ cursor: isDraft ? "default" : "pointer" }}
-        >
+        <div className="flex-1 cursor-pointer" onClick={onOpen}>
           <div className="text-sm font-mono font-semibold">
             {r.report_number || r.id}
           </div>
@@ -86,30 +106,28 @@ export function TestReportsListItem({
           <div>
             <PassFail status={r.compliance_status} />
           </div>
-          {isDraft && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="mt-2">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onOpen}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="mt-2 h-7 w-7 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onOpen}>
+                <Edit className="h-4 w-4 mr-2" />
+                {isDraft ? "Edit Draft" : "View/Edit"}
+              </DropdownMenuItem>
+              {onDelete && (
+                <DropdownMenuItem
+                  onClick={onDelete}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
                 </DropdownMenuItem>
-                {onDelete && (
-                  <DropdownMenuItem
-                    onClick={onDelete}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -130,13 +148,19 @@ export function TestReportsListItem({
           {r.test_date ? new Date(r.test_date).toLocaleDateString() : "—"}
         </div>
         <div>
-          <span className="text-muted-foreground">Compaction:</span>{" "}
-          {typeof compaction === "number" ? `${compaction.toFixed(1)}%` : "—"}
+          <span className="text-muted-foreground">{primaryKpi.name}:</span>{" "}
+          {primaryKpi.value}
         </div>
         <div>
           <span className="text-muted-foreground">Technician:</span>{" "}
           {r.technician_name || "—"}
         </div>
+        {(r.status === "approved" || r.status === "rejected") && (
+          <div>
+            <span className="text-muted-foreground">Approved By:</span>{" "}
+            {r.approved_by || "—"}
+          </div>
+        )}
       </div>
     </div>
   );

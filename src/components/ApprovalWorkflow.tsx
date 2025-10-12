@@ -1,12 +1,19 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle, XCircle, Clock, FileText, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface TestReport {
   id: string;
@@ -25,20 +32,26 @@ interface ApprovalWorkflowProps {
   onApprovalUpdate: () => void;
 }
 
-export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflowProps) {
+export function ApprovalWorkflow({
+  reports,
+  onApprovalUpdate,
+}: ApprovalWorkflowProps) {
   const [selectedReport, setSelectedReport] = useState<TestReport | null>(null);
-  const [approvalNotes, setApprovalNotes] = useState('');
+  const [approvalNotes, setApprovalNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { profile } = useAuth();
 
-  const pendingReports = reports.filter(report => report.compliance_status === 'pending');
+  const pendingReports = reports.filter(
+    (report) => report.compliance_status === "pending"
+  );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'approved':
+      case "approved":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'rejected':
+      case "rejected":
         return <XCircle className="h-4 w-4 text-red-600" />;
       default:
         return <Clock className="h-4 w-4 text-yellow-600" />;
@@ -47,16 +60,23 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'approved':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'rejected':
+      case "approved":
+        return (
+          <Badge variant="secondary" className="bg-green-100 text-green-800">
+            Approved
+          </Badge>
+        );
+      case "rejected":
         return <Badge variant="destructive">Rejected</Badge>;
       default:
         return <Badge variant="outline">Pending</Badge>;
     }
   };
 
-  const handleApproval = async (reportId: string, newStatus: 'approved' | 'rejected') => {
+  const handleApproval = async (
+    reportId: string,
+    newStatus: "approved" | "rejected"
+  ) => {
     if (!profile) {
       toast({
         title: "Error",
@@ -68,8 +88,13 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
 
     setIsProcessing(true);
     try {
+      // On approval, the main status is 'approved' or 'rejected'.
+      // The compliance_status should reflect the test outcome ('pass' or 'fail').
+      // If the report is being approved, we assume it passed. If rejected, it failed.
       const updateData: any = {
-        compliance_status: newStatus,
+        status: newStatus,
+        compliance_status: newStatus === "approved" ? "pass" : "fail",
+        approved_by: profile?.name || profile?.email,
         updated_at: new Date().toISOString(),
       };
 
@@ -78,9 +103,9 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
       }
 
       const { error } = await supabase
-        .from('test_reports')
+        .from("test_reports")
         .update(updateData)
-        .eq('id', reportId);
+        .eq("id", reportId);
 
       if (error) throw error;
 
@@ -90,10 +115,10 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
       });
 
       setSelectedReport(null);
-      setApprovalNotes('');
+      setApprovalNotes("");
       onApprovalUpdate();
     } catch (error) {
-      console.error('Error updating approval status:', error);
+      console.error("Error updating approval status:", error);
       toast({
         title: "Error",
         description: "Failed to update approval status",
@@ -134,7 +159,8 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
                     <div>
                       <p className="font-medium">{report.report_number}</p>
                       <p className="text-sm text-muted-foreground">
-                        {report.test_type} • {new Date(report.test_date).toLocaleDateString()}
+                        {report.test_type} •{" "}
+                        {new Date(report.test_date).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -153,14 +179,17 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
           <CardHeader>
             <CardTitle>Review Report: {selectedReport.report_number}</CardTitle>
             <CardDescription>
-              Submitted on {new Date(selectedReport.created_at).toLocaleDateString()}
+              Submitted on{" "}
+              {new Date(selectedReport.created_at).toLocaleDateString()}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Test Type</label>
-                <p className="text-sm text-muted-foreground">{selectedReport.test_type}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedReport.test_type}
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium">Test Date</label>
@@ -170,18 +199,24 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
               </div>
               <div>
                 <label className="text-sm font-medium">Technician</label>
-                <p className="text-sm text-muted-foreground">{selectedReport.technician_name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedReport.technician_name}
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium">Material Type</label>
-                <p className="text-sm text-muted-foreground">{selectedReport.material_type}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedReport.material_type}
+                </p>
               </div>
             </div>
 
             {selectedReport.notes && (
               <div>
                 <label className="text-sm font-medium">Current Notes</label>
-                <p className="text-sm text-muted-foreground mt-1">{selectedReport.notes}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {selectedReport.notes}
+                </p>
               </div>
             )}
 
@@ -197,7 +232,16 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
 
             <div className="flex gap-2 pt-4">
               <Button
-                onClick={() => handleApproval(selectedReport.id, 'approved')}
+                variant="outline"
+                onClick={() =>
+                  navigate(`/test-reports/${selectedReport.id}/edit`)
+                }
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                View Full Report
+              </Button>
+              <Button
+                onClick={() => handleApproval(selectedReport.id, "approved")}
                 disabled={isProcessing}
                 className="flex items-center gap-2"
               >
@@ -206,7 +250,7 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => handleApproval(selectedReport.id, 'rejected')}
+                onClick={() => handleApproval(selectedReport.id, "rejected")}
                 disabled={isProcessing}
                 className="flex items-center gap-2"
               >
@@ -217,7 +261,7 @@ export function ApprovalWorkflow({ reports, onApprovalUpdate }: ApprovalWorkflow
                 variant="outline"
                 onClick={() => {
                   setSelectedReport(null);
-                  setApprovalNotes('');
+                  setApprovalNotes("");
                 }}
               >
                 Cancel

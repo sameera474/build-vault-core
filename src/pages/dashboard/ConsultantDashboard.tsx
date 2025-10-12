@@ -1,11 +1,20 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, CheckCircle, AlertCircle, Eye } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, CheckCircle, AlertCircle, Eye, Loader2 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ConsultantDashboard() {
   const { profile } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalReports: 0,
     passedTests: 0,
@@ -16,36 +25,38 @@ export default function ConsultantDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       if (!profile?.company_id) return;
+      setLoading(true);
 
       try {
-        // Total reports (read-only access)
-        const { count: totalCount } = await supabase
-          .from('test_reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id);
-
-        // Passed tests
-        const { count: passedCount } = await supabase
-          .from('test_reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id)
-          .eq('compliance_status', 'pass');
-
-        // Failed tests
-        const { count: failedCount } = await supabase
-          .from('test_reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id)
-          .eq('compliance_status', 'fail');
-
-        // Recent reports (last 7 days)
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const { count: recentCount } = await supabase
-          .from('test_reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id)
-          .gte('created_at', sevenDaysAgo.toISOString());
+
+        const [
+          { count: totalCount },
+          { count: passedCount },
+          { count: failedCount },
+          { count: recentCount },
+        ] = await Promise.all([
+          supabase
+            .from("test_reports")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id),
+          supabase
+            .from("test_reports")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id)
+            .eq("compliance_status", "pass"),
+          supabase
+            .from("test_reports")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id)
+            .eq("compliance_status", "fail"),
+          supabase
+            .from("test_reports")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id)
+            .gte("created_at", sevenDaysAgo.toISOString()),
+        ]);
 
         setStats({
           totalReports: totalCount || 0,
@@ -54,21 +65,40 @@ export default function ConsultantDashboard() {
           recentReviews: recentCount || 0,
         });
       } catch (error) {
-        console.error('Error fetching consultant stats:', error);
+        console.error("Error fetching consultant stats:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchStats();
   }, [profile?.company_id]);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const pieData = [
+    { name: "Passed", value: stats.passedTests },
+    { name: "Failed", value: stats.failedTests },
+  ];
+  const COLORS = ["#22c55e", "#ef4444"];
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="text-3xl font-bold tracking-tight">
           Consultant Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Review and monitor test reports for {profile?.role === 'consultant_engineer' ? 'engineering compliance' : 'technical accuracy'}.
+          Monitoring dashboard for{" "}
+          <span className="font-semibold text-primary">
+            {profile?.company_name}
+          </span>
         </p>
       </div>
 
@@ -81,7 +111,9 @@ export default function ConsultantDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalReports}</div>
-            <p className="text-xs text-muted-foreground">Available for review</p>
+            <p className="text-xs text-muted-foreground">
+              Available for review
+            </p>
           </CardContent>
         </Card>
 
@@ -109,7 +141,9 @@ export default function ConsultantDashboard() {
 
         <Card className="border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Recent Activity
+            </CardTitle>
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -127,19 +161,21 @@ export default function ConsultantDashboard() {
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="text-sm">
-              <span className="font-medium">Role:</span>{' '}
+              <span className="font-medium">Role:</span>{" "}
               <span className="text-muted-foreground capitalize">
-                {profile?.role === 'consultant_engineer' ? 'Consultant Engineer' : 'Consultant Technician'}
+                {profile?.role === "consultant_engineer"
+                  ? "Consultant Engineer"
+                  : "Consultant Technician"}
               </span>
             </div>
             <div className="text-sm">
-              <span className="font-medium">Access Type:</span>{' '}
+              <span className="font-medium">Access Type:</span>{" "}
               <span className="text-muted-foreground">Read-Only</span>
             </div>
             <ul className="space-y-1 text-sm text-muted-foreground mt-4">
               <li>• View all test reports</li>
               <li>• Access analytics</li>
-              {profile?.role === 'consultant_engineer' && (
+              {profile?.role === "consultant_engineer" && (
                 <li>• Provide final approval if required</li>
               )}
               <li>• No editing permissions</li>
@@ -153,7 +189,8 @@ export default function ConsultantDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Access test reports to review technical data and compliance status.
+              Access test reports to review technical data and compliance
+              status.
             </p>
             <div className="space-y-2">
               <a href="/test-reports" className="block">
@@ -177,6 +214,68 @@ export default function ConsultantDashboard() {
                 </Card>
               </a>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Test Compliance Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) =>
+                      `${name} ${(percent * 100).toFixed(0)}%`
+                    }
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--background))",
+                      borderColor: "hsl(var(--border))",
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Access</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              className="w-full"
+              onClick={() => (window.location.href = "/test-reports")}
+            >
+              View All Reports
+            </Button>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => (window.location.href = "/analytics")}
+            >
+              Go to Analytics
+            </Button>
           </CardContent>
         </Card>
       </div>

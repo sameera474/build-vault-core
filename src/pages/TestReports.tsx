@@ -354,14 +354,17 @@ export default function TestReports() {
         <div className="flex gap-2">
           {projects.length === 0 &&
           (permissions.canCreateReport ||
-            permissions.role === "super_admin" ||
-            permissions.role === "company_admin" ||
-            permissions.role === "admin") ? (
+            ["super_admin", "admin", "project_manager"].includes(
+              profile?.role || ""
+            )) ? (
             <Button onClick={() => navigate("/projects")}>
               <FolderPlus className="h-4 w-4 mr-2" />
               Create Project First
             </Button>
-          ) : permissions.canCreateReport ? (
+          ) : permissions.canCreateReport ||
+            ["super_admin", "admin", "project_manager"].includes(
+              profile?.role || ""
+            ) ? (
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Test Report
@@ -624,12 +627,15 @@ export default function TestReports() {
                           <h3 className="text-lg font-semibold">
                             No test reports found
                           </h3>
-                          <p className="text-muted-foreground mt-2">
-                            {permissions.canCreateReport
-                              ? "Get started by creating your first test report."
-                              : "No reports to display. Contact your administrator for access."}
+                          <p className="text-muted-foreground mt-2 text-center">
+                            Get started by creating your first test report.
                           </p>
-                          {permissions.canCreateReport && (
+                          {(permissions.canCreateReport ||
+                            [
+                              "super_admin",
+                              "admin",
+                              "project_manager",
+                            ].includes(profile?.role || "")) && (
                             <Button
                               onClick={() => setIsCreateDialogOpen(true)}
                               className="mt-4"
@@ -656,11 +662,7 @@ export default function TestReports() {
                             navigate(`/test-reports/${report.id}/edit`);
                           }
                         }}
-                        onDelete={
-                          report.status === "draft"
-                            ? () => handleDelete(report.id)
-                            : undefined
-                        }
+                        onDelete={() => handleDelete(report.id)}
                       />
                     ))
                   )}
