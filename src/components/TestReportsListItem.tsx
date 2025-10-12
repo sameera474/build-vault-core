@@ -56,7 +56,31 @@ export function TestReportsListItem({
   onOpen,
   onDelete,
 }: TestReportsListItemProps) {
-  const compaction = r.summary_json?.kpis?.degree_compaction;
+  const getPrimaryKpi = () => {
+    const kpis = r.summary_json?.kpis;
+    if (!kpis || typeof kpis !== "object" || Object.keys(kpis).length === 0) {
+      return { name: "Result", value: "—" };
+    }
+
+    const primaryKey =
+      Object.keys(kpis).find(
+        (k) =>
+          k.toLowerCase().includes("strength") ||
+          k.toLowerCase().includes("density") ||
+          k.toLowerCase().includes("compaction")
+      ) || Object.keys(kpis)[0];
+
+    const value = kpis[primaryKey];
+    const name = primaryKey
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+    return {
+      name,
+      value: typeof value === "number" ? value.toFixed(2) : value || "—",
+    };
+  };
+
+  const primaryKpi = getPrimaryKpi();
 
   const isDraft = (r.status || "draft") === "draft";
 
@@ -130,8 +154,8 @@ export function TestReportsListItem({
           {r.test_date ? new Date(r.test_date).toLocaleDateString() : "—"}
         </div>
         <div>
-          <span className="text-muted-foreground">Compaction:</span>{" "}
-          {typeof compaction === "number" ? `${compaction.toFixed(1)}%` : "—"}
+          <span className="text-muted-foreground">{primaryKpi.name}:</span>{" "}
+          {primaryKpi.value}
         </div>
         <div>
           <span className="text-muted-foreground">Technician:</span>{" "}
