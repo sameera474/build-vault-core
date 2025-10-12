@@ -662,11 +662,7 @@ export default function TestReports() {
                             navigate(`/test-reports/${report.id}/edit`);
                           }
                         }}
-                        onDelete={
-                          report.status === "draft"
-                            ? () => handleDelete(report.id)
-                            : undefined
-                        }
+                        onDelete={() => handleDelete(report.id)}
                       />
                     ))
                   )}
