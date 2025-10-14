@@ -10,6 +10,7 @@ interface Profile {
   name: string | null;
   role: string;
   created_at: string;
+  company_name?: string;
 }
 
 interface AuthContextType {
@@ -46,6 +47,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(async () => {
             if (!mounted) return;
             const { data: profileData } = await getUserProfile(session.user.id);
+            
+            // Fetch company name
+            if (profileData?.company_id) {
+              const { data: companyData } = await supabase
+                .from('companies')
+                .select('name')
+                .eq('id', profileData.company_id)
+                .single();
+              
+              if (companyData) {
+                setProfile({ ...profileData, company_name: companyData.name } as typeof profileData & { company_name: string });
+                return;
+              }
+            }
+            
             setProfile(profileData);
           }, 0);
         } else {
@@ -68,8 +84,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        getUserProfile(session.user.id).then(({ data: profileData }) => {
+        getUserProfile(session.user.id).then(async ({ data: profileData }) => {
           if (!mounted) return;
+          
+          // Fetch company name
+          if (profileData?.company_id) {
+            const { data: companyData } = await supabase
+              .from('companies')
+              .select('name')
+              .eq('id', profileData.company_id)
+              .single();
+            
+            if (companyData) {
+              profileData = { ...profileData, company_name: companyData.name } as typeof profileData & { company_name: string };
+            }
+          }
+          
           setProfile(profileData);
           setLoading(false);
         });

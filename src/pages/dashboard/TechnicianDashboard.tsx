@@ -96,7 +96,10 @@ export default function TechnicianDashboard() {
           Technician Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Your testing activity and performance summary
+          Your testing activity and performance summary for{" "}
+          <span className="font-semibold text-primary">
+            {profile?.company_name}
+          </span>
         </p>
       </div>
 
