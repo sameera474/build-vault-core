@@ -62,7 +62,6 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
   // Use the report number hook
   const { reportNumber, isLoading: isGeneratingNumber } = useReportNumber(
     data.project_id,
-    data.road_name,
     data.doc_code,
     data.test_date ? new Date(data.test_date) : undefined
   );

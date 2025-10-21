@@ -148,16 +148,20 @@ export default function LayerWorksChart() {
       if (error) throw error;
 
       const chartPoints: LayerData[] = (data || [])
-        .map((report) => ({
-          layer:
-            report.material === "custom"
-              ? report.custom_material
-              : report.material,
-          chainage: [Number(report.chainage_from), Number(report.chainage_to)],
-          side: (report.side?.toUpperCase() as any) || "FULL",
-          test_type: report.test_type,
-          report_id: report.id,
-        }))
+        .map((report) => {
+          const from = Number(report.chainage_from);
+          const to = Number(report.chainage_to);
+          return {
+            layer:
+              report.material === "custom"
+                ? report.custom_material
+                : report.material,
+            chainage: [from, to] as [number, number],
+            side: (report.side?.toUpperCase() as any) || "FULL",
+            test_type: report.test_type,
+            report_id: report.id,
+          };
+        })
         .filter(
           (p) => p.layer && !isNaN(p.chainage[0]) && !isNaN(p.chainage[1])
         );

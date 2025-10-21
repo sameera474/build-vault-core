@@ -94,7 +94,7 @@ export function ApprovalWorkflow({
       const updateData: any = {
         status: newStatus,
         compliance_status: newStatus === "approved" ? "pass" : "fail",
-        approved_by: profile?.name || profile?.email,
+        approved_by: profile?.name || "Unknown",
         updated_at: new Date().toISOString(),
       };
 
