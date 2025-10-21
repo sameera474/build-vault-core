@@ -175,7 +175,8 @@ export default function ChainageBarChart() {
 
       const chartPoints: ChartData[] = (data || [])
         .map((report) => {
-          const kpis = report.summary_json?.kpis;
+          const summaryJson = report.summary_json as any;
+          const kpis = summaryJson?.kpis;
           // Try to find a primary KPI, e.g., 'strength', 'density', 'compaction'
           const primaryKpiKey =
             Object.keys(kpis || {}).find(
@@ -193,8 +194,8 @@ export default function ChainageBarChart() {
             description: `Report ID: ${report.id}`,
             testDate: report.test_date,
             testType: report.test_type,
-            specMin: report.summary_json?.thresholds?.min_value,
-            specMax: report.summary_json?.thresholds?.max_value,
+            specMin: summaryJson?.thresholds?.min_value,
+            specMax: summaryJson?.thresholds?.max_value,
           };
         })
         .filter((p) => !isNaN(p.chainage) && !isNaN(p.value));
