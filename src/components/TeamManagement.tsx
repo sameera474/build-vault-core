@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { hasHigherOrEqualAuthority } from '@/lib/rbac';
 
 interface TeamMember {
   user_id: string;
@@ -580,19 +579,6 @@ const addMemberManually = async () => {
 };
 
 const editMember = (member: TeamMember) => {
-  // Check role hierarchy - can only edit users with equal or lower authority
-  const currentUserRole = profile?.role;
-  const targetRole = member.tenant_role || member.role;
-  
-  if (!hasHigherOrEqualAuthority(currentUserRole, targetRole)) {
-    toast({
-      title: "Insufficient authority",
-      description: "You cannot edit users with higher authority than your role.",
-      variant: "destructive",
-    });
-    return;
-  }
-  
   setEditingMember(member);
   setIsEditMemberOpen(true);
 };
@@ -651,24 +637,12 @@ const updateMember = async () => {
   }
 };
 
-const deleteMember = async (memberId: string, memberRole: string) => {
+const deleteMember = async (memberId: string) => {
   // Prevent users from deleting themselves
   if (memberId === profile?.user_id) {
     toast({
       title: "Cannot delete yourself",
       description: "You cannot delete your own account. Please ask another admin.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  // Check role hierarchy - can only delete users with equal or lower authority
-  const currentUserRole = profile?.role;
-  
-  if (!hasHigherOrEqualAuthority(currentUserRole, memberRole)) {
-    toast({
-      title: "Insufficient authority",
-      description: "You cannot delete users with higher authority than your role.",
       variant: "destructive",
     });
     return;
@@ -1063,53 +1037,40 @@ const deleteMember = async (memberId: string, memberRole: string) => {
                            </p>
                          </div>
                        </div>
-                         <div className="flex items-center gap-2">
-                           <Badge className={getRoleColor(member.tenant_role || member.role)}>
-                             {formatRole(member.tenant_role || member.role)}
-                           </Badge>
-                           {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (() => {
-                             const memberRole = member.tenant_role || member.role;
-                             const canManageThisMember = hasHigherOrEqualAuthority(profile?.role, memberRole);
-                             
-                             return (
-                               <>
-                                 <Button
-                                   variant="outline"
-                                   size="sm"
-                                   onClick={() => editMember(member)}
-                                   disabled={!canManageThisMember}
-                                   title={!canManageThisMember ? "Cannot edit users with higher authority" : "Edit member"}
-                                 >
-                                   <Edit className="h-4 w-4" />
-                                 </Button>
-                                 <Button
-                                   variant="outline"
-                                   size="sm"
-                                   onClick={() => {
-                                     const isSuperAdminTarget = member.is_super_admin;
-                                     const confirmMsg = isSuperAdminTarget 
-                                       ? `⚠️ WARNING: You are about to delete a SUPER ADMIN account (${member.name})!\n\nThis is a critical action. Are you absolutely sure?`
-                                       : `Are you sure you want to delete ${member.name}?`;
-                                     
-                                     if (confirm(confirmMsg)) {
-                                       deleteMember(member.user_id, memberRole);
-                                     }
-                                   }}
-                                   disabled={member.user_id === profile?.user_id || !canManageThisMember}
-                                   title={
-                                     member.user_id === profile?.user_id 
-                                       ? "You cannot delete yourself" 
-                                       : !canManageThisMember 
-                                         ? "Cannot delete users with higher authority"
-                                         : "Delete member"
-                                   }
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                 </Button>
-                               </>
-                             );
-                           })()}
-                         </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getRoleColor(member.tenant_role || member.role)}>
+                            {formatRole(member.tenant_role || member.role)}
+                          </Badge>
+                          {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => editMember(member)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const isSuperAdminTarget = member.is_super_admin;
+                                  const confirmMsg = isSuperAdminTarget 
+                                    ? `⚠️ WARNING: You are about to delete a SUPER ADMIN account (${member.name})!\n\nThis is a critical action. Are you absolutely sure?`
+                                    : `Are you sure you want to delete ${member.name}?`;
+                                  
+                                  if (confirm(confirmMsg)) {
+                                    deleteMember(member.user_id);
+                                  }
+                                }}
+                                disabled={member.user_id === profile?.user_id}
+                                title={member.user_id === profile?.user_id ? "You cannot delete yourself" : "Delete member"}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                      </div>
                   ))}
                 </div>
@@ -1260,48 +1221,35 @@ const deleteMember = async (memberId: string, memberRole: string) => {
                                 Super Admin
                               </Badge>
                             )}
-                            {isSuperAdmin && (() => {
-                              const userRole = user.tenant_role || user.role;
-                              const canManageThisUser = hasHigherOrEqualAuthority(profile?.role, userRole);
-                              
-                              return (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => editMember(user)}
-                                    disabled={!canManageThisUser}
-                                    title={!canManageThisUser ? "Cannot edit users with higher authority" : "Edit member"}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      const isSuperAdminTarget = user.is_super_admin;
-                                      const confirmMsg = isSuperAdminTarget 
-                                        ? `⚠️ WARNING: You are about to delete a SUPER ADMIN account (${user.name})!\n\nThis is a critical action. Are you absolutely sure?`
-                                        : `Are you sure you want to delete ${user.name}?`;
-                                      
-                                      if (confirm(confirmMsg)) {
-                                        deleteMember(user.user_id, userRole);
-                                      }
-                                    }}
-                                    disabled={user.user_id === profile?.user_id || !canManageThisUser}
-                                    title={
-                                      user.user_id === profile?.user_id 
-                                        ? "You cannot delete yourself" 
-                                        : !canManageThisUser 
-                                          ? "Cannot delete users with higher authority"
-                                          : "Delete member"
+                            {isSuperAdmin && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => editMember(user)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const isSuperAdminTarget = user.is_super_admin;
+                                    const confirmMsg = isSuperAdminTarget 
+                                      ? `⚠️ WARNING: You are about to delete a SUPER ADMIN account (${user.name})!\n\nThis is a critical action. Are you absolutely sure?`
+                                      : `Are you sure you want to delete ${user.name}?`;
+                                    
+                                    if (confirm(confirmMsg)) {
+                                      deleteMember(user.user_id);
                                     }
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              );
-                            })()}
+                                  }}
+                                  disabled={user.user_id === profile?.user_id}
+                                  title={user.user_id === profile?.user_id ? "You cannot delete yourself" : "Delete member"}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
                       ))}

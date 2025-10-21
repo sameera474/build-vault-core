@@ -288,47 +288,6 @@ export function canSeeMenuItem(
 }
 
 /**
- * Role hierarchy levels (lower number = higher authority)
- */
-const roleHierarchy: Record<AppRole, number> = {
-  super_admin: 1,
-  admin: 2,
-  project_manager: 3,
-  quality_manager: 4,
-  supervisor: 5,
-  consultant_engineer: 6,
-  consultant_technician: 7,
-  technician: 8,
-};
-
-/**
- * Check if a role has higher or equal authority than another role
- */
-export function hasHigherOrEqualAuthority(
-  actorRole: string | null | undefined,
-  targetRole: string | null | undefined
-): boolean {
-  if (!actorRole || !targetRole) return false;
-  
-  const actorLevel = roleHierarchy[actorRole as AppRole];
-  const targetLevel = roleHierarchy[targetRole as AppRole];
-  
-  // If either role not found in hierarchy, deny access
-  if (actorLevel === undefined || targetLevel === undefined) return false;
-  
-  // Lower number = higher authority, so actor must have <= target level
-  return actorLevel <= targetLevel;
-}
-
-/**
- * Get the hierarchy level of a role (lower number = higher authority)
- */
-export function getRoleHierarchyLevel(role: string | null | undefined): number {
-  if (!role) return Infinity;
-  return roleHierarchy[role as AppRole] ?? Infinity;
-}
-
-/**
  * Check if user owns a resource
  */
 export function isOwn(

@@ -125,7 +125,7 @@ export default function MonthlySummaries() {
         .lte("test_date", date.to.toISOString().split("T")[0]);
 
       if (selectedMaterial !== "all") {
-        query = query.eq("material", selectedMaterial as any);
+        query = query.eq("material", selectedMaterial);
       }
 
       const { data: reports, error } = await query;
