@@ -11,6 +11,15 @@ interface Profile {
   role: string;
   created_at: string;
   company_name?: string;
+  avatar_url?: string | null;
+  phone?: string | null;
+  job_title?: string | null;
+  department?: string | null;
+  employee_id?: string | null;
+  hire_date?: string | null;
+  is_active?: boolean;
+  is_super_admin?: boolean;
+  email?: string | null;
 }
 
 interface AuthContextType {
