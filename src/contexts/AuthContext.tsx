@@ -4,6 +4,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserProfile } from '@/lib/auth';
 
+interface SubscriptionStatus {
+  subscribed: boolean;
+  product_id?: string | null;
+  subscription_end?: string | null;
+  is_trial?: boolean;
+  trial_used?: boolean;
+  trial_reports_remaining?: number;
+}
+
 interface Profile {
   user_id: string;
   company_id: string;
@@ -26,8 +35,10 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  subscriptionStatus: SubscriptionStatus | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,7 +47,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const refreshSubscription = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (error) throw error;
+      setSubscriptionStatus(data);
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setSubscriptionStatus(null);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -67,14 +90,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               
               if (companyData) {
                 setProfile({ ...profileData, company_name: companyData.name } as typeof profileData & { company_name: string });
-                return;
+              } else {
+                setProfile(profileData);
               }
+            } else {
+              setProfile(profileData);
             }
             
-            setProfile(profileData);
+            // Check subscription status
+            refreshSubscription();
           }, 0);
         } else {
           setProfile(null);
+          setSubscriptionStatus(null);
         }
 
         // Avoid flipping loading during initial bootstrap
@@ -110,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           
           setProfile(profileData);
+          refreshSubscription();
           setLoading(false);
         });
       } else {
@@ -117,9 +146,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Auto-refresh subscription every minute
+    const interval = setInterval(() => {
+      if (user) {
+        refreshSubscription();
+      }
+    }, 60000);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearInterval(interval);
     };
   }, []);
 
@@ -131,8 +168,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     session,
     profile,
+    subscriptionStatus,
     loading,
     signOut: handleSignOut,
+    refreshSubscription,
   };
 
   return (

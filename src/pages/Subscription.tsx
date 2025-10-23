@@ -88,7 +88,7 @@ export default function Subscription() {
     }
   };
 
-  const createCheckoutSession = async (planId: string) => {
+  const createCheckoutSession = async (priceId: string) => {
     if (!profile?.user_id) {
       toast({
         title: "Authentication required",
@@ -98,15 +98,10 @@ export default function Subscription() {
       return;
     }
 
-    setSubscribing(planId);
+    setSubscribing(priceId);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          planId,
-          billingCycle,
-          successUrl: `${window.location.origin}/subscription?success=true`,
-          cancelUrl: `${window.location.origin}/subscription?canceled=true`
-        }
+        body: { priceId }
       });
 
       if (error) throw error;
@@ -127,11 +122,7 @@ export default function Subscription() {
 
   const manageSubscription = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal', {
-        body: { 
-          returnUrl: `${window.location.origin}/subscription`
-        }
-      });
+      const { data, error } = await supabase.functions.invoke('customer-portal');
 
       if (error) throw error;
 

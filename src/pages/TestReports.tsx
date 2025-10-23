@@ -34,6 +34,8 @@ import FlowDiagram from "@/components/FlowDiagram";
 import { useTestReportPermissions } from "@/hooks/usePermissions";
 import { RoleBadge } from "@/components/RoleBadge";
 import { TestReportsListItem } from "@/components/TestReportsListItem";
+import { TrialBanner } from "@/components/TrialBanner";
+import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
 
 interface Project {
   id: string;
@@ -67,6 +69,7 @@ interface TestReport {
 export default function TestReports() {
   const { profile } = useAuth();
   const permissions = useTestReportPermissions();
+  const { canCreateReport, showLimitError } = useSubscriptionLimits();
   const navigate = useNavigate();
   const [reports, setReports] = useState<TestReport[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -347,6 +350,8 @@ export default function TestReports() {
 
   return (
     <div className="space-y-6">
+      <TrialBanner />
+      
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold">Test Reports</h1>
@@ -365,7 +370,15 @@ export default function TestReports() {
             ["super_admin", "admin", "project_manager"].includes(
               profile?.role || ""
             ) ? (
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Button 
+              onClick={() => {
+                if (!canCreateReport) {
+                  showLimitError();
+                  return;
+                }
+                setIsCreateDialogOpen(true);
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Create Test Report
             </Button>

@@ -41,6 +41,8 @@ interface SystemStats {
   active_subscriptions: number;
   monthly_revenue: number;
   growth_rate: number;
+  mrr: number;
+  balance_available: number;
 }
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1'];
@@ -54,7 +56,9 @@ export default function SuperAdmin() {
     total_reports: 0,
     active_subscriptions: 0,
     monthly_revenue: 0,
-    growth_rate: 0
+    growth_rate: 0,
+    mrr: 0,
+    balance_available: 0
   });
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('overview');
@@ -113,13 +117,18 @@ export default function SuperAdmin() {
 
       if (reportsError) throw reportsError;
 
+      // Fetch real Stripe revenue data
+      const { data: revenueData } = await supabase.functions.invoke('get-stripe-revenue');
+      
       setStats({
         total_users: formattedUsers.length,
         total_companies: fetchedCompanies.length,
         total_reports: reportsData?.length || 0,
-        active_subscriptions: Math.floor(fetchedCompanies.length * 0.8), // Simulated
-        monthly_revenue: fetchedCompanies.length * 79.99, // Simulated
-        growth_rate: 12.5 // Simulated
+        active_subscriptions: revenueData?.subscriptions?.active || 0,
+        monthly_revenue: revenueData?.revenue?.last_30_days || 0,
+        mrr: revenueData?.subscriptions?.mrr || 0,
+        balance_available: revenueData?.balance?.available?.[0]?.amount || 0,
+        growth_rate: 12.5 // Would need historical data to calculate
       });
 
     } catch (error) {
@@ -285,13 +294,13 @@ export default function SuperAdmin() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Revenue (30d)</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.monthly_revenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${stats.monthly_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground">
-              Current month
+              MRR: ${stats.mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </CardContent>
         </Card>
