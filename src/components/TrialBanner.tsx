@@ -3,10 +3,17 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function TrialBanner() {
   const navigate = useNavigate();
   const { getTrialStatus } = useSubscriptionLimits();
+  const { profile } = useAuth();
+
+  // Don't show banner for super admins or demo users
+  if (profile?.is_super_admin || profile?.role === 'demo_user') {
+    return null;
+  }
 
   if (getTrialStatus.isSubscribed) {
     return null;

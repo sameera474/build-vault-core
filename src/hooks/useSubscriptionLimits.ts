@@ -2,10 +2,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 export function useSubscriptionLimits() {
-  const { subscriptionStatus } = useAuth();
+  const { subscriptionStatus, profile } = useAuth();
   const { toast } = useToast();
 
   const canCreateReport = () => {
+    // Super admins and demo users bypass all limits
+    if (profile?.is_super_admin || profile?.role === 'demo_user') {
+      return true;
+    }
+
     // If subscribed, always allow
     if (subscriptionStatus?.subscribed) {
       return true;
@@ -36,6 +41,15 @@ export function useSubscriptionLimits() {
   };
 
   const getTrialStatus = () => {
+    // Super admins and demo users have full access
+    if (profile?.is_super_admin) {
+      return { isSubscribed: true, message: 'Super Admin Access' };
+    }
+    
+    if (profile?.role === 'demo_user') {
+      return { isSubscribed: true, message: 'Demo User Access' };
+    }
+
     if (subscriptionStatus?.subscribed) {
       return { isSubscribed: true, message: 'Active Subscription' };
     }
