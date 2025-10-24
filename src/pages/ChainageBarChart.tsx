@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { BarChart3, MapPin, Download, Plus, Loader2 } from "lucide-react";
+import { BarChart3, MapPin, Download, RefreshCw, Loader2, ChevronLeft, Layers } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -8,29 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Cell,
-} from "recharts";
 
 interface Project {
   id: string;
@@ -39,54 +21,59 @@ interface Project {
   location: string;
 }
 
-interface ChartData {
-  chainage: number;
-  value: number;
-  status: string;
-  description: string;
-  testDate: string;
-  testType: string;
-  specMin?: number;
-  specMax?: number;
+interface LayerData {
+  layer: string;
+  chainage: string;
+  side: "LHS" | "RHS" | "FULL";
+  material: string;
+  report_id: string;
+  chainage_from: number;
+  chainage_to: number;
 }
 
-const testTypeConfigs = {
-  "Concrete Compression": {
-    unit: "MPa",
-    minValue: 20,
-    maxValue: 50,
-    color: "#3b82f6",
-  },
-  "Steel Tensile": {
-    unit: "MPa",
-    minValue: 400,
-    maxValue: 600,
-    color: "#6366f1",
-  },
-  "Soil Compaction": {
-    unit: "%",
-    minValue: 90,
-    maxValue: 100,
-    color: "#8b5cf6",
-  },
-  "CBR Test": {
-    unit: "%",
-    minValue: 5,
-    maxValue: 15,
-    color: "#84cc16",
-  },
-  "Asphalt Marshall": {
-    unit: "kN",
-    minValue: 8,
-    maxValue: 16,
-    color: "#f59e0b",
-  },
-  Default: {
-    unit: "",
-    minValue: 0,
-    maxValue: 100,
-    color: "#6b7280",
-  },
+// Layer order matching the reference image
+const layerOrder = [
+  "SHOULDER",
+  "SHO EMB 2",
+  "SHO EMB 1",
+  "WEARING",
+  "TACK C.",
+  "PRIME",
+  "ABC TOP",
+  "ABC 1ST",
+  "SB 2 LAYER",
+  "SB 1 LAYER",
+  "EMB LAYER5",
+  "EMB LAYER4",
+  "EMB LAYER3",
+  "EMB LAYER2",
+  "EMB LAYER 1",
+  "SHOULDER S.G.",
+  "SUB GRADE",
+  "EXCAVATION",
+  "CLEARING",
+];
+
+const layerColors: { [key: string]: string } = {
+  "SHOULDER": "#1f2937",
+  "SHO EMB 2": "#374151",
+  "SHO EMB 1": "#4b5563",
+  "WEARING": "#1f2937",
+  "TACK C.": "#6b7280",
+  "PRIME": "#f97316",
+  "ABC TOP": "#9ca3af",
+  "ABC 1ST": "#d1d5db",
+  "SB 2 LAYER": "#e5e7eb",
+  "SB 1 LAYER": "#f3f4f6",
+  "EMB LAYER5": "#fef3c7",
+  "EMB LAYER4": "#fde68a",
+  "EMB LAYER3": "#fcd34d",
+  "EMB LAYER2": "#fbbf24",
+  "EMB LAYER 1": "#f59e0b",
+  "SHOULDER S.G.": "#d97706",
+  "SUB GRADE": "#b45309",
+  "EXCAVATION": "#92400e",
+  "CLEARING": "#78350f",
 };
 
 export default function ChainageBarChart() {
@@ -94,10 +81,9 @@ export default function ChainageBarChart() {
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [chainageData, setChainageData] = useState<ChartData[]>([]);
-  const [selectedTestType, setSelectedTestType] = useState<string>("all");
-  const [availableTestTypes, setAvailableTestTypes] = useState<string[]>([]);
+  const [layerData, setLayerData] = useState<LayerData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
 
@@ -108,8 +94,19 @@ export default function ChainageBarChart() {
   useEffect(() => {
     if (projectId && projectId !== ":projectId" && !projectId.includes(":")) {
       fetchProjectData(projectId);
-      fetchChainageData(projectId);
+      fetchLayerData(projectId);
     }
+  }, [projectId, profile?.company_id]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!projectId || projectId === ":projectId" || projectId.includes(":")) return;
+    
+    const interval = setInterval(() => {
+      fetchLayerData(projectId, true);
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [projectId, profile?.company_id]);
 
   const fetchProjects = async () => {
@@ -157,15 +154,20 @@ export default function ChainageBarChart() {
     }
   };
 
-  const fetchChainageData = async (id: string) => {
+  const fetchLayerData = async (id: string, isRefresh = false) => {
     if (!profile?.company_id || !id || id.includes(":")) return;
+    
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
 
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from("test_reports")
         .select(
-          "id, chainage_from, test_type, compliance_status, test_date, summary_json"
+          "id, chainage_from, chainage_to, material, custom_material, side"
         )
         .eq("project_id", id)
         .eq("company_id", profile.company_id)
@@ -173,116 +175,98 @@ export default function ChainageBarChart() {
 
       if (error) throw error;
 
-      const chartPoints: ChartData[] = (data || [])
+      const layerPoints: LayerData[] = (data || [])
         .map((report) => {
-          const kpis = (report.summary_json as any)?.kpis;
-          // Try to find a primary KPI, e.g., 'strength', 'density', 'compaction'
-          const primaryKpiKey =
-            Object.keys(kpis || {}).find(
-              (k) =>
-                k.toLowerCase().includes("strength") ||
-                k.toLowerCase().includes("density") ||
-                k.toLowerCase().includes("compaction")
-            ) || Object.keys(kpis || {})[0];
-          const value = kpis && primaryKpiKey ? Number(kpis[primaryKpiKey]) : 0;
+          const from = Number(report.chainage_from);
+          const to = Number(report.chainage_to);
+          const material =
+            report.material === "custom"
+              ? report.custom_material
+              : report.material;
 
           return {
-            chainage: Number(report.chainage_from),
-            value: value,
-            status: report.compliance_status || "pending",
-            description: `Report ID: ${report.id}`,
-            testDate: report.test_date,
-            testType: report.test_type,
-            specMin: (report.summary_json as any)?.thresholds?.min_value,
-            specMax: (report.summary_json as any)?.thresholds?.max_value,
+            layer: material?.toUpperCase() || "OTHER",
+            chainage: `${from}+${String(from % 100).padStart(3, "0")} to ${to}+${String(to % 100).padStart(3, "0")}`,
+            side: (report.side?.toUpperCase() as any) || "FULL",
+            material: material || "unknown",
+            report_id: report.id,
+            chainage_from: from,
+            chainage_to: to,
           };
         })
-        .filter((p) => !isNaN(p.chainage) && !isNaN(p.value));
+        .filter(
+          (p) => p.material && !isNaN(p.chainage_from) && !isNaN(p.chainage_to)
+        );
 
-      setChainageData(chartPoints);
-
-      const testTypes = Array.from(new Set(chartPoints.map((p) => p.testType)));
-      setAvailableTestTypes(testTypes);
+      setLayerData(layerPoints);
+      
+      if (isRefresh) {
+        toast({
+          title: "Data Refreshed",
+          description: "Layer works chart updated successfully",
+        });
+      }
     } catch (error) {
-      console.error("Error fetching chainage data:", error);
+      console.error("Error fetching layer data:", error);
       toast({
         title: "Error",
-        description: "Failed to load chainage data",
+        description: "Failed to load layer data",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
-  const getFilteredData = (): ChartData[] => {
-    let filtered = chainageData;
-
-    if (selectedTestType !== "all") {
-      filtered = filtered.filter(
-        (point) => point.testType === selectedTestType
-      );
-    }
-
-    return filtered
-      .sort((a, b) => a.chainage - b.chainage)
-      .map((point) => point);
-  };
-
-  const getTestTypeConfig = () => {
-    if (selectedTestType === "all") return testTypeConfigs.Default;
-    return (
-      testTypeConfigs[selectedTestType as keyof typeof testTypeConfigs] ||
-      testTypeConfigs.Default
-    );
-  };
-
-  const getBarColor = (status: string) => {
-    switch (status) {
-      case "pass":
-        return "#22c55e";
-      case "fail":
-        return "#ef4444";
-      case "pending":
-        return "#f59e0b";
-      case "review_required":
-        return "#3b82f6";
-      default:
-        return "#6b7280";
+  const handleRefresh = () => {
+    if (projectId && projectId !== ":projectId" && !projectId.includes(":")) {
+      fetchLayerData(projectId, true);
     }
   };
 
-  const exportChartData = () => {
-    const data = getFilteredData();
-    const config = getTestTypeConfig();
+  const groupByLayer = () => {
+    const grouped: { [key: string]: { lhs: LayerData[], rhs: LayerData[] } } = {};
+    
+    layerOrder.forEach(layer => {
+      grouped[layer] = { lhs: [], rhs: [] };
+    });
 
-    const csvContent = [
-      [
-        "Chainage (m)",
-        `Test Value (${config.unit})`,
-        "Status",
-        "Description",
-        "Test Date",
-      ],
-      ...data.map((point) => [
-        point.chainage,
-        point.value.toFixed(2),
-        point.status,
-        point.description,
-        point.testDate,
-      ]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
+    layerData.forEach(item => {
+      if (grouped[item.layer]) {
+        if (item.side === "LHS" || item.side === "FULL") {
+          grouped[item.layer].lhs.push(item);
+        }
+        if (item.side === "RHS" || item.side === "FULL") {
+          grouped[item.layer].rhs.push(item);
+        }
+      }
+    });
+
+    return grouped;
+  };
+
+  const exportLayerData = () => {
+    const grouped = groupByLayer();
+    let csvContent = "Layer,Side,Chainage From,Chainage To,Material,Report ID\n";
+    
+    Object.entries(grouped).forEach(([layer, data]) => {
+      data.lhs.forEach(item => {
+        csvContent += `${layer},LHS,${item.chainage_from},${item.chainage_to},${item.material},${item.report_id}\n`;
+      });
+      data.rhs.forEach(item => {
+        csvContent += `${layer},RHS,${item.chainage_from},${item.chainage_to},${item.material},${item.report_id}\n`;
+      });
+    });
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.setAttribute("href", url);
-    a.setAttribute(
-      "download",
-      `chainage-data-${project?.name || "project"}.csv`
-    );
+    a.href = url;
+    a.download = `layer-works-${project?.name || "chart"}-${new Date().toISOString()}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -300,10 +284,10 @@ export default function ChainageBarChart() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Chainage Bar Charts
+            Layer Works Chainage Chart
           </h1>
           <p className="text-muted-foreground">
-            Select a project to view test results along chainages
+            Select a project to view layer works progress
           </p>
         </div>
 
@@ -311,7 +295,7 @@ export default function ChainageBarChart() {
           <CardHeader className="pb-4">
             <CardTitle>Select Project</CardTitle>
             <CardDescription>
-              Choose a project to analyze chainage data
+              Choose a project to visualize layer works
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -334,7 +318,7 @@ export default function ChainageBarChart() {
                       className="w-full"
                       onClick={() => navigate(`/barchart/${proj.id}`)}
                     >
-                      View Chainage Chart
+                      View Layer Chart
                     </Button>
                   </CardContent>
                 </Card>
@@ -343,8 +327,7 @@ export default function ChainageBarChart() {
             {projects.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">
-                  No projects found. Create a project first to view chainage
-                  charts.
+                  No projects found. Create a project first to view layer works charts.
                 </p>
               </div>
             )}
@@ -354,43 +337,45 @@ export default function ChainageBarChart() {
     );
   }
 
-  const chartData = getFilteredData();
-  const config = getTestTypeConfig();
+  const grouped = groupByLayer();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/barchart/:projectId")}
+            className="mb-2"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Back to Projects
+          </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            Chainage Bar Chart
+            Layer Works Chainage Chart
           </h1>
           <p className="text-muted-foreground">
-            {project?.name} - Test results along project chainage
+            {project?.name} - Construction layer progress
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <Select value={selectedTestType} onValueChange={setSelectedTestType}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Test Types</SelectItem>
-              {availableTestTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button onClick={exportChartData} variant="outline">
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handleRefresh} 
+            variant="outline"
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={exportLayerData} variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
         </div>
       </div>
 
-      {/* Project Info Card */}
+      {/* Project Info */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -404,121 +389,123 @@ export default function ChainageBarChart() {
         <CardContent>
           <div className="flex gap-4 text-sm">
             <div>
-              <span className="font-medium">Total Points:</span>{" "}
-              {chartData.length}
+              <span className="font-medium">Total Reports:</span> {layerData.length}
             </div>
             <div>
-              <span className="font-medium">Test Type:</span>{" "}
-              {selectedTestType === "all" ? "All Types" : selectedTestType}
-            </div>
-            <div>
-              <span className="font-medium">Unit:</span> {config.unit}
+              <span className="font-medium">Auto-refresh:</span> Every 30 seconds
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Chart */}
+      {/* Layer Works Chart */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Test Results by Chainage
+            <Layers className="h-5 w-5" />
+            Layer Works Progress
           </CardTitle>
           <CardDescription>
-            {selectedTestType === "all" ? "All test types" : selectedTestType}{" "}
-            along project chainage
+            Construction layers by chainage (LHS and RHS)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {chartData.length > 0 ? (
-            <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="chainage"
-                    label={{
-                      value: "Chainage (m)",
-                      position: "insideBottom",
-                      offset: -5,
-                    }}
-                  />
-                  <YAxis
-                    label={{
-                      value: `Test Value (${config.unit})`,
-                      angle: -90,
-                      position: "insideLeft",
-                    }}
-                  />
-                  <Tooltip
-                    formatter={(value: number, name: string, props: any) => [
-                      `${value.toFixed(2)} ${config.unit}`,
-                      "Test Value",
-                    ]}
-                    labelFormatter={(label) => `Chainage: ${label}m`}
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-background border rounded-lg p-3 shadow-md">
-                            <p className="font-medium">{`Chainage: ${label}m`}</p>
-                            <p className="text-sm">{`Value: ${payload[0].value?.toFixed(
-                              2
-                            )} ${config.unit}`}</p>
-                            <p className="text-sm">{`Status: ${data.status}`}</p>
-                            <p className="text-sm">{`Date: ${new Date(
-                              data.testDate
-                            ).toLocaleDateString()}`}</p>
-                            <p className="text-sm">{data.description}</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar dataKey="value" fill={config.color} name="Test Value">
-                    {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={getBarColor(entry.status)}
-                      />
-                    ))}
-                  </Bar>
-                  {/* Specification lines */}
-                  {chartData[0]?.specMin && (
-                    <ReferenceLine
-                      y={chartData[0].specMin}
-                      stroke="red"
-                      strokeDasharray="5 5"
-                      label="Min Spec"
-                    />
-                  )}
-                  {chartData[0]?.specMax && (
-                    <ReferenceLine
-                      y={chartData[0].specMax}
-                      stroke="green"
-                      strokeDasharray="5 5"
-                      label="Max Spec"
-                    />
-                  )}
-                </BarChart>
-              </ResponsiveContainer>
+          {layerData.length > 0 ? (
+            <div className="space-y-6">
+              {/* LHS Section */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Badge variant="outline" className="text-base font-semibold">
+                    LHS (Left Hand Side)
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {layerOrder.map((layer) => {
+                    const lhsData = grouped[layer]?.lhs || [];
+                    return (
+                      <div key={`lhs-${layer}`} className="flex items-center gap-2">
+                        <div className="w-40 text-sm font-medium text-right">{layer}</div>
+                        <div className="flex-1 h-8 bg-muted rounded relative overflow-hidden">
+                          {lhsData.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="absolute h-full group cursor-pointer hover:opacity-80 transition-opacity"
+                              style={{
+                                left: `${(item.chainage_from / 2000) * 100}%`,
+                                width: `${((item.chainage_to - item.chainage_from) / 2000) * 100}%`,
+                                backgroundColor: layerColors[layer] || "#6b7280",
+                              }}
+                              title={`${item.chainage} - ${item.material}`}
+                            >
+                              <div className="absolute inset-0 flex items-center justify-center text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                {item.chainage}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* RHS Section */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Badge variant="outline" className="text-base font-semibold">
+                    RHS (Right Hand Side)
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {layerOrder.map((layer) => {
+                    const rhsData = grouped[layer]?.rhs || [];
+                    return (
+                      <div key={`rhs-${layer}`} className="flex items-center gap-2">
+                        <div className="w-40 text-sm font-medium text-right">{layer}</div>
+                        <div className="flex-1 h-8 bg-muted rounded relative overflow-hidden">
+                          {rhsData.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="absolute h-full group cursor-pointer hover:opacity-80 transition-opacity"
+                              style={{
+                                left: `${(item.chainage_from / 2000) * 100}%`,
+                                width: `${((item.chainage_to - item.chainage_from) / 2000) * 100}%`,
+                                backgroundColor: layerColors[layer] || "#6b7280",
+                                opacity: 0.7,
+                              }}
+                              title={`${item.chainage} - ${item.material}`}
+                            >
+                              <div className="absolute inset-0 flex items-center justify-center text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                {item.chainage}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Chainage Scale */}
+              <div className="mt-4 pl-40">
+                <div className="flex justify-between text-xs text-muted-foreground border-t pt-2">
+                  <span>00+000</span>
+                  <span>00+500</span>
+                  <span>01+000</span>
+                  <span>01+500</span>
+                  <span>02+000</span>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-center py-12">
-              <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                No chainage data found
-              </h3>
+              <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Layer Data Found</h3>
               <p className="text-muted-foreground mb-4">
-                No test points available for the selected filters.
+                No test reports with material and chainage information found for this project.
               </p>
               <Button onClick={() => navigate("/test-reports")}>
-                <Plus className="h-4 w-4 mr-2" />
                 Go to Test Reports
               </Button>
             </div>
@@ -529,40 +516,19 @@ export default function ChainageBarChart() {
       {/* Legend */}
       <Card>
         <CardHeader>
-          <CardTitle>Legend</CardTitle>
+          <CardTitle>Layer Colors</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span className="text-sm">Passed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span className="text-sm">Failed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-              <span className="text-sm">Pending</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span className="text-sm">Review Required</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="w-4 h-2 bg-red-500 rounded"
-                style={{ borderTop: "2px dashed red" }}
-              ></div>
-              <span className="text-sm">Min Specification</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="w-4 h-2 bg-green-500 rounded"
-                style={{ borderTop: "2px dashed green" }}
-              ></div>
-              <span className="text-sm">Max Specification</span>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {layerOrder.map((layer) => (
+              <div key={layer} className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded"
+                  style={{ backgroundColor: layerColors[layer] }}
+                ></div>
+                <span className="text-xs">{layer}</span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
