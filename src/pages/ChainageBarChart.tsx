@@ -154,6 +154,20 @@ export default function ChainageBarChart() {
     }
   };
 
+  const parseChainageToMeters = (chainage: string): number => {
+    if (!chainage) return 0;
+    // Handle formats like "5+562", "01+250", "1+100"
+    const cleanChainage = String(chainage).replace(/\s/g, "");
+    const parts = cleanChainage.split("+");
+    if (parts.length === 2) {
+      const km = parseInt(parts[0]) || 0;
+      const meters = parseInt(parts[1]) || 0;
+      return km * 1000 + meters;
+    }
+    // Try to parse as plain number
+    return parseInt(cleanChainage) || 0;
+  };
+
   const fetchLayerData = async (id: string, isRefresh = false) => {
     if (!profile?.company_id || !id || id.includes(":")) return;
     
@@ -170,24 +184,36 @@ export default function ChainageBarChart() {
           "id, chainage_from, chainage_to, material, custom_material, side"
         )
         .eq("project_id", id)
-        .eq("company_id", profile.company_id)
         .order("chainage_from");
 
       if (error) throw error;
 
       const layerPoints: LayerData[] = (data || [])
         .map((report) => {
-          const from = Number(report.chainage_from);
-          const to = Number(report.chainage_to);
+          const from = parseChainageToMeters(report.chainage_from || "");
+          const to = parseChainageToMeters(report.chainage_to || "");
           const material =
             report.material === "custom"
               ? report.custom_material
               : report.material;
 
+          // Map side values
+          let sideValue: "LHS" | "RHS" | "FULL" = "FULL";
+          if (report.side) {
+            const sideStr = String(report.side).toLowerCase();
+            if (sideStr === "left" || sideStr === "lhs") {
+              sideValue = "LHS";
+            } else if (sideStr === "right" || sideStr === "rhs") {
+              sideValue = "RHS";
+            }
+          }
+
           return {
             layer: material?.toUpperCase() || "OTHER",
-            chainage: `${from}+${String(from % 100).padStart(3, "0")} to ${to}+${String(to % 100).padStart(3, "0")}`,
-            side: (report.side?.toUpperCase() as any) || "FULL",
+            chainage: report.chainage_from && report.chainage_to 
+              ? `${report.chainage_from} to ${report.chainage_to}`
+              : "Unknown",
+            side: sideValue,
             material: material || "unknown",
             report_id: report.id,
             chainage_from: from,
@@ -195,7 +221,7 @@ export default function ChainageBarChart() {
           };
         })
         .filter(
-          (p) => p.material && !isNaN(p.chainage_from) && !isNaN(p.chainage_to)
+          (p) => p.material && p.chainage_from > 0 && p.chainage_to > 0
         );
 
       setLayerData(layerPoints);
@@ -231,10 +257,19 @@ export default function ChainageBarChart() {
   const groupByLayer = () => {
     const grouped: { [key: string]: { lhs: LayerData[], rhs: LayerData[] } } = {};
     
+    // Initialize all predefined layers
     layerOrder.forEach(layer => {
       grouped[layer] = { lhs: [], rhs: [] };
     });
 
+    // Also add any custom layers from the data
+    layerData.forEach(item => {
+      if (!grouped[item.layer]) {
+        grouped[item.layer] = { lhs: [], rhs: [] };
+      }
+    });
+
+    // Group the data
     layerData.forEach(item => {
       if (grouped[item.layer]) {
         if (item.side === "LHS" || item.side === "FULL") {
@@ -420,8 +455,13 @@ export default function ChainageBarChart() {
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  {layerOrder.map((layer) => {
+                  {Object.keys(grouped).filter(layer => grouped[layer].lhs.length > 0 || layerOrder.includes(layer)).map((layer) => {
                     const lhsData = grouped[layer]?.lhs || [];
+                    if (lhsData.length === 0 && !layerOrder.includes(layer)) return null;
+                    
+                    // Find max chainage for scaling
+                    const maxChainage = Math.max(...layerData.map(d => d.chainage_to), 10000);
+                    
                     return (
                       <div key={`lhs-${layer}`} className="flex items-center gap-2">
                         <div className="w-40 text-sm font-medium text-right">{layer}</div>
@@ -431,8 +471,8 @@ export default function ChainageBarChart() {
                               key={idx}
                               className="absolute h-full group cursor-pointer hover:opacity-80 transition-opacity"
                               style={{
-                                left: `${(item.chainage_from / 2000) * 100}%`,
-                                width: `${((item.chainage_to - item.chainage_from) / 2000) * 100}%`,
+                                left: `${(item.chainage_from / maxChainage) * 100}%`,
+                                width: `${((item.chainage_to - item.chainage_from) / maxChainage) * 100}%`,
                                 backgroundColor: layerColors[layer] || "#6b7280",
                               }}
                               title={`${item.chainage} - ${item.material}`}
@@ -457,8 +497,13 @@ export default function ChainageBarChart() {
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  {layerOrder.map((layer) => {
+                  {Object.keys(grouped).filter(layer => grouped[layer].rhs.length > 0 || layerOrder.includes(layer)).map((layer) => {
                     const rhsData = grouped[layer]?.rhs || [];
+                    if (rhsData.length === 0 && !layerOrder.includes(layer)) return null;
+                    
+                    // Find max chainage for scaling
+                    const maxChainage = Math.max(...layerData.map(d => d.chainage_to), 10000);
+                    
                     return (
                       <div key={`rhs-${layer}`} className="flex items-center gap-2">
                         <div className="w-40 text-sm font-medium text-right">{layer}</div>
@@ -468,8 +513,8 @@ export default function ChainageBarChart() {
                               key={idx}
                               className="absolute h-full group cursor-pointer hover:opacity-80 transition-opacity"
                               style={{
-                                left: `${(item.chainage_from / 2000) * 100}%`,
-                                width: `${((item.chainage_to - item.chainage_from) / 2000) * 100}%`,
+                                left: `${(item.chainage_from / maxChainage) * 100}%`,
+                                width: `${((item.chainage_to - item.chainage_from) / maxChainage) * 100}%`,
                                 backgroundColor: layerColors[layer] || "#6b7280",
                                 opacity: 0.7,
                               }}
@@ -490,11 +535,20 @@ export default function ChainageBarChart() {
               {/* Chainage Scale */}
               <div className="mt-4 pl-40">
                 <div className="flex justify-between text-xs text-muted-foreground border-t pt-2">
-                  <span>00+000</span>
-                  <span>00+500</span>
-                  <span>01+000</span>
-                  <span>01+500</span>
-                  <span>02+000</span>
+                  {(() => {
+                    const maxChainage = Math.max(...layerData.map(d => d.chainage_to), 10000);
+                    const steps = 5;
+                    return Array.from({ length: steps }, (_, i) => {
+                      const value = (maxChainage / (steps - 1)) * i;
+                      const km = Math.floor(value / 1000);
+                      const m = Math.floor(value % 1000);
+                      return (
+                        <span key={i}>
+                          {String(km).padStart(2, '0')}+{String(m).padStart(3, '0')}
+                        </span>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             </div>
@@ -520,11 +574,11 @@ export default function ChainageBarChart() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {layerOrder.map((layer) => (
+            {Object.keys(grouped).map((layer) => (
               <div key={layer} className="flex items-center gap-2">
                 <div
                   className="w-4 h-4 rounded"
-                  style={{ backgroundColor: layerColors[layer] }}
+                  style={{ backgroundColor: layerColors[layer] || "#6b7280" }}
                 ></div>
                 <span className="text-xs">{layer}</span>
               </div>
