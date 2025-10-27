@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { BarChart3, MapPin, Download, RefreshCw, Loader2, ChevronLeft, Layers, Settings } from "lucide-react";
 import { LayerManagement } from "@/components/LayerManagement";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -23,6 +24,14 @@ interface Project {
   location: string;
 }
 
+interface ProjectRoad {
+  id: string;
+  name: string;
+  project_id: string;
+  company_id: string;
+  created_at: string;
+}
+
 interface LayerData {
   layer: string;
   chainage: string;
@@ -38,6 +47,8 @@ export default function ChainageBarChart() {
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [roads, setRoads] = useState<ProjectRoad[]>([]);
+  const [selectedRoadId, setSelectedRoadId] = useState<string>("");
   const [layerData, setLayerData] = useState<LayerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -85,22 +96,28 @@ export default function ChainageBarChart() {
   }, [profile?.company_id]);
 
   useEffect(() => {
-    if (projectId && projectId !== ":projectId" && !projectId.includes(":") && layerOrder.length > 0) {
+    if (projectId && projectId !== ":projectId" && !projectId.includes(":")) {
       fetchProjectData(projectId);
-      fetchLayerData(projectId);
+      fetchProjectRoads(projectId);
     }
-  }, [projectId, profile?.company_id, layerOrder]);
+  }, [projectId, profile?.company_id]);
+
+  useEffect(() => {
+    if (projectId && projectId !== ":projectId" && !projectId.includes(":") && layerOrder.length > 0 && selectedRoadId) {
+      fetchLayerData(projectId, selectedRoadId);
+    }
+  }, [projectId, selectedRoadId, profile?.company_id, layerOrder]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
-    if (!projectId || projectId === ":projectId" || projectId.includes(":") || layerOrder.length === 0) return;
+    if (!projectId || projectId === ":projectId" || projectId.includes(":") || layerOrder.length === 0 || !selectedRoadId) return;
     
     const interval = setInterval(() => {
-      fetchLayerData(projectId, true);
+      fetchLayerData(projectId, selectedRoadId, true);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [projectId, profile?.company_id, layerOrder]);
+  }, [projectId, selectedRoadId, profile?.company_id, layerOrder]);
 
   const fetchProjects = async () => {
     if (!profile?.company_id) return;
@@ -147,6 +164,34 @@ export default function ChainageBarChart() {
     }
   };
 
+  const fetchProjectRoads = async (id: string) => {
+    if (!profile?.company_id || !id || id.includes(":")) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("project_roads")
+        .select("*")
+        .eq("project_id", id)
+        .eq("company_id", profile.company_id)
+        .order("name");
+
+      if (error) throw error;
+      setRoads(data || []);
+      
+      // Auto-select first road if available
+      if (data && data.length > 0 && !selectedRoadId) {
+        setSelectedRoadId(data[0].id);
+      }
+    } catch (error) {
+      console.error("Error fetching project roads:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load project roads",
+        variant: "destructive",
+      });
+    }
+  };
+
   const parseChainageToMeters = (chainage: string): number => {
     if (!chainage) return 0;
     // Handle formats like "5+562", "01+250", "1+100"
@@ -161,8 +206,8 @@ export default function ChainageBarChart() {
     return parseInt(cleanChainage) || 0;
   };
 
-  const fetchLayerData = async (id: string, isRefresh = false) => {
-    if (!profile?.company_id || !id || id.includes(":")) return;
+  const fetchLayerData = async (id: string, roadId: string, isRefresh = false) => {
+    if (!profile?.company_id || !id || id.includes(":") || !roadId) return;
     
     if (isRefresh) {
       setRefreshing(true);
@@ -171,12 +216,27 @@ export default function ChainageBarChart() {
     }
 
     try {
+      // Get the road name first
+      const { data: roadData } = await supabase
+        .from("project_roads")
+        .select("name")
+        .eq("id", roadId)
+        .single();
+
+      if (!roadData) {
+        setLayerData([]);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("test_reports")
         .select(
-          "id, chainage_from, chainage_to, material, custom_material, side"
+          "id, chainage_from, chainage_to, material, custom_material, side, road_name"
         )
         .eq("project_id", id)
+        .eq("road_name", roadData.name)
         .order("chainage_from");
 
       if (error) throw error;
@@ -242,8 +302,8 @@ export default function ChainageBarChart() {
   };
 
   const handleRefresh = () => {
-    if (projectId && projectId !== ":projectId" && !projectId.includes(":")) {
-      fetchLayerData(projectId, true);
+    if (projectId && projectId !== ":projectId" && !projectId.includes(":") && selectedRoadId) {
+      fetchLayerData(projectId, selectedRoadId, true);
     }
   };
 
@@ -386,6 +446,23 @@ export default function ChainageBarChart() {
           <p className="text-muted-foreground">
             {project?.name} - Construction layer progress
           </p>
+          {roads.length > 0 && (
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-sm font-medium">Road:</span>
+              <Select value={selectedRoadId} onValueChange={setSelectedRoadId}>
+                <SelectTrigger className="w-[300px]">
+                  <SelectValue placeholder="Select a road" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roads.map((road) => (
+                    <SelectItem key={road.id} value={road.id}>
+                      {road.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -557,7 +634,11 @@ export default function ChainageBarChart() {
               <Layers className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
               <h3 className="text-xl font-semibold mb-2">No Layer Works Data Available</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                This project doesn't have any test reports with layer and chainage information yet.
+                {roads.length === 0 
+                  ? "This project doesn't have any roads configured yet. Add roads to the project first."
+                  : !selectedRoadId
+                  ? "Please select a road to view layer works data."
+                  : `No test reports found for the selected road with layer and chainage information.`}
               </p>
               <div className="bg-muted/50 rounded-lg p-6 max-w-2xl mx-auto mb-6">
                 <h4 className="font-medium mb-3 text-left">To display layer works data, test reports must include:</h4>
@@ -581,12 +662,20 @@ export default function ChainageBarChart() {
                 </ul>
               </div>
               <div className="flex gap-3 justify-center">
-                <Button onClick={() => navigate("/test-reports")} size="lg">
-                  View All Test Reports
-                </Button>
-                <Button onClick={() => navigate("/test-reports/new")} variant="outline" size="lg">
-                  Create New Report
-                </Button>
+                {roads.length === 0 ? (
+                  <Button onClick={() => navigate(`/projects/${projectId}/edit`)} size="lg">
+                    Configure Project Roads
+                  </Button>
+                ) : (
+                  <>
+                    <Button onClick={() => navigate("/test-reports")} size="lg">
+                      View All Test Reports
+                    </Button>
+                    <Button onClick={() => navigate("/test-reports/new")} variant="outline" size="lg">
+                      Create New Report
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -621,8 +710,8 @@ export default function ChainageBarChart() {
           </DialogHeader>
           <LayerManagement onLayersUpdated={() => {
             fetchLayers();
-            if (projectId && projectId !== ":projectId" && !projectId.includes(":")) {
-              fetchLayerData(projectId);
+            if (projectId && projectId !== ":projectId" && !projectId.includes(":") && selectedRoadId) {
+              fetchLayerData(projectId, selectedRoadId);
             }
           }} />
         </DialogContent>
