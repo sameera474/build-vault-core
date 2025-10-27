@@ -116,9 +116,7 @@ export function EnhancedCreateReportWizard({ open, onOpenChange, onSuccess }: En
   const fetchProjects = async () => {
     try {
       const { data: projects, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('company_id', profile?.company_id)
+        .rpc('user_accessible_projects')
         .eq('status', 'active')
         .order('name');
 
