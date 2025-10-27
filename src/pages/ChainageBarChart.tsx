@@ -31,51 +31,6 @@ interface LayerData {
   chainage_to: number;
 }
 
-// Layer order matching the reference image
-const layerOrder = [
-  "SHOULDER",
-  "SHO EMB 2",
-  "SHO EMB 1",
-  "WEARING",
-  "TACK C.",
-  "PRIME",
-  "ABC TOP",
-  "ABC 1ST",
-  "SB 2 LAYER",
-  "SB 1 LAYER",
-  "EMB LAYER5",
-  "EMB LAYER4",
-  "EMB LAYER3",
-  "EMB LAYER2",
-  "EMB LAYER 1",
-  "SHOULDER S.G.",
-  "SUB GRADE",
-  "EXCAVATION",
-  "CLEARING",
-];
-
-const layerColors: { [key: string]: string } = {
-  "SHOULDER": "#1f2937",
-  "SHO EMB 2": "#374151",
-  "SHO EMB 1": "#4b5563",
-  "WEARING": "#1f2937",
-  "TACK C.": "#6b7280",
-  "PRIME": "#f97316",
-  "ABC TOP": "#9ca3af",
-  "ABC 1ST": "#d1d5db",
-  "SB 2 LAYER": "#e5e7eb",
-  "SB 1 LAYER": "#f3f4f6",
-  "EMB LAYER5": "#fef3c7",
-  "EMB LAYER4": "#fde68a",
-  "EMB LAYER3": "#fcd34d",
-  "EMB LAYER2": "#fbbf24",
-  "EMB LAYER 1": "#f59e0b",
-  "SHOULDER S.G.": "#d97706",
-  "SUB GRADE": "#b45309",
-  "EXCAVATION": "#92400e",
-  "CLEARING": "#78350f",
-};
-
 export default function ChainageBarChart() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -84,30 +39,65 @@ export default function ChainageBarChart() {
   const [layerData, setLayerData] = useState<LayerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [layerOrder, setLayerOrder] = useState<string[]>([]);
+  const [layerColors, setLayerColors] = useState<{ [key: string]: string }>({});
   const { profile } = useAuth();
   const { toast } = useToast();
+
+  // Fetch layers from database
+  const fetchLayers = async () => {
+    if (!profile?.company_id) return;
+
+    try {
+      const { data: layers, error } = await supabase
+        .from("construction_layers")
+        .select("name, color, display_order")
+        .eq("company_id", profile.company_id)
+        .eq("is_active", true)
+        .order("display_order");
+
+      if (error) throw error;
+
+      if (layers && layers.length > 0) {
+        const order = layers.map((l) => l.name);
+        const colors = layers.reduce((acc, l) => {
+          acc[l.name] = l.color;
+          return acc;
+        }, {} as { [key: string]: string });
+
+        setLayerOrder(order);
+        setLayerColors(colors);
+      }
+    } catch (error) {
+      console.error("Error fetching layers:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLayers();
+  }, [profile?.company_id]);
 
   useEffect(() => {
     fetchProjects();
   }, [profile?.company_id]);
 
   useEffect(() => {
-    if (projectId && projectId !== ":projectId" && !projectId.includes(":")) {
+    if (projectId && projectId !== ":projectId" && !projectId.includes(":") && layerOrder.length > 0) {
       fetchProjectData(projectId);
       fetchLayerData(projectId);
     }
-  }, [projectId, profile?.company_id]);
+  }, [projectId, profile?.company_id, layerOrder]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
-    if (!projectId || projectId === ":projectId" || projectId.includes(":")) return;
+    if (!projectId || projectId === ":projectId" || projectId.includes(":") || layerOrder.length === 0) return;
     
     const interval = setInterval(() => {
       fetchLayerData(projectId, true);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [projectId, profile?.company_id]);
+  }, [projectId, profile?.company_id, layerOrder]);
 
   const fetchProjects = async () => {
     if (!profile?.company_id) return;

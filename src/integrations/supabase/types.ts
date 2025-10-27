@@ -165,6 +165,42 @@ export type Database = {
           },
         ]
       }
+      construction_layers: {
+        Row: {
+          color: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           created_at: string
@@ -918,30 +954,18 @@ export type Database = {
           yymmdd: string
         }[]
       }
-      current_user_company: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      current_user_company: { Args: never; Returns: string }
       current_user_info: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           company_id: string
           role: string
           user_id: string
         }[]
       }
-      get_current_user_company: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_user_company: {
-        Args: { user_uuid: string }
-        Returns: string
-      }
-      get_user_company_id: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_current_user_company: { Args: never; Returns: string }
+      get_user_company: { Args: { user_uuid: string }; Returns: string }
+      get_user_company_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -953,12 +977,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_super_admin: {
-        Args: { user_uuid: string }
-        Returns: boolean
-      }
+      is_super_admin: { Args: { user_uuid: string }; Returns: boolean }
       user_accessible_projects: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           client_logo: string
           client_name: string
