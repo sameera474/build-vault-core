@@ -48,28 +48,49 @@ export function EnhancedMobileFeatures({
   });
 
   const takePhoto = async () => {
-    if (!Capacitor.isNativePlatform()) {
-      toast({
-        title: "Camera not available",
-        description: "Camera functionality is only available on mobile devices",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsCapturingPhoto(true);
     
     try {
-      const photo = await CapacitorCamera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
-      });
+      let photoDataUrl: string;
+
+      if (Capacitor.isNativePlatform()) {
+        // Use native camera on mobile devices
+        const photo = await CapacitorCamera.getPhoto({
+          quality: 90,
+          allowEditing: false,
+          resultType: CameraResultType.DataUrl,
+          source: CameraSource.Camera,
+        });
+        photoDataUrl = photo.dataUrl!;
+      } else {
+        // Use HTML file input for web/desktop
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment'; // Request camera on mobile web
+
+        photoDataUrl = await new Promise((resolve, reject) => {
+          input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) {
+              reject(new Error('No file selected'));
+              return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(file);
+          };
+
+          input.oncancel = () => reject(new Error('Photo capture cancelled'));
+          input.click();
+        });
+      }
 
       const photoData: PhotoData = {
         id: Date.now().toString(),
-        dataUrl: photo.dataUrl!,
+        dataUrl: photoDataUrl,
         location: currentLocation || undefined,
         timestamp: new Date().toISOString(),
       };
@@ -79,16 +100,18 @@ export function EnhancedMobileFeatures({
 
       toast({
         title: "Photo captured",
-        description: "Photo has been saved to the report",
+        description: "Photo has been saved successfully",
       });
 
     } catch (error: any) {
-      console.error('Camera error:', error);
-      toast({
-        title: "Camera error",
-        description: error.message || "Failed to capture photo",
-        variant: "destructive",
-      });
+      if (error.message !== 'Photo capture cancelled') {
+        console.error('Camera error:', error);
+        toast({
+          title: "Camera error",
+          description: error.message || "Failed to capture photo",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsCapturingPhoto(false);
     }
