@@ -57,27 +57,50 @@ export function TestReportsListItem({
   onDelete,
 }: TestReportsListItemProps) {
   const getPrimaryKpi = () => {
+    // First check summary_json for KPIs
     const kpis = r.summary_json?.kpis;
-    if (!kpis || typeof kpis !== "object" || Object.keys(kpis).length === 0) {
-      return { name: "Result", value: "—" };
+    if (kpis && typeof kpis === "object" && Object.keys(kpis).length > 0) {
+      const primaryKey =
+        Object.keys(kpis).find(
+          (k) =>
+            k.toLowerCase().includes("strength") ||
+            k.toLowerCase().includes("density") ||
+            k.toLowerCase().includes("compaction") ||
+            k.toLowerCase().includes("cbr") ||
+            k.toLowerCase().includes("stability")
+        ) || Object.keys(kpis)[0];
+
+      const value = kpis[primaryKey];
+      const name = primaryKey
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+      return {
+        name,
+        value: typeof value === "number" ? value.toFixed(2) : (value || "—"),
+      };
     }
 
-    const primaryKey =
-      Object.keys(kpis).find(
-        (k) =>
-          k.toLowerCase().includes("strength") ||
-          k.toLowerCase().includes("density") ||
-          k.toLowerCase().includes("compaction")
-      ) || Object.keys(kpis)[0];
+    // Fallback to data_json if summary_json is not available
+    if (r.data_json && typeof r.data_json === "object") {
+      // Look for common result fields in data_json
+      const commonFields = [
+        "result", "value", "strength", "density", "compaction", 
+        "cbr_value", "stability", "average", "final_value"
+      ];
+      
+      for (const field of commonFields) {
+        if (r.data_json[field] !== undefined && r.data_json[field] !== null) {
+          return {
+            name: field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+            value: typeof r.data_json[field] === "number" 
+              ? r.data_json[field].toFixed(2) 
+              : r.data_json[field]
+          };
+        }
+      }
+    }
 
-    const value = kpis[primaryKey];
-    const name = primaryKey
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (l) => l.toUpperCase());
-    return {
-      name,
-      value: typeof value === "number" ? value.toFixed(2) : value || "—",
-    };
+    return { name: "Result", value: "Pending" };
   };
 
   const primaryKpi = getPrimaryKpi();
@@ -156,10 +179,22 @@ export function TestReportsListItem({
           {r.technician_name || "—"}
         </div>
         {(r.status === "approved" || r.status === "rejected") && (
-          <div>
-            <span className="text-muted-foreground">Approved By:</span>{" "}
-            {r.approved_by || "—"}
-          </div>
+          <>
+            <div>
+              <span className="text-muted-foreground">
+                {r.status === "approved" ? "Approved By" : "Rejected By"}:
+              </span>{" "}
+              {r.approver?.name || "System"}
+            </div>
+            {r.approved_at && (
+              <div>
+                <span className="text-muted-foreground">
+                  {r.status === "approved" ? "Approved" : "Rejected"} Date:
+                </span>{" "}
+                {new Date(r.approved_at).toLocaleDateString()}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

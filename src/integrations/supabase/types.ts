@@ -747,6 +747,8 @@ export type Database = {
       }
       test_reports: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           chainage_from: string | null
           chainage_to: string | null
           company_id: string
@@ -788,6 +790,8 @@ export type Database = {
           yymmdd: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           chainage_from?: string | null
           chainage_to?: string | null
           company_id: string
@@ -829,6 +833,8 @@ export type Database = {
           yymmdd?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           chainage_from?: string | null
           chainage_to?: string | null
           company_id?: string

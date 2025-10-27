@@ -61,7 +61,14 @@ interface TestReport {
   compliance_status: string;
   test_date: string;
   created_at: string;
+  approved_by?: string;
+  approved_at?: string;
+  summary_json?: any;
+  data_json?: any;
   projects?: {
+    name: string;
+  };
+  approver?: {
     name: string;
   };
 }
@@ -162,7 +169,27 @@ export default function TestReports() {
       const { data, error } = await query;
 
       if (error) throw error;
-      setReports(data || []);
+      
+      // Fetch approver names for approved/rejected reports
+      const reportsWithApprovers = await Promise.all(
+        (data || []).map(async (report) => {
+          if (report.approved_by && (report.status === "approved" || report.status === "rejected")) {
+            const { data: approverData } = await supabase
+              .from("profiles")
+              .select("name")
+              .eq("user_id", report.approved_by)
+              .maybeSingle();
+            
+            return {
+              ...report,
+              approver: approverData || null
+            };
+          }
+          return report;
+        })
+      );
+      
+      setReports(reportsWithApprovers || []);
     } catch (error) {
       console.error("Error fetching reports:", error);
       toast({
@@ -234,11 +261,15 @@ export default function TestReports() {
 
   const handleApprove = async (reportId: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from("test_reports")
         .update({
           status: "approved",
           compliance_status: "approved",
+          approved_by: user?.id,
+          approved_at: new Date().toISOString(),
         })
         .eq("id", reportId);
 
@@ -261,11 +292,15 @@ export default function TestReports() {
 
   const handleReject = async (reportId: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from("test_reports")
         .update({
           status: "rejected",
           compliance_status: "rejected",
+          approved_by: user?.id,
+          approved_at: new Date().toISOString(),
         })
         .eq("id", reportId);
 
