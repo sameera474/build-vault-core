@@ -31,7 +31,7 @@ export default function SupervisorDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!profile?.company_id) return;
+      if (!profile?.user_id) return;
       setLoading(true);
 
       try {
@@ -46,20 +46,16 @@ export default function SupervisorDashboard() {
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
             .eq("status", "submitted"),
           supabase
             .from("test_reports")
-            .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id),
+            .select("*", { count: "exact", head: true }),
           supabase
             .from("profiles")
-            .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id),
+            .select("*", { count: "exact", head: true }),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
             .eq("status", "approved")
             .gte("updated_at", today),
         ]);
@@ -78,7 +74,7 @@ export default function SupervisorDashboard() {
     };
 
     fetchStats();
-  }, [profile?.company_id]);
+  }, [profile?.user_id]);
 
   if (loading) {
     return (

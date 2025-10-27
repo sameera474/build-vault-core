@@ -25,7 +25,7 @@ export default function ConsultantDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!profile?.company_id) return;
+      if (!profile?.user_id) return;
       setLoading(true);
 
       try {
@@ -40,22 +40,18 @@ export default function ConsultantDashboard() {
         ] = await Promise.all([
           supabase
             .from("test_reports")
-            .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id),
+            .select("*", { count: "exact", head: true }),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
             .eq("compliance_status", "pass"),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
             .eq("compliance_status", "fail"),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
             .gte("created_at", sevenDaysAgo.toISOString()),
         ]);
 
@@ -73,7 +69,7 @@ export default function ConsultantDashboard() {
     };
 
     fetchStats();
-  }, [profile?.company_id]);
+  }, [profile?.user_id]);
 
   if (loading) {
     return (

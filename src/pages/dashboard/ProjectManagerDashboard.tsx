@@ -44,25 +44,6 @@ export default function ProjectManagerDashboard() {
       setLoading(true);
 
       try {
-        // First, get accessible project IDs for this user
-        const { data: accessibleProjects } = await supabase
-          .rpc('user_accessible_projects');
-        
-        const projectIds = accessibleProjects?.map(p => p.id) || [];
-
-        // If no accessible projects, return zeros
-        if (projectIds.length === 0) {
-          setStats({
-            activeProjects: 0,
-            pendingApprovals: 0,
-            completedTests: 0,
-            complianceRate: 100,
-          });
-          setComplianceTrend([]);
-          setLoading(false);
-          return;
-        }
-
         const [
           { count: projectCount },
           { count: pendingCount },
@@ -72,22 +53,18 @@ export default function ProjectManagerDashboard() {
           supabase
             .from("projects")
             .select("*", { count: "exact", head: true })
-            .in("id", projectIds)
             .eq("status", "active"),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .in("project_id", projectIds)
             .eq("status", "submitted"),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .in("project_id", projectIds)
             .eq("status", "approved"),
           supabase
             .from("test_reports")
-            .select("compliance_status, created_at")
-            .in("project_id", projectIds),
+            .select("compliance_status, created_at"),
         ]);
 
         let complianceRate = 100;
@@ -98,15 +75,12 @@ export default function ProjectManagerDashboard() {
           complianceRate = Math.round((passed / allReports.length) * 100);
         }
 
-        // Calculate compliance trend
-        const monthlyData: {
-          [key: string]: { total: number; passed: number };
-        } = {};
+        const monthlyData: { [key: string]: { total: number; passed: number } } = {};
         allReports?.forEach((report) => {
-          const month = new Date(report.created_at).toLocaleDateString(
-            "en-US",
-            { month: "short", year: "numeric" }
-          );
+          const month = new Date(report.created_at).toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
+          });
           if (!monthlyData[month]) {
             monthlyData[month] = { total: 0, passed: 0 };
           }
@@ -119,12 +93,11 @@ export default function ProjectManagerDashboard() {
         const trend = Object.entries(monthlyData)
           .map(([month, data]) => ({
             month,
-            date: new Date(month), // Create a date object for sorting
-            rate:
-              data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0,
+            date: new Date(month),
+            rate: data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0,
           }))
           .sort((a, b) => a.date.getTime() - b.date.getTime())
-          .map(({ month, rate }) => ({ month, rate })); // Remove date field after sorting
+          .map(({ month, rate }) => ({ month, rate }));
 
         setComplianceTrend(trend);
 

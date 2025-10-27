@@ -25,7 +25,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!profile?.company_id) return;
+      if (!profile?.user_id) return;
       setLoading(true);
 
       try {
@@ -44,21 +44,17 @@ export default function AdminDashboard() {
         ] = await Promise.all([
           supabase
             .from("profiles")
-            .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id),
+            .select("*", { count: "exact", head: true }),
           supabase
             .from("projects")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
             .eq("status", "active"),
           supabase
             .from("test_reports")
-            .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id),
+            .select("*", { count: "exact", head: true }),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
             .gte("created_at", firstDayOfMonth),
         ]);
 
@@ -76,7 +72,7 @@ export default function AdminDashboard() {
     };
 
     fetchStats();
-  }, [profile?.company_id]);
+  }, [profile?.user_id]);
 
   if (loading) {
     return (

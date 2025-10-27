@@ -32,7 +32,7 @@ export default function QualityManagerDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!profile?.company_id) return;
+      if (!profile?.user_id) return;
       setLoading(true);
 
       try {
@@ -42,12 +42,10 @@ export default function QualityManagerDashboard() {
         ] = await Promise.all([
           supabase
             .from("test_reports")
-            .select("compliance_status, status")
-            .eq("company_id", profile.company_id),
+            .select("compliance_status, status"),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
             .eq("status", "draft"),
         ]);
 
@@ -75,7 +73,7 @@ export default function QualityManagerDashboard() {
     };
 
     fetchStats();
-  }, [profile?.company_id]);
+  }, [profile?.user_id]);
 
   if (loading) {
     return (
