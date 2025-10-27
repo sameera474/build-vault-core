@@ -40,10 +40,29 @@ export default function ProjectManagerDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!profile?.company_id) return;
+      if (!profile?.user_id) return;
       setLoading(true);
 
       try {
+        // First, get accessible project IDs for this user
+        const { data: accessibleProjects } = await supabase
+          .rpc('user_accessible_projects');
+        
+        const projectIds = accessibleProjects?.map(p => p.id) || [];
+
+        // If no accessible projects, return zeros
+        if (projectIds.length === 0) {
+          setStats({
+            activeProjects: 0,
+            pendingApprovals: 0,
+            completedTests: 0,
+            complianceRate: 100,
+          });
+          setComplianceTrend([]);
+          setLoading(false);
+          return;
+        }
+
         const [
           { count: projectCount },
           { count: pendingCount },
@@ -53,22 +72,22 @@ export default function ProjectManagerDashboard() {
           supabase
             .from("projects")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
+            .in("id", projectIds)
             .eq("status", "active"),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
+            .in("project_id", projectIds)
             .eq("status", "submitted"),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("company_id", profile.company_id)
+            .in("project_id", projectIds)
             .eq("status", "approved"),
           supabase
             .from("test_reports")
             .select("compliance_status, created_at")
-            .eq("company_id", profile.company_id),
+            .in("project_id", projectIds),
         ]);
 
         let complianceRate = 100;
@@ -123,7 +142,7 @@ export default function ProjectManagerDashboard() {
     };
 
     fetchStats();
-  }, [profile?.company_id]);
+  }, [profile?.user_id]);
 
   if (loading) {
     return (
