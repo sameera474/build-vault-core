@@ -553,15 +553,41 @@ export default function ChainageBarChart() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Layer Data Found</h3>
-              <p className="text-muted-foreground mb-4">
-                No test reports with material and chainage information found for this project.
+            <div className="text-center py-12 px-4">
+              <Layers className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h3 className="text-xl font-semibold mb-2">No Layer Works Data Available</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                This project doesn't have any test reports with layer and chainage information yet.
               </p>
-              <Button onClick={() => navigate("/test-reports")}>
-                Go to Test Reports
-              </Button>
+              <div className="bg-muted/50 rounded-lg p-6 max-w-2xl mx-auto mb-6">
+                <h4 className="font-medium mb-3 text-left">To display layer works data, test reports must include:</h4>
+                <ul className="text-left space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">✓</span>
+                    <span><strong>Material/Layer type</strong> (e.g., SUB GRADE, ABC TOP, WEARING)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">✓</span>
+                    <span><strong>Chainage From</strong> (e.g., 0+000, 1+250)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">✓</span>
+                    <span><strong>Chainage To</strong> (e.g., 0+100, 1+300)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">✓</span>
+                    <span><strong>Side</strong> (LHS, RHS, or both)</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={() => navigate("/test-reports")} size="lg">
+                  View All Test Reports
+                </Button>
+                <Button onClick={() => navigate("/test-reports/new")} variant="outline" size="lg">
+                  Create New Report
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
