@@ -48,7 +48,6 @@ import Companies from "./pages/Companies";
 import DemoUsers from "./pages/DemoUsers";
 import FixDemoUsers from "./pages/FixDemoUsers";
 import Profile from "./pages/Profile";
-import LayerSettings from "./pages/LayerSettings";
 
 // Layouts
 import { PublicLayout } from "./layouts/PublicLayout";
@@ -326,14 +325,6 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Profile />
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-
-          <Route path="/layer-settings" element={
-            <ProtectedRoute>
-              <AppLayout>
-                <LayerSettings />
               </AppLayout>
             </ProtectedRoute>
           } />

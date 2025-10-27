@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { BarChart3, MapPin, Download, RefreshCw, Loader2, ChevronLeft, Layers } from "lucide-react";
+import { BarChart3, MapPin, Download, RefreshCw, Loader2, ChevronLeft, Layers, Settings } from "lucide-react";
+import { LayerManagement } from "@/components/LayerManagement";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
@@ -41,6 +43,7 @@ export default function ChainageBarChart() {
   const [refreshing, setRefreshing] = useState(false);
   const [layerOrder, setLayerOrder] = useState<string[]>([]);
   const [layerColors, setLayerColors] = useState<{ [key: string]: string }>({});
+  const [showLayerSettings, setShowLayerSettings] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
 
@@ -386,6 +389,13 @@ export default function ChainageBarChart() {
         </div>
         <div className="flex items-center gap-2">
           <Button 
+            onClick={() => setShowLayerSettings(true)} 
+            variant="outline"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Manage Layers
+          </Button>
+          <Button 
             onClick={handleRefresh} 
             variant="outline"
             disabled={refreshing}
@@ -576,6 +586,21 @@ export default function ChainageBarChart() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Layer Management Dialog */}
+      <Dialog open={showLayerSettings} onOpenChange={setShowLayerSettings}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Construction Layers</DialogTitle>
+          </DialogHeader>
+          <LayerManagement onLayersUpdated={() => {
+            fetchLayers();
+            if (projectId && projectId !== ":projectId" && !projectId.includes(":")) {
+              fetchLayerData(projectId);
+            }
+          }} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

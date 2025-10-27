@@ -22,7 +22,7 @@ interface Layer {
   is_active: boolean;
 }
 
-export const LayerManagement = () => {
+export const LayerManagement = ({ onLayersUpdated }: { onLayersUpdated?: () => void }) => {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -125,6 +125,7 @@ export const LayerManagement = () => {
 
       setIsDialogOpen(false);
       fetchLayers();
+      onLayersUpdated?.();
     } catch (error: any) {
       console.error("Error saving layer:", error);
       toast({
@@ -147,6 +148,7 @@ export const LayerManagement = () => {
       if (error) throw error;
       toast({ title: "Success", description: "Layer deleted successfully" });
       fetchLayers();
+      onLayersUpdated?.();
     } catch (error) {
       console.error("Error deleting layer:", error);
       toast({
@@ -164,12 +166,6 @@ export const LayerManagement = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Construction Layers</h2>
-          <p className="text-muted-foreground">
-            Manage construction layer definitions for your projects
-          </p>
-        </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="w-4 h-4 mr-2" />
           Add Layer
