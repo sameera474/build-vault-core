@@ -27,6 +27,7 @@ export const LayerManagement = ({ onLayersUpdated }: { onLayersUpdated?: () => v
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLayer, setEditingLayer] = useState<Layer | null>(null);
+  const [draggedLayer, setDraggedLayer] = useState<Layer | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     color: "#3b82f6",
@@ -159,6 +160,65 @@ export const LayerManagement = ({ onLayersUpdated }: { onLayersUpdated?: () => v
     }
   };
 
+  const handleDragStart = (layer: Layer) => {
+    setDraggedLayer(layer);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetLayer: Layer) => {
+    e.preventDefault();
+    if (!draggedLayer || draggedLayer.id === targetLayer.id) return;
+
+    const draggedIndex = layers.findIndex(l => l.id === draggedLayer.id);
+    const targetIndex = layers.findIndex(l => l.id === targetLayer.id);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newLayers = [...layers];
+    newLayers.splice(draggedIndex, 1);
+    newLayers.splice(targetIndex, 0, draggedLayer);
+
+    // Update display_order for all layers
+    const updatedLayers = newLayers.map((layer, index) => ({
+      ...layer,
+      display_order: index + 1
+    }));
+
+    setLayers(updatedLayers);
+  };
+
+  const handleDragEnd = async () => {
+    if (!draggedLayer) return;
+
+    try {
+      // Update all layer orders in the database
+      const updates = layers.map((layer, index) => 
+        supabase
+          .from("construction_layers")
+          .update({ display_order: index + 1 })
+          .eq("id", layer.id)
+      );
+
+      await Promise.all(updates);
+      
+      toast({ 
+        title: "Success", 
+        description: "Layer order updated successfully" 
+      });
+      
+      onLayersUpdated?.();
+    } catch (error) {
+      console.error("Error updating layer order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update layer order",
+        variant: "destructive",
+      });
+      fetchLayers(); // Reload to get correct order
+    } finally {
+      setDraggedLayer(null);
+    }
+  };
+
   if (loading) {
     return <div className="p-6">Loading layers...</div>;
   }
@@ -174,10 +234,19 @@ export const LayerManagement = ({ onLayersUpdated }: { onLayersUpdated?: () => v
 
       <div className="grid gap-4">
         {layers.map((layer) => (
-          <Card key={layer.id} className="p-4">
+          <Card 
+            key={layer.id} 
+            className={`p-4 cursor-move transition-all ${
+              draggedLayer?.id === layer.id ? 'opacity-50 scale-95' : 'hover:shadow-md'
+            }`}
+            draggable
+            onDragStart={() => handleDragStart(layer)}
+            onDragOver={(e) => handleDragOver(e, layer)}
+            onDragEnd={handleDragEnd}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <GripVertical className="w-5 h-5 text-muted-foreground" />
+                <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
                 <div
                   className="w-8 h-8 rounded"
                   style={{ backgroundColor: layer.color }}
