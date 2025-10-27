@@ -49,6 +49,12 @@ interface Project {
   name: string;
 }
 
+interface ProjectRoad {
+  id: string;
+  name: string;
+  project_id: string;
+}
+
 interface MonthlySummary {
   month: string;
   total_reports: number;
@@ -61,7 +67,9 @@ export default function MonthlySummaries() {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [roads, setRoads] = useState<ProjectRoad[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>("");
+  const [selectedRoad, setSelectedRoad] = useState<string>("all");
   const [selectedMaterial, setSelectedMaterial] = useState<string>("all");
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -85,10 +93,17 @@ export default function MonthlySummaries() {
   }, []);
 
   useEffect(() => {
+    if (selectedProject) {
+      fetchRoads();
+      setSelectedRoad("all"); // Reset road selection when project changes
+    }
+  }, [selectedProject]);
+
+  useEffect(() => {
     if (selectedProject && date?.from && date?.to) {
       fetchMonthlySummary();
     }
-  }, [selectedProject, date, selectedMaterial]);
+  }, [selectedProject, selectedRoad, date, selectedMaterial]);
 
   const fetchProjects = async () => {
     try {
@@ -112,6 +127,28 @@ export default function MonthlySummaries() {
     }
   };
 
+  const fetchRoads = async () => {
+    if (!selectedProject) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("project_roads")
+        .select("*")
+        .eq("project_id", selectedProject)
+        .order("name");
+
+      if (error) throw error;
+      setRoads(data || []);
+    } catch (error: any) {
+      console.error("Error fetching roads:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load roads",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchMonthlySummary = async () => {
     if (!selectedProject || !date?.from || !date?.to) return;
 
@@ -119,13 +156,17 @@ export default function MonthlySummaries() {
     try {
       let query = supabase
         .from("test_reports")
-        .select("id, status, test_type, material, created_at")
+        .select("id, status, test_type, material, created_at, road_name")
         .eq("project_id", selectedProject)
         .gte("test_date", date.from.toISOString().split("T")[0])
         .lte("test_date", date.to.toISOString().split("T")[0]);
 
       if (selectedMaterial !== "all") {
         query = query.eq("material", selectedMaterial as "aggregates" | "asphalt" | "concrete" | "custom" | "soil");
+      }
+
+      if (selectedRoad !== "all") {
+        query = query.eq("road_name", selectedRoad);
       }
 
       const { data: reports, error } = await query;
@@ -183,6 +224,7 @@ export default function MonthlySummaries() {
         {
           body: {
             project_id: selectedProject,
+            road_name: selectedRoad !== "all" ? selectedRoad : undefined,
             start_date: date?.from?.toISOString(),
             end_date: date?.to?.toISOString(),
             material: selectedMaterial,
@@ -231,12 +273,13 @@ export default function MonthlySummaries() {
 
       const csvContent = [
         `Monthly Summary for Project ID: ${selectedProject}`,
+        selectedRoad !== "all" ? `Road: ${selectedRoad}` : "",
         `Period: ${summary.month}`,
         `Material: ${selectedMaterial}`,
         "",
         headers.join(","),
         ...data.map((row) => row.join(",")),
-      ].join("\n");
+      ].filter(line => line !== "").join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
@@ -286,7 +329,7 @@ export default function MonthlySummaries() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div>
               <label className="text-sm font-medium mb-2 block">Project</label>
               <Select
@@ -300,6 +343,26 @@ export default function MonthlySummaries() {
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Road</label>
+              <Select
+                value={selectedRoad}
+                onValueChange={setSelectedRoad}
+                disabled={!selectedProject || roads.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select road" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roads</SelectItem>
+                  {roads.map((road) => (
+                    <SelectItem key={road.id} value={road.name}>
+                      {road.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
