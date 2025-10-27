@@ -97,15 +97,15 @@ export default function ProjectManagerDashboard() {
           }
         });
 
-        const trend = Object.entries(monthlyData).map(([month, data]) => ({
-          month,
-          date: new Date(month), // Create a date object for sorting
-          rate:
-            data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0,
-        }));
-
-        // Sort the trend data by date
-        trend.sort((a, b) => a.date.getTime() - b.date.getTime());
+        const trend = Object.entries(monthlyData)
+          .map(([month, data]) => ({
+            month,
+            date: new Date(month), // Create a date object for sorting
+            rate:
+              data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0,
+          }))
+          .sort((a, b) => a.date.getTime() - b.date.getTime())
+          .map(({ month, rate }) => ({ month, rate })); // Remove date field after sorting
 
         setComplianceTrend(trend);
 
