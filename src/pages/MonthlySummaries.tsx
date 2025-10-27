@@ -386,19 +386,19 @@ export default function MonthlySummaries() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Date range</label>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Date range</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     id="date"
                     variant={"outline"}
                     className={cn(
-                      "justify-start text-left font-normal",
+                      "w-full h-10 justify-start text-left font-normal px-3 border-input hover:bg-accent hover:text-accent-foreground",
                       !date && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
                     {date?.from ? (
                       date.to ? (
                         <>
@@ -421,6 +421,7 @@ export default function MonthlySummaries() {
                     selected={date}
                     onSelect={setDate}
                     numberOfMonths={2}
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
