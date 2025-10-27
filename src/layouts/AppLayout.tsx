@@ -46,7 +46,7 @@ const navigationItems: NavigationItem[] = [
   { title: "Chainage Charts", url: "/barchart", icon: BarChart3, requiredPermissions: ['view_analytics', 'view_company_reports'] },
   { title: "Approvals", url: "/approvals", icon: FileText, requiredPermissions: ['approve_reports'] },
   { title: "Documents", url: "/documents", icon: FileText, requiredPermissions: ['view_company_reports', 'export_data'] },
-  { title: "Laboratory Inventory", url: "/laboratory-inventory", icon: Package, requiredPermissions: ['manage_company_users', 'view_company_reports'] },
+  { title: "Laboratory Inventory", url: "/laboratory-inventory", icon: Package, requiredPermissions: ['view_company_reports'] },
   { title: "Team", url: "/team", icon: UsersIcon, requiredPermissions: ['manage_company_users'] },
   { title: "Projects", url: "/projects", icon: UsersIcon, requiredPermissions: ['manage_projects', 'view_company_reports'] },
   { title: "Companies", url: "/companies", icon: Building2, requireSuperAdmin: true },
