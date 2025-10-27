@@ -49,9 +49,10 @@ class ProjectService {
   }
 
   async fetchProjects() {
-    // Use user_accessible_projects function which respects RLS and role-based access
+    // Use projects table directly; RLS restricts rows to the user's company or super_admin
     const { data, error } = await supabase
-      .rpc('user_accessible_projects')
+      .from('projects')
+      .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
