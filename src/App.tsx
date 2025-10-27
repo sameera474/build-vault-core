@@ -32,6 +32,7 @@ import TestReports from "./pages/TestReports";
 import { Templates } from "./pages/Templates";
 import { EnhancedReportEditor } from "./components/EnhancedReportEditor";
 import MonthlySummaries from "./pages/MonthlySummaries";
+import LaboratoryInventory from "./pages/LaboratoryInventory";
 import ChainageBarChart from "./pages/ChainageBarChart";
 import Approvals from "./pages/Approvals";
 import Documents from "./pages/Documents";
@@ -181,6 +182,14 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <MonthlySummaries />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/laboratory-inventory" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <LaboratoryInventory />
               </AppLayout>
             </ProtectedRoute>
           } />

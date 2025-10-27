@@ -228,6 +228,53 @@ export type Database = {
         }
         Relationships: []
       }
+      laboratory_inventory: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_name: string
+          project_id: string | null
+          quantity: number
+          remarks: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_name: string
+          project_id?: string | null
+          quantity?: number
+          remarks?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_name?: string
+          project_id?: string | null
+          quantity?: number
+          remarks?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "laboratory_inventory_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       material_categories: {
         Row: {
           company_id: string
