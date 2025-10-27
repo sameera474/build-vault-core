@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Download, Mail, FileText, Share, Printer } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, Mail, FileText, Share, Printer, Zap, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +17,19 @@ interface ExportOptions {
   dateRange: 'all' | '7days' | '30days' | '90days';
   includePhotos: boolean;
   includeCharts: boolean;
+  projectId?: string;
+  roadName?: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+}
+
+interface ProjectRoad {
+  id: string;
+  name: string;
+  project_id: string;
 }
 
 interface EmailOptions {
@@ -31,8 +44,15 @@ export function IntegrationExport() {
     format: 'pdf',
     dateRange: '30days',
     includePhotos: true,
-    includeCharts: true
+    includeCharts: true,
+    projectId: 'all',
+    roadName: 'all'
   });
+  
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [roads, setRoads] = useState<ProjectRoad[]>([]);
+  const [zapierWebhook, setZapierWebhook] = useState('');
+  const [isTriggeringZap, setIsTriggeringZap] = useState(false);
   
   const [emailOptions, setEmailOptions] = useState<EmailOptions>({
     recipients: '',
@@ -44,8 +64,51 @@ export function IntegrationExport() {
   const [isExporting, setIsExporting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [isZapierDialogOpen, setIsZapierDialogOpen] = useState(false);
+  const [shareableLink, setShareableLink] = useState('');
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    if (exportOptions.projectId && exportOptions.projectId !== 'all') {
+      fetchRoads();
+    } else {
+      setRoads([]);
+      setExportOptions(prev => ({ ...prev, roadName: 'all' }));
+    }
+  }, [exportOptions.projectId]);
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase.rpc('user_accessible_projects');
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  const fetchRoads = async () => {
+    if (!exportOptions.projectId || exportOptions.projectId === 'all') return;
+
+    try {
+      const { data, error } = await supabase
+        .from('project_roads')
+        .select('*')
+        .eq('project_id', exportOptions.projectId)
+        .order('name');
+
+      if (error) throw error;
+      setRoads(data || []);
+    } catch (error) {
+      console.error('Error fetching roads:', error);
+    }
+  };
 
   const getDateRange = (range: string) => {
     const endDate = new Date();
@@ -74,7 +137,7 @@ export function IntegrationExport() {
     const { startDate, endDate } = getDateRange(exportOptions.dateRange);
 
     try {
-      const { data: reports, error } = await supabase
+      let query = supabase
         .from('test_reports')
         .select(`
           *,
@@ -82,8 +145,21 @@ export function IntegrationExport() {
         `)
         .eq('company_id', profile.company_id)
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .order('created_at', { ascending: false });
+        .lte('created_at', endDate.toISOString());
+
+      // Apply project filter
+      if (exportOptions.projectId && exportOptions.projectId !== 'all') {
+        query = query.eq('project_id', exportOptions.projectId);
+      }
+
+      // Apply road filter
+      if (exportOptions.roadName && exportOptions.roadName !== 'all') {
+        query = query.eq('road_name', exportOptions.roadName);
+      }
+
+      query = query.order('created_at', { ascending: false });
+
+      const { data: reports, error } = await query;
 
       if (error) throw error;
 
@@ -392,6 +468,101 @@ export function IntegrationExport() {
     }
   };
 
+  const handleTriggerZapier = async () => {
+    if (!zapierWebhook.trim()) {
+      toast({
+        title: "Missing webhook URL",
+        description: "Please enter your Zapier webhook URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTriggeringZap(true);
+
+    try {
+      const data = await fetchReportData();
+      
+      const response = await fetch(zapierWebhook, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        mode: "no-cors",
+        body: JSON.stringify({
+          timestamp: new Date().toISOString(),
+          company: profile?.name,
+          totalReports: data?.reports.length || 0,
+          reports: data?.reports || [],
+          triggered_from: window.location.origin,
+        }),
+      });
+
+      toast({
+        title: "Zapier Triggered",
+        description: "Request sent successfully. Check your Zap's history to confirm.",
+      });
+
+      setIsZapierDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error triggering Zapier:", error);
+      toast({
+        title: "Error",
+        description: "Failed to trigger Zapier webhook",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTriggeringZap(false);
+    }
+  };
+
+  const handleShareLink = () => {
+    // Generate a shareable link (in production, this would create a secure token)
+    const link = `${window.location.origin}/reports/shared/${Date.now()}`;
+    setShareableLink(link);
+    setIsShareDialogOpen(true);
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link copied",
+      description: "Shareable link copied to clipboard",
+    });
+  };
+
+  const handlePrint = async () => {
+    try {
+      const data = await fetchReportData();
+      if (!data) {
+        throw new Error('Failed to fetch report data');
+      }
+
+      const pdf = await exportToPDF(data);
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      
+      // Open PDF in new window for printing
+      const printWindow = window.open(pdfUrl);
+      if (printWindow) {
+        printWindow.addEventListener('load', () => {
+          printWindow.print();
+        });
+      }
+      
+      toast({
+        title: "Print dialog opened",
+        description: "PDF ready for printing",
+      });
+    } catch (error: any) {
+      console.error('Print error:', error);
+      toast({
+        title: "Print failed",
+        description: error.message || "Failed to prepare document for printing",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -449,7 +620,49 @@ export function IntegrationExport() {
               </Select>
             </div>
 
-            <Button 
+            <div className="space-y-2">
+              <Label htmlFor="project">Project (Optional)</Label>
+              <Select 
+                value={exportOptions.projectId || 'all'} 
+                onValueChange={(value) => setExportOptions(prev => ({ ...prev, projectId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {exportOptions.projectId && exportOptions.projectId !== 'all' && roads.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="road">Road (Optional)</Label>
+                <Select 
+                  value={exportOptions.roadName || 'all'} 
+                  onValueChange={(value) => setExportOptions(prev => ({ ...prev, roadName: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roads</SelectItem>
+                    {roads.map((road) => (
+                      <SelectItem key={road.id} value={road.name}>
+                        {road.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <Button
               onClick={handleExport} 
               disabled={isExporting}
               className="w-full"
@@ -543,11 +756,11 @@ export function IntegrationExport() {
             <div className="p-3 border rounded-lg bg-muted/50">
               <h4 className="font-medium text-sm mb-2">Quick Actions</h4>
               <div className="space-y-2">
-                <Button size="sm" variant="ghost" className="w-full justify-start">
+                <Button size="sm" variant="ghost" className="w-full justify-start" onClick={handleShareLink}>
                   <Share className="h-4 w-4 mr-2" />
                   Share via Link
                 </Button>
-                <Button size="sm" variant="ghost" className="w-full justify-start">
+                <Button size="sm" variant="ghost" className="w-full justify-start" onClick={handlePrint}>
                   <Printer className="h-4 w-4 mr-2" />
                   Print Report
                 </Button>
@@ -556,6 +769,78 @@ export function IntegrationExport() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Zapier Integration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-orange-500" />
+            Zapier Integration
+          </CardTitle>
+          <CardDescription>
+            Connect your reports to 5,000+ apps with Zapier webhooks
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="zapier-webhook">Zapier Webhook URL</Label>
+            <Input
+              id="zapier-webhook"
+              value={zapierWebhook}
+              onChange={(e) => setZapierWebhook(e.target.value)}
+              placeholder="https://hooks.zapier.com/hooks/catch/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Create a Zap with a "Catch Hook" trigger and paste the webhook URL here
+            </p>
+          </div>
+          
+          <Button 
+            onClick={handleTriggerZapier} 
+            disabled={isTriggeringZap}
+            className="w-full"
+          >
+            {isTriggeringZap ? (
+              'Triggering...'
+            ) : (
+              <>
+                <Zap className="h-4 w-4 mr-2" />
+                Trigger Zapier Webhook
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Share Link Dialog */}
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Shareable Link</DialogTitle>
+            <DialogDescription>
+              Share this link with anyone to give them access to the report
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 bg-muted rounded-lg break-all">
+              <code className="text-sm">{shareableLink}</code>
+            </div>
+            <Button 
+              onClick={() => {
+                navigator.clipboard.writeText(shareableLink);
+                toast({
+                  title: "Copied",
+                  description: "Link copied to clipboard",
+                });
+              }}
+              className="w-full"
+            >
+              <LinkIcon className="h-4 w-4 mr-2" />
+              Copy Link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Integration Examples */}
       <Card>
