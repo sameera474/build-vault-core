@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { HardHat, LogOut, User, ChevronDown, BarChart3, FileText, Users as UsersIcon, Building2, Users, Settings, Package, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { UserAvatar } from '@/components/UserAvatar';
 import { 
   Sidebar,
   SidebarContent,
@@ -173,7 +174,11 @@ export function AppLayout({ children }: AppLayoutProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
+                    <UserAvatar 
+                      avatarUrl={profile?.avatar_url}
+                      userName={profile?.name}
+                      size="sm"
+                    />
                     <span className="hidden sm:inline">{profile?.name || 'User'}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>

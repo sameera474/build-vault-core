@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { TeamManagement } from "@/components/TeamManagement";
 import { SuperAdminTeamManagement } from "@/components/SuperAdminTeamManagement";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
   Card,
   CardContent,
@@ -165,17 +166,24 @@ export default function Team() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div>
-                <p className="font-medium">{profile?.name || "User"}</p>
-                <p className="text-sm text-muted-foreground">
-                  {currentUserRole.charAt(0).toUpperCase() +
-                    currentUserRole.slice(1).replace("_", " ")}
-                  {(profile as any)?.is_super_admin && (
-                    <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                      Super Admin
-                    </span>
-                  )}
-                </p>
+              <div className="flex items-center gap-3">
+                <UserAvatar 
+                  avatarUrl={profile?.avatar_url}
+                  userName={profile?.name}
+                  size="lg"
+                />
+                <div>
+                  <p className="font-medium">{profile?.name || "User"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {currentUserRole.charAt(0).toUpperCase() +
+                      currentUserRole.slice(1).replace("_", " ")}
+                    {(profile as any)?.is_super_admin && (
+                      <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                        Super Admin
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
               <div className="pt-2">
                 <h5 className="text-sm font-medium mb-2">Your Permissions:</h5>

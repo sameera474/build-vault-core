@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserAvatar } from '@/components/UserAvatar';
 
 interface TeamMember {
   user_id: string;
@@ -1029,7 +1030,11 @@ const deleteMember = async (memberId: string) => {
                   {teamMembers.map((member) => (
                      <div key={member.user_id} className="flex items-center justify-between p-3 border rounded-lg">
                        <div className="flex items-center gap-3">
-                         <UserCheck className="h-4 w-4 text-green-500" />
+                         <UserAvatar 
+                           avatarUrl={member.avatar_url}
+                           userName={member.name}
+                           size="md"
+                         />
                          <div>
                            <p className="font-medium">{member.name || 'Unknown User'}</p>
                            <p className="text-sm text-muted-foreground">
@@ -1201,7 +1206,11 @@ const deleteMember = async (memberId: string) => {
                       {allCompanyUsers.map((user) => (
                         <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-3">
-                            <UserCheck className="h-4 w-4 text-blue-500" />
+                            <UserAvatar 
+                              avatarUrl={user.avatar_url}
+                              userName={user.name}
+                              size="md"
+                            />
                             <div>
                               <p className="font-medium">{user.name || 'Unknown User'}</p>
                               <p className="text-sm text-muted-foreground">
