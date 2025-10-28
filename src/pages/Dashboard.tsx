@@ -57,32 +57,55 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!profile?.company_id) return;
+      if (!profile) return;
 
       try {
+        // Super admins see all data across all companies
+        const isSuperAdmin = profile.is_super_admin;
+        
         // Fetch projects count
-        const { count: projectCount } = await supabase
+        let projectQuery = supabase
           .from('projects')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id);
+          .select('*', { count: 'exact', head: true });
+        
+        if (!isSuperAdmin && profile.company_id) {
+          projectQuery = projectQuery.eq('company_id', profile.company_id);
+        }
+        
+        const { count: projectCount } = await projectQuery;
 
         // Fetch test reports count
-        const { count: testReportCount } = await supabase
+        let reportsQuery = supabase
           .from('test_reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id);
+          .select('*', { count: 'exact', head: true });
+        
+        if (!isSuperAdmin && profile.company_id) {
+          reportsQuery = reportsQuery.eq('company_id', profile.company_id);
+        }
+        
+        const { count: testReportCount } = await reportsQuery;
 
-        // Fetch team members count (users in same company)
-        const { count: teamMemberCount } = await supabase
+        // Fetch team members count
+        let teamQuery = supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', profile.company_id);
+          .select('*', { count: 'exact', head: true });
+        
+        if (!isSuperAdmin && profile.company_id) {
+          teamQuery = teamQuery.eq('company_id', profile.company_id);
+        }
+        
+        const { count: teamMemberCount } = await teamQuery;
 
         // Calculate compliance rate
-        const { data: complianceData } = await supabase
+        let complianceQuery = supabase
           .from('test_reports')
-          .select('compliance_status')
-          .eq('company_id', profile.company_id);
+          .select('compliance_status');
+        
+        if (!isSuperAdmin && profile.company_id) {
+          complianceQuery = complianceQuery.eq('company_id', profile.company_id);
+        }
+        
+        const { data: complianceData } = await complianceQuery;
 
         let complianceRate = 100;
         if (complianceData && complianceData.length > 0) {
@@ -91,18 +114,28 @@ export default function Dashboard() {
         }
 
         // Fetch recent projects
-        const { data: projects } = await supabase
+        let recentProjectsQuery = supabase
           .from('projects')
-          .select('id, name, status, created_at')
-          .eq('company_id', profile.company_id)
+          .select('id, name, status, created_at');
+        
+        if (!isSuperAdmin && profile.company_id) {
+          recentProjectsQuery = recentProjectsQuery.eq('company_id', profile.company_id);
+        }
+        
+        const { data: projects } = await recentProjectsQuery
           .order('created_at', { ascending: false })
           .limit(5);
 
         // Fetch recent test reports
-        const { data: reports } = await supabase
+        let recentReportsQuery = supabase
           .from('test_reports')
-          .select('id, report_number, test_type, compliance_status, test_date, project_id')
-          .eq('company_id', profile.company_id)
+          .select('id, report_number, test_type, compliance_status, test_date, project_id');
+        
+        if (!isSuperAdmin && profile.company_id) {
+          recentReportsQuery = recentReportsQuery.eq('company_id', profile.company_id);
+        }
+        
+        const { data: reports } = await recentReportsQuery
           .order('created_at', { ascending: false })
           .limit(5);
 
@@ -122,13 +155,13 @@ export default function Dashboard() {
       }
     };
 
-    if (profile?.company_id) {
+    if (profile) {
       fetchDashboardData();
     }
-  }, [profile?.company_id]);
+  }, [profile]);
 
   const createSampleData = async () => {
-    if (!profile?.company_id) return;
+    if (!profile?.company_id || profile?.is_super_admin) return;
 
     try {
       // Create a sample project
@@ -208,7 +241,7 @@ export default function Dashboard() {
             Here's an overview of your testing operations.
           </p>
         </div>
-        {stats.projectCount === 0 && (
+        {stats.projectCount === 0 && profile?.company_id && !profile?.is_super_admin && (
           <Button onClick={createSampleData} variant="outline">
             <Plus className="h-4 w-4 mr-2" />
             Add Sample Data
