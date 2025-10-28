@@ -343,6 +343,29 @@ export default function Approvals() {
 
   useEffect(() => {
     fetchReports();
+
+    // Set up real-time subscription for test_reports updates
+    const channel = supabase
+      .channel('test-reports-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'test_reports',
+          filter: `company_id=eq.${profile?.company_id}`
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          // Refresh the reports list when any change occurs
+          fetchReports();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [profile?.company_id]);
 
   const getStatusCounts = () => {

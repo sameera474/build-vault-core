@@ -21,6 +21,7 @@ interface TestReport {
   test_type: string;
   test_date: string;
   compliance_status: string;
+  status: string;
   technician_name: string;
   material_type: string;
   notes: string;
@@ -44,7 +45,7 @@ export function ApprovalWorkflow({
   const { profile } = useAuth();
 
   const pendingReports = reports.filter(
-    (report) => report.compliance_status === "pending"
+    (report) => report.status === "submitted"
   );
 
   const getStatusIcon = (status: string) => {
@@ -53,8 +54,10 @@ export function ApprovalWorkflow({
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case "rejected":
         return <XCircle className="h-4 w-4 text-red-600" />;
-      default:
+      case "submitted":
         return <Clock className="h-4 w-4 text-yellow-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -68,8 +71,14 @@ export function ApprovalWorkflow({
         );
       case "rejected":
         return <Badge variant="destructive">Rejected</Badge>;
+      case "submitted":
+        return (
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+            Pending
+          </Badge>
+        );
       default:
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge variant="outline">Draft</Badge>;
     }
   };
 
@@ -155,7 +164,7 @@ export function ApprovalWorkflow({
                   onClick={() => setSelectedReport(report)}
                 >
                   <div className="flex items-center gap-4">
-                    {getStatusIcon(report.compliance_status)}
+                    {getStatusIcon(report.status)}
                     <div>
                       <p className="font-medium">{report.report_number}</p>
                       <p className="text-sm text-muted-foreground">
@@ -165,7 +174,7 @@ export function ApprovalWorkflow({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {getStatusBadge(report.compliance_status)}
+                    {getStatusBadge(report.status)}
                   </div>
                 </div>
               ))
