@@ -583,16 +583,16 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="relative overflow-hidden py-16 sm:py-24 lg:py-32">
-        <div className="absolute inset-0 bg-primary dark:bg-primary -z-10"></div>
+        <div className="absolute inset-0 bg-gradient-primary -z-10"></div>
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20 -z-10"></div>
         
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center space-y-6 sm:space-y-8 animate-fade-in">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white dark:text-white">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-primary-foreground">
               Ready to transform your{' '}
               <span className="block sm:inline">testing workflow?</span>
             </h2>
-            <p className="text-base sm:text-lg lg:text-xl text-white/90 dark:text-white/90 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-primary-foreground/90 max-w-2xl mx-auto">
               Join construction professionals who trust ConstructTest Pro for their materials testing needs.
               Start your free trial today—no credit card required.
             </p>
@@ -600,7 +600,7 @@ export default function Home() {
               <Link to="/register" className="w-full sm:w-auto">
                 <Button 
                   size="lg" 
-                  className="w-full sm:w-auto bg-white text-primary hover:bg-white/90 hover:scale-105 transition-smooth group shadow-elegant text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6"
+                  className="w-full sm:w-auto bg-background text-foreground hover:bg-background/90 hover:scale-105 transition-smooth group shadow-elegant text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6"
                 >
                   Start free trial today
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -610,13 +610,13 @@ export default function Home() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="w-full sm:w-auto border-2 border-white/30 text-white hover:bg-white/10 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6"
+                  className="w-full sm:w-auto border-2 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6"
                 >
                   Contact sales
                 </Button>
               </Link>
             </div>
-            <div className="flex items-center justify-center gap-8 text-xs sm:text-sm text-white/90 dark:text-white/90 pt-4">
+            <div className="flex items-center justify-center gap-8 text-xs sm:text-sm text-primary-foreground/80 pt-4">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>14-day free trial</span>
