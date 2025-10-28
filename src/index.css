@@ -60,6 +60,7 @@
     --shadow-sm: 0 1px 3px hsl(215 25% 15% / 0.1);
     --shadow-md: 0 4px 12px hsl(215 25% 15% / 0.15);
     --shadow-lg: 0 10px 25px hsl(215 25% 15% / 0.2);
+    --shadow-elegant: 0 10px 30px -10px hsl(215 85% 25% / 0.3);
     --shadow-glow: 0 0 20px hsl(215 85% 25% / 0.3);
 
     /* Radius */
@@ -156,5 +157,19 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-primary bg-clip-text text-transparent;
   }
 }

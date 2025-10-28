@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle, BarChart3, Shield, Users, FileText, Clock, ArrowRight, Star, Play, Zap, TrendingUp, Award } from 'lucide-react';
+import { CheckCircle, BarChart3, Shield, Users, FileText, Clock, ArrowRight, Star, Play, Zap, TrendingUp, Award, Target, Lightbulb, Rocket, Database, Cloud, Lock, Settings, Package, GitBranch, Quote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import heroImage from '@/assets/hero-testing-lab.jpg';
 import constructionTeam from '@/assets/construction-team.jpg';
 import dashboardPreview from '@/assets/dashboard-preview.jpg';
+import teamSuccess from '@/assets/team-success.jpg';
 
 const features = [
   {
@@ -45,6 +46,95 @@ const materials = [
   { name: 'Concrete Testing', description: 'Compressive strength, slump, and durability testing' },
   { name: 'Soil Analysis', description: 'Compaction, bearing capacity, and classification tests' },
   { name: 'Aggregate Testing', description: 'Gradation, specific gravity, and absorption analysis' },
+];
+
+const howItWorks = [
+  {
+    step: '01',
+    title: 'Create Your Project',
+    description: 'Set up your construction project with all relevant details, locations, and team members in minutes.',
+    icon: Target,
+  },
+  {
+    step: '02',
+    title: 'Conduct Tests',
+    description: 'Perform material tests using our comprehensive templates and guided workflows for accuracy.',
+    icon: FileText,
+  },
+  {
+    step: '03',
+    title: 'Generate Reports',
+    description: 'Automatically generate professional, compliant reports with calculations and visualizations.',
+    icon: BarChart3,
+  },
+  {
+    step: '04',
+    title: 'Collaborate & Approve',
+    description: 'Share reports with your team, get approvals, and maintain complete audit trails.',
+    icon: Users,
+  },
+];
+
+const benefits = [
+  {
+    title: 'Save Time & Money',
+    description: 'Reduce report generation time by 75% and eliminate manual calculation errors that cost projects thousands.',
+    icon: Clock,
+    stat: '75%',
+    statLabel: 'Time Saved',
+  },
+  {
+    title: 'Ensure Compliance',
+    description: 'Automatically check against industry standards (ASTM, AASHTO) and maintain complete audit trails.',
+    icon: Shield,
+    stat: '100%',
+    statLabel: 'Compliant',
+  },
+  {
+    title: 'Improve Accuracy',
+    description: 'Eliminate human errors with automated calculations and built-in quality checks.',
+    icon: Award,
+    stat: '99.9%',
+    statLabel: 'Accurate',
+  },
+  {
+    title: 'Scale Efficiently',
+    description: 'Handle multiple projects and unlimited team members with enterprise-grade infrastructure.',
+    icon: TrendingUp,
+    stat: '500+',
+    statLabel: 'Companies',
+  },
+];
+
+const technologies = [
+  { name: 'Cloud Infrastructure', icon: Cloud, description: 'Powered by enterprise-grade cloud services' },
+  { name: 'Secure Database', icon: Database, description: 'Military-grade encryption for your data' },
+  { name: 'API Integration', icon: GitBranch, description: 'Seamlessly integrate with your existing tools' },
+  { name: 'Real-time Sync', icon: Zap, description: 'Instant updates across all devices' },
+];
+
+const testimonials = [
+  {
+    quote: "ConstructTest Pro has revolutionized our testing workflow. We've cut report generation time by 80% and our clients love the professional reports.",
+    author: 'Sarah Johnson',
+    role: 'Quality Manager',
+    company: 'BuildTech Engineering',
+    rating: 5,
+  },
+  {
+    quote: "The automated compliance checking alone has saved us from countless headaches. This platform is a game-changer for construction QA.",
+    author: 'Michael Chen',
+    role: 'Senior Engineer',
+    company: 'Pacific Construction Group',
+    rating: 5,
+  },
+  {
+    quote: "Best investment we've made for our lab. The team collaboration features and mobile app make field testing so much easier.",
+    author: 'David Martinez',
+    role: 'Laboratory Director',
+    company: 'Premier Materials Testing',
+    rating: 5,
+  },
 ];
 
 export default function Home() {
@@ -210,6 +300,60 @@ export default function Home() {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5 -z-10"></div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center animate-fade-in mb-16">
+            <Badge className="mb-4">Simple Process</Badge>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+              How ConstructTest Pro{' '}
+              <span className="text-gradient">works</span>
+            </h2>
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground">
+              Get started in minutes with our intuitive workflow designed for construction professionals.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-4 gap-6 lg:gap-8">
+            {howItWorks.map((step, index) => (
+              <div
+                key={step.step}
+                className="relative group animate-fade-in"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                {index < howItWorks.length - 1 && (
+                  <div className="hidden lg:block absolute top-16 left-full w-full h-0.5 bg-gradient-to-r from-primary/50 to-transparent"></div>
+                )}
+                <Card className="h-full border-border/50 hover:shadow-elegant transition-smooth bg-card/80 backdrop-blur-sm">
+                  <CardHeader className="text-center space-y-4">
+                    <div className="mx-auto rounded-2xl bg-gradient-primary p-4 w-fit group-hover:scale-110 transition-smooth shadow-glow">
+                      <step.icon className="h-8 w-8 text-primary-foreground" />
+                    </div>
+                    <div className="text-4xl font-bold text-gradient">{step.step}</div>
+                    <CardTitle className="text-xl">{step.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <CardDescription className="text-base leading-relaxed">
+                      {step.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-16 text-center">
+            <Link to="/register">
+              <Button size="lg" className="group shadow-elegant">
+                Get Started Free
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Materials Section */}
       <section className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background -z-10"></div>
@@ -243,6 +387,103 @@ export default function Home() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-16 sm:py-24 lg:py-32 bg-muted/30">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center animate-fade-in mb-16">
+            <Badge variant="secondary" className="mb-4">Why Choose Us</Badge>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+              Built for construction{' '}
+              <span className="text-gradient">excellence</span>
+            </h2>
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto">
+              Discover how ConstructTest Pro helps teams deliver better results, faster.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+            {benefits.map((benefit, index) => (
+              <Card
+                key={benefit.title}
+                className="group relative overflow-hidden border-border/50 hover:shadow-elegant transition-smooth animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-primary opacity-5 rounded-full blur-3xl group-hover:opacity-10 transition-opacity"></div>
+                <CardHeader className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="rounded-xl bg-gradient-primary p-3 w-fit group-hover:scale-110 transition-smooth shadow-glow">
+                      <benefit.icon className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-gradient">{benefit.stat}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{benefit.statLabel}</div>
+                    </div>
+                  </div>
+                  <CardTitle className="text-xl">{benefit.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base leading-relaxed">
+                    {benefit.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Technology Section */}
+      <section className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background -z-10"></div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8 animate-slide-in-left">
+              <div className="space-y-4">
+                <Badge className="mb-2">Enterprise Technology</Badge>
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+                  Built on{' '}
+                  <span className="text-gradient">modern infrastructure</span>
+                </h2>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  ConstructTest Pro leverages cutting-edge technology to ensure reliability, security, and performance at scale.
+                </p>
+              </div>
+
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-primary opacity-10 blur-3xl rounded-3xl"></div>
+                <img
+                  src={teamSuccess}
+                  alt="Team collaborating with ConstructTest Pro"
+                  className="relative rounded-2xl object-cover w-full shadow-elegant hover-scale"
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4 lg:gap-6">
+              {technologies.map((tech, index) => (
+                <Card
+                  key={tech.name}
+                  className="group border-border/50 hover:shadow-elegant hover:scale-105 transition-smooth animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <CardHeader className="space-y-4">
+                    <div className="rounded-xl bg-gradient-primary p-3 w-fit group-hover:scale-110 transition-smooth shadow-glow">
+                      <tech.icon className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <CardTitle className="text-lg">{tech.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-sm leading-relaxed">
+                      {tech.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -291,6 +532,51 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-16 sm:py-24 lg:py-32 bg-muted/20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center animate-fade-in mb-16">
+            <Badge className="mb-4">Customer Stories</Badge>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+              Trusted by construction{' '}
+              <span className="text-gradient">professionals</span>
+            </h2>
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground">
+              See what our customers have to say about transforming their testing workflows.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card
+                key={testimonial.author}
+                className="group border-border/50 hover:shadow-elegant hover:scale-105 transition-smooth animate-fade-in bg-card/80 backdrop-blur-sm"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <CardHeader className="space-y-4">
+                  <div className="flex gap-1">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-accent text-accent" />
+                    ))}
+                  </div>
+                  <Quote className="h-8 w-8 text-primary/20" />
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <p className="text-base text-muted-foreground leading-relaxed italic">
+                    "{testimonial.quote}"
+                  </p>
+                  <div className="pt-4 border-t border-border">
+                    <p className="font-semibold text-foreground">{testimonial.author}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                    <p className="text-sm text-primary">{testimonial.company}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
