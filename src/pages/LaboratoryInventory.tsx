@@ -119,16 +119,20 @@ export default function LaboratoryInventory() {
   };
 
   const fetchInventory = async () => {
-    if (!profile?.company_id) return;
+    if (!profile) return;
 
     setLoading(true);
     try {
       let query = supabase
         .from("laboratory_inventory")
         .select("*")
-        .eq("company_id", profile.company_id)
         .order("category")
         .order("item_name");
+
+      // Only filter by company_id if not super admin
+      if (!profile.is_super_admin && profile.company_id) {
+        query = query.eq("company_id", profile.company_id);
+      }
 
       if (selectedProject !== "all") {
         query = query.eq("project_id", selectedProject);
@@ -157,7 +161,18 @@ export default function LaboratoryInventory() {
   };
 
   const handleAddItem = async () => {
-    if (!profile?.company_id) return;
+    if (!profile) return;
+    
+    // Super admins need to select a project to determine company_id
+    if (profile.is_super_admin && selectedProject === "all") {
+      toast({
+        title: "Validation Error",
+        description: "Please select a project to add inventory",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!formData.category || !formData.item_name) {
       toast({
         title: "Validation Error",
@@ -168,8 +183,20 @@ export default function LaboratoryInventory() {
     }
 
     try {
+      // Get company_id from profile or from selected project
+      let companyId = profile.company_id;
+      
+      if (profile.is_super_admin && selectedProject !== "all") {
+        const { data: projectData } = await supabase
+          .from("projects")
+          .select("company_id")
+          .eq("id", selectedProject)
+          .single();
+        companyId = projectData?.company_id;
+      }
+
       const { error } = await supabase.from("laboratory_inventory").insert({
-        company_id: profile.company_id,
+        company_id: companyId!,
         project_id: selectedProject !== "all" ? selectedProject : null,
         category: formData.category,
         item_name: formData.item_name,
