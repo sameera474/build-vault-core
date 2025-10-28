@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { Upload, User, Loader2 } from 'lucide-react';
+import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -27,6 +28,8 @@ export default function Profile() {
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>(profile?.avatar_url || '');
   const [loading, setLoading] = useState(false);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const {
     register,
@@ -57,9 +60,9 @@ export default function Profile() {
     }
   }, [profile, reset]);
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
       toast({
@@ -79,16 +82,27 @@ export default function Profile() {
       return;
     }
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImage(reader.result as string);
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!user) return;
+
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}.jpg`;
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, {
+        .upload(fileName, croppedBlob, {
           cacheControl: '3600',
           upsert: false,
+          contentType: 'image/jpeg',
         });
 
       if (uploadError) throw uploadError;
@@ -99,7 +113,6 @@ export default function Profile() {
 
       setAvatarUrl(urlData.publicUrl);
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: urlData.publicUrl })
@@ -120,6 +133,7 @@ export default function Profile() {
       });
     } finally {
       setUploading(false);
+      setSelectedImage(null);
     }
   };
 
@@ -195,7 +209,7 @@ export default function Profile() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleAvatarUpload}
+                onChange={handleFileSelect}
                 className="hidden"
                 id="avatar-upload"
                 disabled={uploading}
@@ -365,6 +379,18 @@ export default function Profile() {
           </div>
         </CardContent>
       </Card>
+
+      {selectedImage && (
+        <AvatarCropDialog
+          open={cropDialogOpen}
+          onClose={() => {
+            setCropDialogOpen(false);
+            setSelectedImage(null);
+          }}
+          imageSrc={selectedImage}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 }
