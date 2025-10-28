@@ -1164,6 +1164,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_company_admin_for_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_manager_for_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_member: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: { user_uuid: string }; Returns: boolean }
       log_audit_event: {
         Args: {
@@ -1173,6 +1185,12 @@ export type Database = {
           _resource_type: string
         }
         Returns: string
+      }
+      user_accessible_project_ids: {
+        Args: { _user_id: string }
+        Returns: {
+          project_id: string
+        }[]
       }
       user_accessible_projects: {
         Args: never
