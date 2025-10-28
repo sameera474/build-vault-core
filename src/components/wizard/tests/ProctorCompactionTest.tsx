@@ -1,23 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Button } from "@/components/ui/button";
 
-interface ProctorData {
-  id: string;
-  moistureContent: string;
-  wetDensity: string;
-  dryDensity: string;
-  degreeOfSaturation: string;
+interface TestContainerData {
+  containerNo: string;
+  waterAdded: string;
+  wetSoilPlusContainer: string;
+  drySoilPlusContainer: string;
+  containerWeight: string;
+  waterWeight: string; // calculated
+  drySoilWeight: string; // calculated
+  moistureContent: string; // calculated
+  wetSamplePlusMould: string;
+  mouldWeight: string;
+  sampleWeight: string; // calculated
+  bulkDensity: string; // calculated
+  dryDensity: string; // calculated
 }
 
 interface ProctorCompactionTestProps {
@@ -30,162 +31,203 @@ export function ProctorCompactionTest({
   onUpdate,
 }: ProctorCompactionTestProps) {
   const [formData, setFormData] = useState({
-    sampleDescription: data.sampleDescription || "",
-    testType: data.testType || "Standard Proctor",
+    // Header Info
+    dateOfSampling: data.dateOfSampling || "",
     dateOfTesting: data.dateOfTesting || "",
-    testedBy: data.testedBy || "",
-    moldVolume: data.moldVolume || "944", // cm³ for standard 4" mold
-    moldWeight: data.moldWeight || "",
-    hammerWeight: data.hammerWeight || "24.4", // lbs for standard hammer
-    noOfLayers: data.noOfLayers || "3",
-    blowsPerLayer: data.blowsPerLayer || "25",
-    proctorData: data.proctorData || [
+    typeOfMaterial: data.typeOfMaterial || "",
+    sampleNo: data.sampleNo || "",
+    source: data.source || "",
+    location: data.location || "",
+    
+    // Mould Specifications
+    mouldNo: data.mouldNo || "",
+    mouldHeight: data.mouldHeight || "",
+    mouldDiameter: data.mouldDiameter || "",
+    mouldVolume: data.mouldVolume || "",
+    mouldWeight: data.mouldWeight || "",
+    
+    // Compaction Parameters
+    rammerWeight: data.rammerWeight || "",
+    droppingHeight: data.droppingHeight || "",
+    numberOfLayers: data.numberOfLayers || "",
+    blowsPerLayer: data.blowsPerLayer || "",
+    
+    // Test Container Data
+    testContainers: data.testContainers || [
       {
-        id: "1",
+        containerNo: "1",
+        waterAdded: "",
+        wetSoilPlusContainer: "",
+        drySoilPlusContainer: "",
+        containerWeight: "",
+        waterWeight: "",
+        drySoilWeight: "",
         moistureContent: "",
-        wetDensity: "",
+        wetSamplePlusMould: "",
+        mouldWeight: "",
+        sampleWeight: "",
+        bulkDensity: "",
         dryDensity: "",
-        degreeOfSaturation: "",
       },
       {
-        id: "2",
+        containerNo: "2",
+        waterAdded: "",
+        wetSoilPlusContainer: "",
+        drySoilPlusContainer: "",
+        containerWeight: "",
+        waterWeight: "",
+        drySoilWeight: "",
         moistureContent: "",
-        wetDensity: "",
+        wetSamplePlusMould: "",
+        mouldWeight: "",
+        sampleWeight: "",
+        bulkDensity: "",
         dryDensity: "",
-        degreeOfSaturation: "",
       },
       {
-        id: "3",
+        containerNo: "3",
+        waterAdded: "",
+        wetSoilPlusContainer: "",
+        drySoilPlusContainer: "",
+        containerWeight: "",
+        waterWeight: "",
+        drySoilWeight: "",
         moistureContent: "",
-        wetDensity: "",
+        wetSamplePlusMould: "",
+        mouldWeight: "",
+        sampleWeight: "",
+        bulkDensity: "",
         dryDensity: "",
-        degreeOfSaturation: "",
       },
       {
-        id: "4",
+        containerNo: "4",
+        waterAdded: "",
+        wetSoilPlusContainer: "",
+        drySoilPlusContainer: "",
+        containerWeight: "",
+        waterWeight: "",
+        drySoilWeight: "",
         moistureContent: "",
-        wetDensity: "",
+        wetSamplePlusMould: "",
+        mouldWeight: "",
+        sampleWeight: "",
+        bulkDensity: "",
         dryDensity: "",
-        degreeOfSaturation: "",
-      },
-      {
-        id: "5",
-        moistureContent: "",
-        wetDensity: "",
-        dryDensity: "",
-        degreeOfSaturation: "",
-      },
-      {
-        id: "6",
-        moistureContent: "",
-        wetDensity: "",
-        dryDensity: "",
-        degreeOfSaturation: "",
       },
     ],
+    
+    // Manual selections from graph
+    maxDryDensity: data.maxDryDensity || "",
+    optimumMoistureContent: data.optimumMoistureContent || "",
   });
+
+  const [selectedPoint, setSelectedPoint] = useState<{x: number, y: number} | null>(
+    data.selectedPoint || null
+  );
 
   const updateFormData = (field: string, value: any) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
-    onUpdate(newData);
+    onUpdate({ ...newData, selectedPoint });
   };
 
-  const updateProctorData = (index: number, field: string, value: string) => {
-    const newData = [...formData.proctorData];
-    newData[index] = { ...newData[index], [field]: value };
+  const calculateContainerValues = (container: TestContainerData, mouldVolume: string) => {
+    const wetSoil = parseFloat(container.wetSoilPlusContainer) || 0;
+    const drySoil = parseFloat(container.drySoilPlusContainer) || 0;
+    const containerWt = parseFloat(container.containerWeight) || 0;
+    const wetSampleMould = parseFloat(container.wetSamplePlusMould) || 0;
+    const mouldWt = parseFloat(container.mouldWeight || formData.mouldWeight) || 0;
+    const volume = parseFloat(mouldVolume) || 0;
 
-    // Auto-calculate dry density if wet density and moisture content are provided
-    if (field === "wetDensity" || field === "moistureContent") {
-      const item = newData[index];
-      if (item.wetDensity && item.moistureContent) {
-        const wetDensity = parseFloat(item.wetDensity);
-        const moisture = parseFloat(item.moistureContent) / 100;
-        const dryDensity = wetDensity / (1 + moisture);
-        item.dryDensity = dryDensity.toFixed(3);
-      }
-    }
+    // Calculate derived values
+    const waterWt = wetSoil - drySoil;
+    const drySoilWt = drySoil - containerWt;
+    const moistureContent = drySoilWt > 0 ? (waterWt / drySoilWt) * 100 : 0;
+    const sampleWt = wetSampleMould - mouldWt;
+    const bulkDensity = volume > 0 ? sampleWt / volume : 0;
+    const dryDensity = moistureContent > 0 ? bulkDensity / (1 + moistureContent / 100) : bulkDensity;
 
-    const newFormData = { ...formData, proctorData: newData };
+    return {
+      waterWeight: waterWt.toFixed(2),
+      drySoilWeight: drySoilWt.toFixed(2),
+      moistureContent: moistureContent.toFixed(2),
+      sampleWeight: sampleWt.toFixed(2),
+      bulkDensity: bulkDensity.toFixed(3),
+      dryDensity: dryDensity.toFixed(3),
+    };
+  };
+
+  const updateTestContainer = (index: number, field: keyof TestContainerData, value: string) => {
+    const newContainers = [...formData.testContainers];
+    newContainers[index] = { ...newContainers[index], [field]: value };
+
+    // Auto-calculate derived values
+    const calculated = calculateContainerValues(newContainers[index], formData.mouldVolume);
+    newContainers[index] = { ...newContainers[index], ...calculated };
+
+    const newFormData = { ...formData, testContainers: newContainers };
     setFormData(newFormData);
-    onUpdate(newFormData);
+    onUpdate({ ...newFormData, selectedPoint });
   };
 
-  const calculateMaxDryDensity = () => {
-    const validData = formData.proctorData.filter(
-      (item) => item.dryDensity && parseFloat(item.dryDensity) > 0
-    );
+  // Prepare chart data
+  const chartData = formData.testContainers
+    .filter(c => parseFloat(c.moistureContent) > 0 && parseFloat(c.dryDensity) > 0)
+    .map(c => ({
+      moistureContent: parseFloat(c.moistureContent),
+      dryDensity: parseFloat(c.dryDensity),
+    }))
+    .sort((a, b) => a.moistureContent - b.moistureContent);
 
-    if (validData.length === 0) return "0.000";
-
-    const maxDensity = Math.max(
-      ...validData.map((item) => parseFloat(item.dryDensity))
-    );
-    return maxDensity.toFixed(3);
+  const handleChartClick = (e: any) => {
+    if (e && e.activeLabel !== undefined) {
+      const clickedPoint = {
+        x: parseFloat(e.activeLabel),
+        y: e.activePayload?.[0]?.value || 0
+      };
+      setSelectedPoint(clickedPoint);
+      
+      const newFormData = {
+        ...formData,
+        optimumMoistureContent: clickedPoint.x.toFixed(2),
+        maxDryDensity: clickedPoint.y.toFixed(3),
+      };
+      setFormData(newFormData);
+      onUpdate({ ...newFormData, selectedPoint: clickedPoint });
+    }
   };
 
-  const calculateOptimumMoistureContent = () => {
-    const validData = formData.proctorData.filter(
-      (item) =>
-        item.moistureContent &&
-        item.dryDensity &&
-        parseFloat(item.dryDensity) > 0
-    );
-
-    if (validData.length === 0) return "0.00";
-
-    const maxDensity = parseFloat(calculateMaxDryDensity());
-    const closestPoint = validData.reduce((prev, current) => {
-      const prevDiff = Math.abs(parseFloat(prev.dryDensity) - maxDensity);
-      const currentDiff = Math.abs(parseFloat(current.dryDensity) - maxDensity);
-      return currentDiff < prevDiff ? current : prev;
-    });
-
-    return parseFloat(closestPoint.moistureContent).toFixed(2);
-  };
-
-  const maxDryDensity = calculateMaxDryDensity();
-  const optimumMoistureContent = calculateOptimumMoistureContent();
+  useEffect(() => {
+    // Recalculate all containers when mould volume changes
+    if (formData.mouldVolume) {
+      const newContainers = formData.testContainers.map(container => {
+        const calculated = calculateContainerValues(container, formData.mouldVolume);
+        return { ...container, ...calculated };
+      });
+      
+      const newFormData = { ...formData, testContainers: newContainers };
+      setFormData(newFormData);
+      onUpdate({ ...newFormData, selectedPoint });
+    }
+  }, [formData.mouldVolume]);
 
   return (
     <div className="space-y-6">
-      {/* Basic Information */}
+      {/* Header Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
+          <CardTitle>Test Information (BS1377 Test 13 / AASHTO T-180)</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="sampleDescription">Sample Description</Label>
-              <Textarea
-                id="sampleDescription"
-                value={formData.sampleDescription}
-                onChange={(e) =>
-                  updateFormData("sampleDescription", e.target.value)
-                }
-                placeholder="Describe the soil sample"
-                rows={3}
+              <Label htmlFor="dateOfSampling">Date of Sampling</Label>
+              <Input
+                id="dateOfSampling"
+                type="date"
+                value={formData.dateOfSampling}
+                onChange={(e) => updateFormData("dateOfSampling", e.target.value)}
               />
-            </div>
-            <div>
-              <Label htmlFor="testType">Test Type</Label>
-              <Select
-                value={formData.testType}
-                onValueChange={(value) => updateFormData("testType", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Standard Proctor">
-                    Standard Proctor
-                  </SelectItem>
-                  <SelectItem value="Modified Proctor">
-                    Modified Proctor
-                  </SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div>
               <Label htmlFor="dateOfTesting">Date of Testing</Label>
@@ -193,222 +235,399 @@ export function ProctorCompactionTest({
                 id="dateOfTesting"
                 type="date"
                 value={formData.dateOfTesting}
-                onChange={(e) =>
-                  updateFormData("dateOfTesting", e.target.value)
-                }
+                onChange={(e) => updateFormData("dateOfTesting", e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="testedBy">Tested By</Label>
+              <Label htmlFor="typeOfMaterial">Type of Material</Label>
               <Input
-                id="testedBy"
-                value={formData.testedBy}
-                onChange={(e) => updateFormData("testedBy", e.target.value)}
-                placeholder="Name of technician"
+                id="typeOfMaterial"
+                value={formData.typeOfMaterial}
+                onChange={(e) => updateFormData("typeOfMaterial", e.target.value)}
+                placeholder="e.g., Silty Clay"
+              />
+            </div>
+            <div>
+              <Label htmlFor="sampleNo">Sample No.</Label>
+              <Input
+                id="sampleNo"
+                value={formData.sampleNo}
+                onChange={(e) => updateFormData("sampleNo", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="source">Source</Label>
+              <Input
+                id="source"
+                value={formData.source}
+                onChange={(e) => updateFormData("source", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => updateFormData("location", e.target.value)}
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Test Parameters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Test Parameters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      {/* Mould and Compaction Parameters */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Mould Specifications</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
             <div>
-              <Label htmlFor="moldVolume">Mold Volume (cm³)</Label>
+              <Label htmlFor="mouldNo">Mould No.</Label>
               <Input
-                id="moldVolume"
-                value={formData.moldVolume}
-                onChange={(e) => updateFormData("moldVolume", e.target.value)}
+                id="mouldNo"
+                value={formData.mouldNo}
+                onChange={(e) => updateFormData("mouldNo", e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="mouldHeight">Height (cm)</Label>
+                <Input
+                  id="mouldHeight"
+                  type="number"
+                  step="0.01"
+                  value={formData.mouldHeight}
+                  onChange={(e) => updateFormData("mouldHeight", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="mouldDiameter">Diameter (cm)</Label>
+                <Input
+                  id="mouldDiameter"
+                  type="number"
+                  step="0.01"
+                  value={formData.mouldDiameter}
+                  onChange={(e) => updateFormData("mouldDiameter", e.target.value)}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="mouldVolume">Volume (cm³)</Label>
+              <Input
+                id="mouldVolume"
+                type="number"
+                step="0.01"
+                value={formData.mouldVolume}
+                onChange={(e) => updateFormData("mouldVolume", e.target.value)}
                 placeholder="944"
               />
             </div>
             <div>
-              <Label htmlFor="moldWeight">Mold Weight (g)</Label>
+              <Label htmlFor="mouldWeight">Weight (g)</Label>
               <Input
-                id="moldWeight"
-                value={formData.moldWeight}
-                onChange={(e) => updateFormData("moldWeight", e.target.value)}
-                placeholder="5000"
+                id="mouldWeight"
+                type="number"
+                step="0.01"
+                value={formData.mouldWeight}
+                onChange={(e) => updateFormData("mouldWeight", e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Compaction Parameters</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label htmlFor="rammerWeight">Weight of Rammer (kg)</Label>
+              <Input
+                id="rammerWeight"
+                type="number"
+                step="0.01"
+                value={formData.rammerWeight}
+                onChange={(e) => updateFormData("rammerWeight", e.target.value)}
+                placeholder="4.5"
               />
             </div>
             <div>
-              <Label htmlFor="hammerWeight">Hammer Weight (lbs)</Label>
+              <Label htmlFor="droppingHeight">Dropping Height (cm)</Label>
               <Input
-                id="hammerWeight"
-                value={formData.hammerWeight}
-                onChange={(e) => updateFormData("hammerWeight", e.target.value)}
-                placeholder="24.4"
+                id="droppingHeight"
+                type="number"
+                step="0.1"
+                value={formData.droppingHeight}
+                onChange={(e) => updateFormData("droppingHeight", e.target.value)}
+                placeholder="450"
               />
             </div>
             <div>
-              <Label htmlFor="noOfLayers">No. of Layers</Label>
+              <Label htmlFor="numberOfLayers">Number of Layers</Label>
               <Input
-                id="noOfLayers"
-                value={formData.noOfLayers}
-                onChange={(e) => updateFormData("noOfLayers", e.target.value)}
-                placeholder="3"
+                id="numberOfLayers"
+                type="number"
+                value={formData.numberOfLayers}
+                onChange={(e) => updateFormData("numberOfLayers", e.target.value)}
+                placeholder="5"
               />
             </div>
             <div>
-              <Label htmlFor="blowsPerLayer">Blows per Layer</Label>
+              <Label htmlFor="blowsPerLayer">Blows Per Layer</Label>
               <Input
                 id="blowsPerLayer"
+                type="number"
                 value={formData.blowsPerLayer}
-                onChange={(e) =>
-                  updateFormData("blowsPerLayer", e.target.value)
-                }
+                onChange={(e) => updateFormData("blowsPerLayer", e.target.value)}
                 placeholder="25"
               />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Proctor Test Results */}
+      {/* Test Data Entry */}
       <Card>
         <CardHeader>
-          <CardTitle>Proctor Compaction Test Results</CardTitle>
+          <CardTitle>Test Data Entry</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border text-sm">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
-                    Point No.
-                  </th>
-                  <th className="border border-gray-300 p-2 text-left">
-                    Moisture Content (%)
-                  </th>
-                  <th className="border border-gray-300 p-2 text-left">
-                    Wet Density (g/cm³)
-                  </th>
-                  <th className="border border-gray-300 p-2 text-left">
-                    Dry Density (g/cm³)
-                  </th>
-                  <th className="border border-gray-300 p-2 text-left">
-                    Degree of Saturation (%)
-                  </th>
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left">Test No. / Container No.</th>
+                  {formData.testContainers.map((c) => (
+                    <th key={c.containerNo} className="border border-border p-2 text-center">
+                      {c.containerNo}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {formData.proctorData.map((item, index) => (
-                  <tr key={item.id}>
-                    <td className="border border-gray-300 p-2 font-medium">
-                      {item.id}
-                    </td>
-                    <td className="border border-gray-300 p-2">
+                <tr>
+                  <td className="border border-border p-2 font-medium">Water added (ml)</td>
+                  {formData.testContainers.map((c, i) => (
+                    <td key={c.containerNo} className="border border-border p-1">
                       <Input
-                        value={item.moistureContent}
-                        onChange={(e) =>
-                          updateProctorData(
-                            index,
-                            "moistureContent",
-                            e.target.value
-                          )
-                        }
-                        placeholder="12.5"
-                        className="w-20"
+                        type="number"
+                        step="0.01"
+                        className="h-8 text-center"
+                        value={c.waterAdded}
+                        onChange={(e) => updateTestContainer(i, "waterAdded", e.target.value)}
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                  ))}
+                </tr>
+                <tr>
+                  <td className="border border-border p-2 font-medium">Weight of wet soil + container (g)</td>
+                  {formData.testContainers.map((c, i) => (
+                    <td key={c.containerNo} className="border border-border p-1">
                       <Input
-                        value={item.wetDensity}
-                        onChange={(e) =>
-                          updateProctorData(index, "wetDensity", e.target.value)
-                        }
-                        placeholder="2.150"
-                        className="w-24"
+                        type="number"
+                        step="0.01"
+                        className="h-8 text-center"
+                        value={c.wetSoilPlusContainer}
+                        onChange={(e) => updateTestContainer(i, "wetSoilPlusContainer", e.target.value)}
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                  ))}
+                </tr>
+                <tr>
+                  <td className="border border-border p-2 font-medium">Weight of dry soil + container (g)</td>
+                  {formData.testContainers.map((c, i) => (
+                    <td key={c.containerNo} className="border border-border p-1">
                       <Input
-                        value={item.dryDensity}
-                        readOnly
-                        className="w-24 bg-gray-50"
+                        type="number"
+                        step="0.01"
+                        className="h-8 text-center"
+                        value={c.drySoilPlusContainer}
+                        onChange={(e) => updateTestContainer(i, "drySoilPlusContainer", e.target.value)}
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                  ))}
+                </tr>
+                <tr>
+                  <td className="border border-border p-2 font-medium">Weight of container (g)</td>
+                  {formData.testContainers.map((c, i) => (
+                    <td key={c.containerNo} className="border border-border p-1">
                       <Input
-                        value={item.degreeOfSaturation}
-                        onChange={(e) =>
-                          updateProctorData(
-                            index,
-                            "degreeOfSaturation",
-                            e.target.value
-                          )
-                        }
-                        placeholder="85"
-                        className="w-20"
+                        type="number"
+                        step="0.01"
+                        className="h-8 text-center"
+                        value={c.containerWeight}
+                        onChange={(e) => updateTestContainer(i, "containerWeight", e.target.value)}
                       />
                     </td>
-                  </tr>
-                ))}
+                  ))}
+                </tr>
+                <tr className="bg-muted/50">
+                  <td className="border border-border p-2 font-medium">Weight of water (g)</td>
+                  {formData.testContainers.map((c) => (
+                    <td key={c.containerNo} className="border border-border p-2 text-center font-mono">
+                      {c.waterWeight || "0.00"}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="bg-muted/50">
+                  <td className="border border-border p-2 font-medium">Weight of dry soil (g)</td>
+                  {formData.testContainers.map((c) => (
+                    <td key={c.containerNo} className="border border-border p-2 text-center font-mono">
+                      {c.drySoilWeight || "0.00"}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="bg-muted/50">
+                  <td className="border border-border p-2 font-medium">Moisture content (%)</td>
+                  {formData.testContainers.map((c) => (
+                    <td key={c.containerNo} className="border border-border p-2 text-center font-mono font-semibold">
+                      {c.moistureContent || "0.00"}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="border border-border p-2 font-medium">Weight of wet sample + mould (g)</td>
+                  {formData.testContainers.map((c, i) => (
+                    <td key={c.containerNo} className="border border-border p-1">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="h-8 text-center"
+                        value={c.wetSamplePlusMould}
+                        onChange={(e) => updateTestContainer(i, "wetSamplePlusMould", e.target.value)}
+                      />
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="border border-border p-2 font-medium">Weight of mould (g)</td>
+                  {formData.testContainers.map((c, i) => (
+                    <td key={c.containerNo} className="border border-border p-1">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="h-8 text-center"
+                        value={c.mouldWeight || formData.mouldWeight}
+                        onChange={(e) => updateTestContainer(i, "mouldWeight", e.target.value)}
+                      />
+                    </td>
+                  ))}
+                </tr>
+                <tr className="bg-muted/50">
+                  <td className="border border-border p-2 font-medium">Weight of sample (g)</td>
+                  {formData.testContainers.map((c) => (
+                    <td key={c.containerNo} className="border border-border p-2 text-center font-mono">
+                      {c.sampleWeight || "0.00"}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="bg-muted/50">
+                  <td className="border border-border p-2 font-medium">Bulk density (g/cm³)</td>
+                  {formData.testContainers.map((c) => (
+                    <td key={c.containerNo} className="border border-border p-2 text-center font-mono">
+                      {c.bulkDensity || "0.000"}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="bg-muted/50">
+                  <td className="border border-border p-2 font-medium">Dry density (g/cm³)</td>
+                  {formData.testContainers.map((c) => (
+                    <td key={c.containerNo} className="border border-border p-2 text-center font-mono font-semibold">
+                      {c.dryDensity || "0.000"}
+                    </td>
+                  ))}
+                </tr>
               </tbody>
             </table>
           </div>
         </CardContent>
       </Card>
 
+      {/* Graph */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Compaction Curve</CardTitle>
+          <p className="text-sm text-muted-foreground">Click on the graph to select the maximum dry density and optimum moisture content</p>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart
+              data={chartData}
+              onClick={handleChartClick}
+              margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="moistureContent" 
+                label={{ value: 'Optimum Moisture Content %', position: 'insideBottom', offset: -10 }}
+                domain={['dataMin - 1', 'dataMax + 1']}
+              />
+              <YAxis 
+                label={{ value: 'Maximum Dry Density (g/cm³)', angle: -90, position: 'insideLeft' }}
+                domain={['dataMin - 0.05', 'dataMax + 0.05']}
+              />
+              <Tooltip />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="dryDensity" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                name="Dry Density"
+                dot={{ r: 5, fill: 'hsl(var(--primary))' }}
+              />
+              {selectedPoint && (
+                <>
+                  <ReferenceLine 
+                    x={selectedPoint.x} 
+                    stroke="hsl(var(--destructive))" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    label={{ value: `OMC: ${selectedPoint.x.toFixed(2)}%`, position: 'top' }}
+                  />
+                  <ReferenceLine 
+                    y={selectedPoint.y} 
+                    stroke="hsl(var(--destructive))" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    label={{ value: `MDD: ${selectedPoint.y.toFixed(3)}`, position: 'right' }}
+                  />
+                </>
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
       {/* Results Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Proctor Compaction Test Results Summary</CardTitle>
+          <CardTitle>Test Results Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">
-                Maximum Dry Density
-              </h4>
-              <p className="text-3xl font-mono text-blue-800">
-                {maxDryDensity}
-              </p>
-              <p className="text-sm text-blue-700 mt-1">g/cm³</p>
+            <div className="p-6 border border-border rounded-lg bg-card">
+              <Label className="text-sm font-medium">Maximum dry density (g/cm³)</Label>
+              <Input
+                type="number"
+                step="0.001"
+                className="mt-2 text-2xl font-mono font-bold text-center"
+                value={formData.maxDryDensity}
+                onChange={(e) => updateFormData("maxDryDensity", e.target.value)}
+                placeholder="Select from graph or enter manually"
+              />
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">
-                Optimum Moisture Content
-              </h4>
-              <p className="text-3xl font-mono text-green-800">
-                {optimumMoistureContent}
-              </p>
-              <p className="text-sm text-green-700 mt-1">%</p>
-            </div>
-          </div>
-
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
-              Test Parameters Summary
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Test Type:</span>
-                <p className="text-muted-foreground">{formData.testType}</p>
-              </div>
-              <div>
-                <span className="font-medium">Mold Volume:</span>
-                <p className="text-muted-foreground">
-                  {formData.moldVolume} cm³
-                </p>
-              </div>
-              <div>
-                <span className="font-medium">Hammer Weight:</span>
-                <p className="text-muted-foreground">
-                  {formData.hammerWeight} lbs
-                </p>
-              </div>
-              <div>
-                <span className="font-medium">Layers/Blows:</span>
-                <p className="text-muted-foreground">
-                  {formData.noOfLayers} × {formData.blowsPerLayer}
-                </p>
-              </div>
+            <div className="p-6 border border-border rounded-lg bg-card">
+              <Label className="text-sm font-medium">Optimum moisture content (%)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                className="mt-2 text-2xl font-mono font-bold text-center"
+                value={formData.optimumMoistureContent}
+                onChange={(e) => updateFormData("optimumMoistureContent", e.target.value)}
+                placeholder="Select from graph or enter manually"
+              />
             </div>
           </div>
         </CardContent>

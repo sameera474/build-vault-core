@@ -52,8 +52,8 @@ serve(async (req) => {
 
     // Calculate monthly recurring revenue
     let mrr = 0;
-    subscriptions.data.forEach(sub => {
-      sub.items.data.forEach(item => {
+    subscriptions.data.forEach((sub: any) => {
+      sub.items.data.forEach((item: any) => {
         if (item.price.recurring?.interval === 'month') {
           mrr += (item.price.unit_amount || 0) * item.quantity;
         } else if (item.price.recurring?.interval === 'year') {
@@ -70,7 +70,7 @@ serve(async (req) => {
     });
 
     let actualRevenue = 0;
-    charges.data.forEach(charge => {
+    charges.data.forEach((charge: any) => {
       if (charge.paid) {
         actualRevenue += charge.amount;
       }
@@ -78,8 +78,8 @@ serve(async (req) => {
 
     // Get subscription breakdown by product
     const productBreakdown: Record<string, number> = {};
-    subscriptions.data.forEach(sub => {
-      sub.items.data.forEach(item => {
+    subscriptions.data.forEach((sub: any) => {
+      sub.items.data.forEach((item: any) => {
         const productId = typeof item.price.product === 'string' 
           ? item.price.product 
           : item.price.product.id;
@@ -89,11 +89,11 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       balance: {
-        available: balance.available.map(b => ({
+        available: balance.available.map((b: any) => ({
           amount: b.amount / 100,
           currency: b.currency
         })),
-        pending: balance.pending.map(b => ({
+        pending: balance.pending.map((b: any) => ({
           amount: b.amount / 100,
           currency: b.currency
         }))
