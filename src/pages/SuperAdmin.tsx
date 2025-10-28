@@ -99,9 +99,9 @@ export default function SuperAdmin() {
 
       const formattedUsers = usersData?.map(user => ({
         id: user.user_id,
-        email: 'user@example.com', // Would need to join with auth.users
+        email: user.email || 'user@example.com',
         name: user.name || 'Unknown',
-        company_name: `Company ${user.company_id.slice(0, 8)}`,
+        company_name: user.company_id ? `Company ${user.company_id.slice(0, 8)}` : 'No Company',
         role: user.role,
         created_at: user.created_at,
         last_sign_in: user.created_at
