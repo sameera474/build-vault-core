@@ -63,13 +63,13 @@ const TENANT_ROLES = [
 ];
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-red-100 text-red-800',
-  project_manager: 'bg-blue-100 text-blue-800',
-  quality_manager: 'bg-purple-100 text-purple-800',
-  material_engineer: 'bg-green-100 text-green-800',
-  technician: 'bg-orange-100 text-orange-800',
-  consultant_engineer: 'bg-cyan-100 text-cyan-800',
-  consultant_technician: 'bg-teal-100 text-teal-800',
+  admin: 'bg-destructive/10 text-destructive',
+  project_manager: 'bg-primary/10 text-primary',
+  quality_manager: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+  material_engineer: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  technician: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  consultant_engineer: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
+  consultant_technician: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
 };
 
 export function TeamManagement() {
@@ -87,6 +87,8 @@ export function TeamManagement() {
   const [isInviting, setIsInviting] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [newMember, setNewMember] = useState({
     name: '',
     email: '',
@@ -107,6 +109,30 @@ export function TeamManagement() {
   const { toast } = useToast();
 
   const isSuperAdmin = (profile as any)?.is_super_admin;
+
+  // Filter team members based on search and role
+  const filteredTeamMembers = teamMembers.filter(member => {
+    const matchesSearch = !searchQuery || 
+      member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.department?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesRole = roleFilter === 'all' || 
+      member.tenant_role === roleFilter || 
+      member.role === roleFilter;
+    
+    return matchesSearch && matchesRole;
+  });
+
+  // Get role distribution statistics
+  const getRoleStats = () => {
+    const stats: Record<string, number> = {};
+    teamMembers.forEach(member => {
+      const role = member.tenant_role || member.role;
+      stats[role] = (stats[role] || 0) + 1;
+    });
+    return stats;
+  };
 
   useEffect(() => {
     fetchTeamData();
@@ -686,26 +712,26 @@ const deleteMember = async (memberId: string) => {
   }
 
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 shadow-sm">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-xl">
               <Users className="h-5 w-5" />
               Team Management
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="mt-1">
               Manage team members, roles, and project assignments
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
               <>
                 <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Invite Member
+                      <Mail className="h-4 w-4 mr-2" />
+                      Invite
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -765,7 +791,7 @@ const deleteMember = async (memberId: string) => {
 
                 <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="default" size="sm">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add Member
                 </Button>
@@ -1000,49 +1026,156 @@ const deleteMember = async (memberId: string) => {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Statistics Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Members</p>
+                  <p className="text-2xl font-bold">{teamMembers.length}</p>
+                </div>
+                <Users className="h-8 w-8 text-primary/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Active Projects</p>
+                  <p className="text-2xl font-bold">{projects.length}</p>
+                </div>
+                <FolderOpen className="h-8 w-8 text-primary/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Assignments</p>
+                  <p className="text-2xl font-bold">{projectAssignments.length}</p>
+                </div>
+                <Building className="h-8 w-8 text-primary/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <p className="text-2xl font-bold">{invitations.length}</p>
+                </div>
+                <Mail className="h-8 w-8 text-primary/50" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="members" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Team Members
+              <span className="hidden sm:inline">Team Members</span>
+              <Badge variant="secondary" className="ml-auto">{teamMembers.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="assignments" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
-              Project Assignments
+              <span className="hidden sm:inline">Assignments</span>
+              <Badge variant="secondary" className="ml-auto">{projectAssignments.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="invitations" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
-              Pending Invitations
+              <span className="hidden sm:inline">Invitations</span>
+              {invitations.length > 0 && (
+                <Badge variant="secondary" className="ml-auto bg-yellow-500/10 text-yellow-600">
+                  {invitations.length}
+                </Badge>
+              )}
             </TabsTrigger>
             {isSuperAdmin && (
               <TabsTrigger value="company-users" className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
-                Company Users
+                <span className="hidden sm:inline">All Users</span>
+                <Badge variant="secondary" className="ml-auto">{allCompanyUsers.length}</Badge>
               </TabsTrigger>
             )}
           </TabsList>
 
           <TabsContent value="members" className="space-y-4">
+            {/* Search and Filter */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search by name, email, or department..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {TENANT_ROLES.map(role => (
+                    <SelectItem key={role.value} value={role.value}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
-              <h4 className="text-sm font-medium mb-3">Team Members ({teamMembers.length})</h4>
-              {teamMembers.length > 0 ? (
-                <div className="space-y-2">
-                  {teamMembers.map((member) => (
-                     <div key={member.user_id} className="flex items-center justify-between p-3 border rounded-lg">
-                       <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium">
+                  Team Members ({filteredTeamMembers.length}{searchQuery || roleFilter !== 'all' ? ` of ${teamMembers.length}` : ''})
+                </h4>
+              </div>
+              {filteredTeamMembers.length > 0 ? (
+                <div className="grid gap-3">
+                  {filteredTeamMembers.map((member) => (
+                     <div key={member.user_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                       <div className="flex items-center gap-3 flex-1 min-w-0">
                          <UserAvatar 
                            avatarUrl={member.avatar_url}
                            userName={member.name}
-                           size="md"
+                           size="lg"
                          />
-                         <div>
-                           <p className="font-medium">{member.name || 'Unknown User'}</p>
-                           <p className="text-sm text-muted-foreground">
-                             {formatRole(member.tenant_role || member.role)} • Joined {new Date(member.created_at).toLocaleDateString()}
+                         <div className="flex-1 min-w-0">
+                           <div className="flex items-center gap-2 flex-wrap">
+                             <p className="font-medium">{member.name || 'Unknown User'}</p>
+                             {member.is_super_admin && (
+                               <Badge variant="destructive" className="text-xs">
+                                 Super Admin
+                               </Badge>
+                             )}
+                           </div>
+                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-muted-foreground">
+                             <span>{formatRole(member.tenant_role || member.role)}</span>
+                             {member.department && (
+                               <>
+                                 <span className="hidden sm:inline">•</span>
+                                 <span>{member.department}</span>
+                               </>
+                             )}
+                             {member.email && (
+                               <>
+                                 <span className="hidden sm:inline">•</span>
+                                 <span className="truncate">{member.email}</span>
+                               </>
+                             )}
+                           </div>
+                           <p className="text-xs text-muted-foreground mt-1">
+                             Joined {new Date(member.created_at).toLocaleDateString()}
                            </p>
                          </div>
                        </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 ml-2">
                           <Badge className={getRoleColor(member.tenant_role || member.role)}>
                             {formatRole(member.tenant_role || member.role)}
                           </Badge>
@@ -1080,9 +1213,24 @@ const deleteMember = async (memberId: string) => {
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  No team members found.
-                </p>
+                <div className="text-center py-12 border rounded-lg bg-muted/20">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    {searchQuery || roleFilter !== 'all' 
+                      ? 'No team members match your filters' 
+                      : 'No team members found'}
+                  </p>
+                  {(searchQuery || roleFilter !== 'all') && (
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      onClick={() => { setSearchQuery(''); setRoleFilter('all'); }}
+                      className="mt-2"
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </TabsContent>
@@ -1091,15 +1239,20 @@ const deleteMember = async (memberId: string) => {
             <div>
               <h4 className="text-sm font-medium mb-3">Project Assignments ({projectAssignments.length})</h4>
               {projectAssignments.length > 0 ? (
-                <div className="space-y-2">
+                <div className="grid gap-3">
                   {projectAssignments.map((assignment) => (
-                    <div key={assignment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Building className="h-4 w-4 text-blue-500" />
-                        <div>
+                    <div key={assignment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Building className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
                           <p className="font-medium">{assignment.project_name}</p>
                           <p className="text-sm text-muted-foreground">
                             {assignment.user_name} • {formatRole(assignment.role)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Assigned {new Date(assignment.assigned_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -1107,21 +1260,31 @@ const deleteMember = async (memberId: string) => {
                         <Badge className={getRoleColor(assignment.role)}>
                           {formatRole(assignment.role)}
                         </Badge>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeAssignment(assignment.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Remove ${assignment.user_name} from ${assignment.project_name}?`)) {
+                                removeAssignment(assignment.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  No project assignments found.
-                </p>
+                <div className="text-center py-12 border rounded-lg bg-muted/20">
+                  <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">No project assignments yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Assign team members to projects to get started
+                  </p>
+                </div>
               )}
             </div>
           </TabsContent>
@@ -1130,13 +1293,15 @@ const deleteMember = async (memberId: string) => {
             {invitations.length > 0 ? (
               <div>
                 <h4 className="text-sm font-medium mb-3">Pending Invitations ({invitations.length})</h4>
-                <div className="space-y-2">
+                <div className="grid gap-3">
                   {invitations.map((invitation) => (
-                    <div key={invitation.id} className="flex items-center justify-between p-3 border rounded-lg border-yellow-200 bg-yellow-50">
-                      <div className="flex items-center gap-3">
-                        <Mail className="h-4 w-4 text-yellow-600" />
-                        <div>
-                          <p className="font-medium">{invitation.email}</p>
+                    <div key={invitation.id} className="flex items-center justify-between p-4 border rounded-lg bg-yellow-500/5 border-yellow-500/20">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                          <Mail className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{invitation.email}</p>
                           <p className="text-sm text-muted-foreground">
                             Invited {new Date(invitation.created_at).toLocaleDateString()} • 
                             Expires {new Date(invitation.expires_at).toLocaleDateString()}
@@ -1144,7 +1309,7 @@ const deleteMember = async (memberId: string) => {
                         </div>
                       </div>
         <div className="flex items-center gap-2">
-          <Badge className="bg-yellow-100 text-yellow-800">
+          <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
             {formatRole(invitation.role)}
           </Badge>
           <Button
@@ -1153,13 +1318,16 @@ const deleteMember = async (memberId: string) => {
             onClick={() => copyInvitationLink(invitation.invitation_token)}
             title="Copy invite link"
           >
-            <Copy className="h-4 w-4 mr-2" />
-            Copy Link
+            <Copy className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => deleteInvitation(invitation.id)}
+            onClick={() => {
+              if (confirm(`Cancel invitation for ${invitation.email}?`)) {
+                deleteInvitation(invitation.id);
+              }
+            }}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -1169,9 +1337,13 @@ const deleteMember = async (memberId: string) => {
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">
-                No pending invitations.
-              </p>
+              <div className="text-center py-12 border rounded-lg bg-muted/20">
+                <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No pending invitations</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Invite team members to join your organization
+                </p>
+              </div>
             )}
           </TabsContent>
 
@@ -1202,20 +1374,32 @@ const deleteMember = async (memberId: string) => {
                     Company Users ({allCompanyUsers.length})
                   </h4>
                   {allCompanyUsers.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="grid gap-3">
                       {allCompanyUsers.map((user) => (
-                        <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
+                        <div key={user.user_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
                             <UserAvatar 
                               avatarUrl={user.avatar_url}
                               userName={user.name}
-                              size="md"
+                              size="lg"
                             />
-                            <div>
-                              <p className="font-medium">{user.name || 'Unknown User'}</p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-medium">{user.name || 'Unknown User'}</p>
+                                {user.is_super_admin && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    Super Admin
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-sm text-muted-foreground">
                                 {(user as any).company_name} • {formatRole(user.tenant_role || user.role)}
                               </p>
+                              {user.email && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {user.email}
+                                </p>
+                              )}
                               <p className="text-xs text-muted-foreground">
                                 Joined {new Date(user.created_at).toLocaleDateString()}
                               </p>
@@ -1225,11 +1409,6 @@ const deleteMember = async (memberId: string) => {
                             <Badge className={getRoleColor(user.tenant_role || user.role)}>
                               {formatRole(user.tenant_role || user.role)}
                             </Badge>
-                            {user.is_super_admin && (
-                              <Badge className="bg-red-100 text-red-800">
-                                Super Admin
-                              </Badge>
-                            )}
                             {isSuperAdmin && (
                               <>
                                 <Button
@@ -1264,9 +1443,10 @@ const deleteMember = async (memberId: string) => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-center py-4">
-                      No users found for the selected company.
-                    </p>
+                    <div className="text-center py-12 border rounded-lg bg-muted/20">
+                      <Building className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground">No users found for the selected company</p>
+                    </div>
                   )}
                 </div>
               </div>

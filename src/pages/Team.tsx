@@ -231,7 +231,7 @@ export default function Team() {
                   Company ID
                 </span>
                 <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                  {profile?.company_id?.slice(0, 8)}...
+                  {profile?.company_id ? `${profile.company_id.slice(0, 8)}...` : 'No Company'}
                 </span>
               </div>
               {(profile as any)?.is_super_admin && (
