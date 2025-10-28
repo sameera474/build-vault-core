@@ -1125,10 +1125,9 @@ export type Database = {
           _project: string
         }
         Returns: {
-          lab_code: string
           project_prefix: string
-          region_code: string
           report_number: string
+          road_code: string
           seq: number
           yymmdd: string
         }[]
