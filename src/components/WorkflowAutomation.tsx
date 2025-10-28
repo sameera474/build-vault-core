@@ -61,23 +61,36 @@ export function WorkflowAutomation() {
     return () => {
       channel.unsubscribe();
     };
-  }, [profile?.company_id]);
+  }, [profile]);
 
   const fetchNotifications = async () => {
-    if (!profile?.company_id) return;
+    if (!profile) return;
 
     try {
-      // Simulate notifications based on current data
-      const { data: reports } = await supabase
+      // Fetch reports based on user role
+      let reportsQuery = supabase
         .from('test_reports')
         .select('*')
-        .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
-      const { data: projects } = await supabase
+      // Only filter by company_id if not super admin
+      if (!profile.is_super_admin && profile.company_id) {
+        reportsQuery = reportsQuery.eq('company_id', profile.company_id);
+      }
+
+      const { data: reports } = await reportsQuery;
+
+      // Fetch projects based on user role
+      let projectsQuery = supabase
         .from('projects')
-        .select('*')
-        .eq('company_id', profile.company_id);
+        .select('*');
+
+      // Only filter by company_id if not super admin
+      if (!profile.is_super_admin && profile.company_id) {
+        projectsQuery = projectsQuery.eq('company_id', profile.company_id);
+      }
+
+      const { data: projects } = await projectsQuery;
 
       // Generate workflow notifications
       const generatedNotifications: Notification[] = [];
