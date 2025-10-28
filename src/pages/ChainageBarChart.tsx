@@ -124,11 +124,16 @@ export default function ChainageBarChart() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("projects")
-        .select("id, name, description, location")
-        .eq("company_id", profile.company_id)
-        .order("name");
+        .select("id, name, description, location");
+      
+      // Only filter by company_id if not super admin
+      if (!profile?.is_super_admin) {
+        query = query.eq("company_id", profile.company_id);
+      }
+      
+      const { data, error } = await query.order("name");
 
       if (error) throw error;
       setProjects(data || []);
@@ -145,12 +150,17 @@ export default function ChainageBarChart() {
     if (!profile?.company_id || !id || id.includes(":")) return;
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("projects")
         .select("id, name, description, location")
-        .eq("id", id)
-        .eq("company_id", profile.company_id)
-        .maybeSingle();
+        .eq("id", id);
+      
+      // Only filter by company_id if not super admin
+      if (!profile?.is_super_admin) {
+        query = query.eq("company_id", profile.company_id);
+      }
+      
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
       setProject(data);
@@ -168,12 +178,17 @@ export default function ChainageBarChart() {
     if (!profile?.company_id || !id || id.includes(":")) return;
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("project_roads")
         .select("*")
-        .eq("project_id", id)
-        .eq("company_id", profile.company_id)
-        .order("name");
+        .eq("project_id", id);
+      
+      // Only filter by company_id if not super admin
+      if (!profile?.is_super_admin) {
+        query = query.eq("company_id", profile.company_id);
+      }
+      
+      const { data, error } = await query.order("name");
 
       if (error) throw error;
       setRoads(data || []);

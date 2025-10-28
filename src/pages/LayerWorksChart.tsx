@@ -95,11 +95,16 @@ export default function LayerWorksChart() {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("projects")
-        .select("id, name, description, location")
-        .eq("company_id", profile.company_id)
-        .order("name");
+        .select("id, name, description, location");
+      
+      // Only filter by company_id if not super admin
+      if (!profile?.is_super_admin) {
+        query = query.eq("company_id", profile.company_id);
+      }
+      
+      const { data, error } = await query.order("name");
       if (error) throw error;
       setProjects(data || []);
     } catch (error) {
@@ -114,12 +119,17 @@ export default function LayerWorksChart() {
   const fetchProjectData = async (id: string) => {
     if (!profile?.company_id || !id || id.includes(":")) return;
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("projects")
         .select("id, name, description, location")
-        .eq("id", id)
-        .eq("company_id", profile.company_id)
-        .maybeSingle();
+        .eq("id", id);
+      
+      // Only filter by company_id if not super admin
+      if (!profile?.is_super_admin) {
+        query = query.eq("company_id", profile.company_id);
+      }
+      
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
       setProject(data);
     } catch (error) {
@@ -136,14 +146,19 @@ export default function LayerWorksChart() {
     if (!profile?.company_id || !id || id.includes(":")) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("test_reports")
         .select(
           "id, chainage_from, chainage_to, material, custom_material, side, test_type"
         )
-        .eq("project_id", id)
-        .eq("company_id", profile.company_id)
-        .order("chainage_from");
+        .eq("project_id", id);
+      
+      // Only filter by company_id if not super admin
+      if (!profile?.is_super_admin) {
+        query = query.eq("company_id", profile.company_id);
+      }
+      
+      const { data, error } = await query.order("chainage_from");
 
       if (error) throw error;
 
