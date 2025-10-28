@@ -18,43 +18,65 @@ serve(async (req) => {
 
     const { email, password, name } = await req.json();
 
-    console.log('Creating super admin user:', email);
+    console.log('Creating/updating super admin user:', email);
 
-    // Check if user already exists
-    const { data: existingProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('user_id')
-      .eq('email', email)
-      .single();
-
-    if (existingProfile) {
+    // Check if auth user exists
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('Error listing users:', listError);
       return new Response(
-        JSON.stringify({ error: 'User already exists' }),
+        JSON.stringify({ error: listError.message }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Create auth user
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        name,
-        is_super_admin: true,
-        role: 'super_admin'
+    const existingAuthUser = users?.find(u => u.email === email);
+    let userId: string;
+
+    if (existingAuthUser) {
+      console.log('Auth user exists, updating metadata:', existingAuthUser.id);
+      userId = existingAuthUser.id;
+      
+      // Update user metadata
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        {
+          user_metadata: {
+            name,
+            is_super_admin: true,
+            role: 'super_admin'
+          }
+        }
+      );
+
+      if (updateError) {
+        console.error('Error updating user metadata:', updateError);
       }
-    });
+    } else {
+      console.log('Creating new auth user');
+      // Create auth user
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          name,
+          is_super_admin: true,
+          role: 'super_admin'
+        }
+      });
 
-    if (authError) {
-      console.error('Auth error:', authError);
-      return new Response(
-        JSON.stringify({ error: authError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      if (authError) {
+        console.error('Auth error:', authError);
+        return new Response(
+          JSON.stringify({ error: authError.message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+
+      userId = authData.user.id;
     }
-
-    const userId = authData.user.id;
 
     // Create/update profile with super admin flag
     const { error: profileError } = await supabaseAdmin
