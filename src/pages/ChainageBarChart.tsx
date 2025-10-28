@@ -60,15 +60,20 @@ export default function ChainageBarChart() {
 
   // Fetch layers from database
   const fetchLayers = async () => {
-    if (!profile?.company_id) return;
+    if (!profile) return;
 
     try {
-      const { data: layers, error } = await supabase
+      let query = supabase
         .from("construction_layers")
         .select("name, color, display_order")
-        .eq("company_id", profile.company_id)
-        .eq("is_active", true)
-        .order("display_order");
+        .eq("is_active", true);
+
+      // Only filter by company_id if not super admin
+      if (!profile.is_super_admin && profile.company_id) {
+        query = query.eq("company_id", profile.company_id);
+      }
+
+      const { data: layers, error } = await query.order("display_order");
 
       if (error) throw error;
 
@@ -89,24 +94,24 @@ export default function ChainageBarChart() {
 
   useEffect(() => {
     fetchLayers();
-  }, [profile?.company_id]);
+  }, [profile]);
 
   useEffect(() => {
     fetchProjects();
-  }, [profile?.company_id]);
+  }, [profile]);
 
   useEffect(() => {
     if (projectId && projectId !== ":projectId" && !projectId.includes(":")) {
       fetchProjectData(projectId);
       fetchProjectRoads(projectId);
     }
-  }, [projectId, profile?.company_id]);
+  }, [projectId, profile]);
 
   useEffect(() => {
     if (projectId && projectId !== ":projectId" && !projectId.includes(":") && layerOrder.length > 0 && selectedRoadId) {
       fetchLayerData(projectId, selectedRoadId);
     }
-  }, [projectId, selectedRoadId, profile?.company_id, layerOrder]);
+  }, [projectId, selectedRoadId, profile, layerOrder]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -117,10 +122,10 @@ export default function ChainageBarChart() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [projectId, selectedRoadId, profile?.company_id, layerOrder]);
+  }, [projectId, selectedRoadId, profile, layerOrder]);
 
   const fetchProjects = async () => {
-    if (!profile?.company_id) return;
+    if (!profile) return;
     setLoading(true);
 
     try {
@@ -129,7 +134,7 @@ export default function ChainageBarChart() {
         .select("id, name, description, location");
       
       // Only filter by company_id if not super admin
-      if (!profile?.is_super_admin) {
+      if (!profile.is_super_admin && profile.company_id) {
         query = query.eq("company_id", profile.company_id);
       }
       
@@ -147,7 +152,7 @@ export default function ChainageBarChart() {
   };
 
   const fetchProjectData = async (id: string) => {
-    if (!profile?.company_id || !id || id.includes(":")) return;
+    if (!profile || !id || id.includes(":")) return;
 
     try {
       let query = supabase
@@ -156,7 +161,7 @@ export default function ChainageBarChart() {
         .eq("id", id);
       
       // Only filter by company_id if not super admin
-      if (!profile?.is_super_admin) {
+      if (!profile.is_super_admin && profile.company_id) {
         query = query.eq("company_id", profile.company_id);
       }
       
@@ -175,7 +180,7 @@ export default function ChainageBarChart() {
   };
 
   const fetchProjectRoads = async (id: string) => {
-    if (!profile?.company_id || !id || id.includes(":")) return;
+    if (!profile || !id || id.includes(":")) return;
 
     try {
       let query = supabase
@@ -184,7 +189,7 @@ export default function ChainageBarChart() {
         .eq("project_id", id);
       
       // Only filter by company_id if not super admin
-      if (!profile?.is_super_admin) {
+      if (!profile.is_super_admin && profile.company_id) {
         query = query.eq("company_id", profile.company_id);
       }
       
@@ -222,7 +227,7 @@ export default function ChainageBarChart() {
   };
 
   const fetchLayerData = async (id: string, roadId: string, isRefresh = false) => {
-    if (!profile?.company_id || !id || id.includes(":") || !roadId) return;
+    if (!profile || !id || id.includes(":") || !roadId) return;
     
     if (isRefresh) {
       setRefreshing(true);
