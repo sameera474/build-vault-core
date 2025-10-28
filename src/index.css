@@ -21,6 +21,10 @@
     --primary-foreground: 0 0% 98%;
     --primary-hover: 215 85% 20%;
 
+    /* Text/SURFACE on Primary backgrounds (always high-contrast) */
+    --on-primary-foreground: 0 0% 98%; /* white text on primary backgrounds */
+    --on-primary-surface: 0 0% 100%; /* white surface elements on primary */
+
     /* Secondary - Light Gray */
     --secondary: 215 15% 96%;
     --secondary-foreground: 215 25% 15%;
@@ -96,6 +100,10 @@
     --primary: 215 100% 65%;
     --primary-foreground: 215 30% 8%;
     --primary-hover: 215 100% 70%;
+
+    /* Text/SURFACE on Primary backgrounds (always high-contrast) */
+    --on-primary-foreground: 0 0% 98%;
+    --on-primary-surface: 0 0% 100%;
 
     /* Secondary */
     --secondary: 215 20% 15%;

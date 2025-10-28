@@ -285,32 +285,32 @@ export default function About() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20"></div>
         <div className="relative px-6 py-24 sm:px-6 sm:py-32 lg:px-8">
           <div className="mx-auto max-w-2xl text-center animate-fade-in">
-            <h2 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight text-on-primary sm:text-4xl">
               Ready to get started?
             </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-primary-foreground/90">
+            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-on-primary/90">
               Join thousands of construction professionals who trust ConstructTest Pro for accurate testing and streamlined workflows.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/register">
-                <Button size="lg" className="w-full sm:w-auto bg-background text-foreground hover:bg-background/90 hover:scale-105 transition-smooth group shadow-elegant">
+                <Button size="lg" className="w-full sm:w-auto bg-on-primary-surface text-primary hover:bg-on-primary-surface/90 hover:scale-105 transition-smooth group shadow-elegant">
                   Start your free trial
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link to="/contact">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-2 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-2 border-on-primary/30 text-on-primary hover:bg-on-primary-surface/10">
                   Contact us
                 </Button>
               </Link>
             </div>
-            <div className="flex items-center justify-center gap-6 text-sm text-primary-foreground/80 pt-8">
+            <div className="flex items-center justify-center gap-6 text-sm text-on-primary/90 pt-8">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
+                <CheckCircle className="h-5 w-5 text-on-primary" />
                 <span>14-day free trial</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
+                <CheckCircle className="h-5 w-5 text-on-primary" />
                 <span>No credit card required</span>
               </div>
             </div>
