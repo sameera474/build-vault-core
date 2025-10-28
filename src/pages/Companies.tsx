@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { getCompanies } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanyEditForm } from '@/components/CompanyEditForm';
@@ -36,11 +38,15 @@ export default function Companies() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedCompanies, setSelectedCompanies] = useState<Set<string>>(new Set());
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   useEffect(() => {
     fetchCompanies();
@@ -108,6 +114,11 @@ export default function Companies() {
     setShowDeleteDialog(true);
   };
 
+  const handlePermanentDelete = (company: Company) => {
+    setSelectedCompany(company);
+    setShowPermanentDeleteDialog(true);
+  };
+
   const confirmDelete = async () => {
     if (!selectedCompany) return;
 
@@ -133,6 +144,93 @@ export default function Companies() {
       toast({
         title: "Error",
         description: "Failed to deactivate company",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const confirmPermanentDelete = async () => {
+    if (!selectedCompany) return;
+
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', selectedCompany.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Company has been permanently deleted",
+      });
+
+      fetchCompanies();
+      setShowPermanentDeleteDialog(false);
+      setSelectedCompany(null);
+    } catch (error: any) {
+      console.error('Error deleting company:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete company",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCompanies(new Set(companies.map(c => c.id)));
+    } else {
+      setSelectedCompanies(new Set());
+    }
+  };
+
+  const handleSelectCompany = (companyId: string, checked: boolean) => {
+    const newSelected = new Set(selectedCompanies);
+    if (checked) {
+      newSelected.add(companyId);
+    } else {
+      newSelected.delete(companyId);
+    }
+    setSelectedCompanies(newSelected);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedCompanies.size === 0) return;
+    setShowBulkDeleteDialog(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    if (selectedCompanies.size === 0) return;
+
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .in('id', Array.from(selectedCompanies));
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${selectedCompanies.size} companies have been permanently deleted`,
+      });
+
+      fetchCompanies();
+      setSelectedCompanies(new Set());
+      setShowBulkDeleteDialog(false);
+    } catch (error: any) {
+      console.error('Error deleting companies:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete companies",
         variant: "destructive",
       });
     } finally {
@@ -188,6 +286,15 @@ export default function Companies() {
             Manage registered companies in the system
           </p>
         </div>
+        {profile?.is_super_admin && selectedCompanies.size > 0 && (
+          <Button
+            variant="destructive"
+            onClick={handleBulkDelete}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Selected ({selectedCompanies.size})
+          </Button>
+        )}
       </div>
 
       {/* Overview Stats */}
@@ -259,6 +366,15 @@ export default function Companies() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      {profile?.is_super_admin && (
+                        <TableHead className="w-[50px]">
+                          <Checkbox
+                            checked={selectedCompanies.size === companies.length && companies.length > 0}
+                            onCheckedChange={handleSelectAll}
+                            aria-label="Select all companies"
+                          />
+                        </TableHead>
+                      )}
                       <TableHead>Company Name</TableHead>
                       <TableHead className="hidden sm:table-cell">Registration Date</TableHead>
                       <TableHead>Status</TableHead>
@@ -268,6 +384,15 @@ export default function Companies() {
                   <TableBody>
                     {companies.map((company) => (
                       <TableRow key={company.id}>
+                        {profile?.is_super_admin && (
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedCompanies.has(company.id)}
+                              onCheckedChange={(checked) => handleSelectCompany(company.id, checked as boolean)}
+                              aria-label={`Select ${company.name}`}
+                            />
+                          </TableCell>
+                        )}
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -324,6 +449,18 @@ export default function Companies() {
                               <Building2 className="mr-2 h-4 w-4" />
                               Activate
                             </DropdownMenuItem>
+                          )}
+                          {profile?.is_super_admin && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handlePermanentDelete(company)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Permanently
+                              </DropdownMenuItem>
+                            </>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -445,6 +582,54 @@ export default function Companies() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteLoading ? 'Deactivating...' : 'Deactivate'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Permanent Delete Confirmation Dialog */}
+      <AlertDialog open={showPermanentDeleteDialog} onOpenChange={setShowPermanentDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently Delete Company?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{selectedCompany?.name}" and all associated data. This action cannot be undone.
+              <br /><br />
+              <strong className="text-destructive">Are you absolutely sure?</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmPermanentDelete}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? 'Deleting...' : 'Delete Permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently Delete {selectedCompanies.size} Companies?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedCompanies.size} selected companies and all their associated data. This action cannot be undone.
+              <br /><br />
+              <strong className="text-destructive">Are you absolutely sure?</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowBulkDeleteDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmBulkDelete}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? 'Deleting...' : `Delete ${selectedCompanies.size} Companies`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
