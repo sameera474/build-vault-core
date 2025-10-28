@@ -50,6 +50,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import Companies from "./pages/Companies";
 import DemoUsers from "./pages/DemoUsers";
 import FixDemoUsers from "./pages/FixDemoUsers";
+import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import Profile from "./pages/Profile";
 
 // Layouts
@@ -346,6 +347,12 @@ const App = () => (
                 <FixDemoUsers />
               </AppLayout>
             </ProtectedRoute>
+          } />
+
+          <Route path="/create-super-admin" element={
+            <PublicLayout>
+              <CreateSuperAdmin />
+            </PublicLayout>
           } />
 
           <Route path="/profile" element={
