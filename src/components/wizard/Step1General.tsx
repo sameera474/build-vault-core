@@ -609,7 +609,12 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
               <Input
                 value={data.technician_name || ""}
                 onChange={(e) => onUpdate({ technician_name: e.target.value })}
-                placeholder="Enter technician name..."
+                onFocus={() => {
+                  if (!data.technician_name && profile?.name) {
+                    onUpdate({ technician_name: profile.name });
+                  }
+                }}
+                placeholder="Click to auto-fill with your name..."
               />
             </div>
             <div className="space-y-2">

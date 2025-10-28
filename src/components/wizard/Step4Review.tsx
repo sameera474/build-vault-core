@@ -147,25 +147,59 @@ export function Step4Review({ data, onSaveDraft, onSubmitForApproval, isLoading 
 
             <div>
               <h4 className="font-semibold mb-2">Test Results</h4>
-              {data.summary_json && (
+              {(data.data_json || data.summary_json) && (
                 <div className="space-y-1 text-sm">
-                  {data.summary_json.field_dry_density && (
+                  {/* Field Density Test Results */}
+                  {data.summary_json?.field_dry_density && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Field Dry Density:</span>
                       <span>{data.summary_json.field_dry_density.toFixed(3)} g/cm³</span>
                     </div>
                   )}
-                  {data.summary_json.degree_of_compaction && (
+                  {data.summary_json?.degree_of_compaction && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Compaction:</span>
                       <span>{data.summary_json.degree_of_compaction.toFixed(1)}%</span>
                     </div>
                   )}
-                  {data.summary_json.field_moisture && (
+                  {data.summary_json?.field_moisture && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Moisture:</span>
                       <span>{data.summary_json.field_moisture.toFixed(1)}%</span>
                     </div>
+                  )}
+                  
+                  {/* Proctor Test Results */}
+                  {data.data_json?.maxDryDensity && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Max Dry Density:</span>
+                      <span>{parseFloat(data.data_json.maxDryDensity).toFixed(3)} g/cm³</span>
+                    </div>
+                  )}
+                  {data.data_json?.optimumMoistureContent && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Optimum Moisture:</span>
+                      <span>{parseFloat(data.data_json.optimumMoistureContent).toFixed(1)}%</span>
+                    </div>
+                  )}
+                  
+                  {/* Generic results from data_json */}
+                  {data.data_json && Object.keys(data.data_json).length > 0 && !data.data_json.maxDryDensity && (
+                    Object.entries(data.data_json).slice(0, 5).map(([key, value]) => {
+                      if (typeof value === 'number' || (typeof value === 'string' && !isNaN(parseFloat(value)))) {
+                        return (
+                          <div key={key} className="flex justify-between">
+                            <span className="text-muted-foreground">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+                            <span>{typeof value === 'number' ? value.toFixed(2) : value}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })
+                  )}
+                  
+                  {!data.data_json && !data.summary_json && (
+                    <p className="text-xs text-muted-foreground">No test results available yet</p>
                   )}
                 </div>
               )}

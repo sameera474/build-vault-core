@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface FieldDensityTestProps {
   data: any;
@@ -12,6 +14,7 @@ interface FieldDensityTestProps {
 }
 
 export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
+  const [proctorReports, setProctorReports] = useState<any[]>([]);
   const [testData, setTestData] = useState({
     // Test Location
     test_location: data.test_location || '',
@@ -64,6 +67,59 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
   useEffect(() => {
     setTestData(prev => ({ ...prev, ...data }));
   }, [data]);
+
+  useEffect(() => {
+    loadProctorReports();
+  }, []);
+
+  const loadProctorReports = async () => {
+    try {
+      const { data: reports, error } = await supabase
+        .from('test_reports')
+        .select('id, report_number, test_date, data_json, summary_json')
+        .eq('test_type', 'Proctor Compaction Test')
+        .eq('status', 'approved')
+        .order('test_date', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      
+      // Filter reports that have maxDryDensity
+      const validReports = (reports || []).filter(
+        report => {
+          if (typeof report.data_json === 'object' && report.data_json !== null) {
+            const dataJson = report.data_json as any;
+            return dataJson.maxDryDensity && dataJson.optimumMoistureContent;
+          }
+          return false;
+        }
+      );
+      
+      setProctorReports(validReports);
+    } catch (error) {
+      console.error('Error loading Proctor reports:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load Proctor test reports',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleProctorReportSelect = (reportId: string) => {
+    const selectedReport = proctorReports.find(r => r.id === reportId);
+    if (selectedReport && typeof selectedReport.data_json === 'object' && selectedReport.data_json !== null) {
+      const dataJson = selectedReport.data_json as any;
+      updateField('proctor_report_no', selectedReport.report_number);
+      updateField('max_dry_density_g_cm3', dataJson.maxDryDensity);
+      updateField('optimum_moisture_percent', dataJson.optimumMoistureContent);
+      
+      toast({
+        title: 'Proctor Values Loaded',
+        description: `Values from ${selectedReport.report_number} have been applied`,
+      });
+    }
+  };
 
   const updateField = (field: string, value: string) => {
     setTestData(prev => {
@@ -436,39 +492,62 @@ export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
         <CardHeader>
           <CardTitle>Reference Lab Value (from Proctor)</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Proctor Report Number</Label>
-            <Select value={testData.proctor_report_no} onValueChange={(value) => updateField('proctor_report_no', value)}>
+            <Label>Select Existing Proctor Report</Label>
+            <Select onValueChange={handleProctorReportSelect}>
               <SelectTrigger>
-                <SelectValue placeholder="Select Proctor report" />
+                <SelectValue placeholder="Select a Proctor test report..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PRO-2024-001">PRO-2024-001</SelectItem>
-                <SelectItem value="PRO-2024-002">PRO-2024-002</SelectItem>
-                <SelectItem value="PRO-2024-003">PRO-2024-003</SelectItem>
+                {proctorReports.length === 0 ? (
+                  <SelectItem value="none" disabled>No approved Proctor reports available</SelectItem>
+                ) : (
+                  proctorReports.map((report) => {
+                    const dataJson = typeof report.data_json === 'object' && report.data_json !== null ? report.data_json as any : null;
+                    return (
+                      <SelectItem key={report.id} value={report.id}>
+                        {report.report_number} - {new Date(report.test_date).toLocaleDateString()} 
+                        {dataJson?.maxDryDensity && ` (MDD: ${parseFloat(dataJson.maxDryDensity).toFixed(3)} g/cm³)`}
+                      </SelectItem>
+                    );
+                  })
+                )}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Max Dry Density (g/cm³)</Label>
-            <Input
-              type="number"
-              step="0.001"
-              value={testData.max_dry_density_g_cm3}
-              onChange={(e) => updateField('max_dry_density_g_cm3', e.target.value)}
-              placeholder="2.150"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Optimum Moisture Content (%)</Label>
-            <Input
-              type="number"
-              step="0.1"
-              value={testData.optimum_moisture_percent}
-              onChange={(e) => updateField('optimum_moisture_percent', e.target.value)}
-              placeholder="8.5"
-            />
+          
+          <Separator />
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Proctor Report Number</Label>
+              <Input
+                value={testData.proctor_report_no}
+                onChange={(e) => updateField('proctor_report_no', e.target.value)}
+                placeholder="Enter report number manually"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Max Dry Density (g/cm³)</Label>
+              <Input
+                type="number"
+                step="0.001"
+                value={testData.max_dry_density_g_cm3}
+                onChange={(e) => updateField('max_dry_density_g_cm3', e.target.value)}
+                placeholder="2.150"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Optimum Moisture Content (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={testData.optimum_moisture_percent}
+                onChange={(e) => updateField('optimum_moisture_percent', e.target.value)}
+                placeholder="8.5"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
