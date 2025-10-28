@@ -318,14 +318,19 @@ export default function Approvals() {
   const { toast } = useToast();
 
   const fetchReports = async () => {
-    if (!profile?.company_id) return;
+    if (!profile) return;
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("test_reports")
-        .select("*")
-        .eq("company_id", profile.company_id)
-        .order("created_at", { ascending: false });
+        .select("*");
+
+      // Only filter by company_id if not super admin
+      if (!profile.is_super_admin && profile.company_id) {
+        query = query.eq("company_id", profile.company_id);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       setReports(data || []);
@@ -345,28 +350,30 @@ export default function Approvals() {
     fetchReports();
 
     // Set up real-time subscription for test_reports updates
+    const channelConfig: any = {
+      event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+      schema: 'public',
+      table: 'test_reports',
+    };
+
+    // Only add company_id filter if not super admin
+    if (!profile?.is_super_admin && profile?.company_id) {
+      channelConfig.filter = `company_id=eq.${profile.company_id}`;
+    }
+
     const channel = supabase
       .channel('test-reports-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'test_reports',
-          filter: `company_id=eq.${profile?.company_id}`
-        },
-        (payload) => {
-          console.log('Real-time update received:', payload);
-          // Refresh the reports list when any change occurs
-          fetchReports();
-        }
-      )
+      .on('postgres_changes', channelConfig, (payload) => {
+        console.log('Real-time update received:', payload);
+        // Refresh the reports list when any change occurs
+        fetchReports();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.company_id]);
+  }, [profile]);
 
   const getStatusCounts = () => {
     const pending = reports.filter((r) => r.status === "submitted").length;
