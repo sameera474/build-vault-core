@@ -36,6 +36,7 @@ export const roleMenuMap: Record<AppRole, string[]> = {
   super_admin: [
     "Dashboard",
     "Super Admin",
+    "Audit Logs",
     "Companies",
     "Demo Users",
     "Fix Demo Users",
@@ -46,6 +47,7 @@ export const roleMenuMap: Record<AppRole, string[]> = {
     "Laboratory Inventory",
     "Approvals",
     "Team",
+    "Permissions",
     "Projects",
     "Automation",
     "Mobile",
@@ -63,6 +65,7 @@ export const roleMenuMap: Record<AppRole, string[]> = {
     "Laboratory Inventory",
     "Approvals",
     "Team",
+    "Permissions",
     "Projects",
     "Automation",
     "Mobile",

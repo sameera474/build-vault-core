@@ -33,6 +33,8 @@ import { Templates } from "./pages/Templates";
 import { EnhancedReportEditor } from "./components/EnhancedReportEditor";
 import MonthlySummaries from "./pages/MonthlySummaries";
 import LaboratoryInventory from "./pages/LaboratoryInventory";
+import PermissionManagement from "./pages/PermissionManagement";
+import AuditLogs from "./pages/AuditLogs";
 import ChainageBarChart from "./pages/ChainageBarChart";
 import Approvals from "./pages/Approvals";
 import Documents from "./pages/Documents";
@@ -190,6 +192,22 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <LaboratoryInventory />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/permissions" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <PermissionManagement />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/audit-logs" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <AuditLogs />
               </AppLayout>
             </ProtectedRoute>
           } />
