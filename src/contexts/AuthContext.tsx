@@ -15,7 +15,7 @@ interface SubscriptionStatus {
 
 interface Profile {
   user_id: string;
-  company_id: string;
+  company_id: string | null;
   name: string | null;
   role: string;
   created_at: string;
@@ -80,8 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!mounted) return;
             const { data: profileData } = await getUserProfile(session.user.id);
             
-            // Fetch company name
-            if (profileData?.company_id) {
+            // Fetch company name only for non-super-admins with company_id
+            if (profileData?.company_id && !profileData?.is_super_admin) {
               const { data: companyData } = await supabase
                 .from('companies')
                 .select('name')
@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setProfile(profileData);
               }
             } else {
+              // Super admins or users without company_id
               setProfile(profileData);
             }
             
@@ -124,8 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getUserProfile(session.user.id).then(async ({ data: profileData }) => {
           if (!mounted) return;
           
-          // Fetch company name
-          if (profileData?.company_id) {
+          // Fetch company name only for non-super-admins with company_id
+          if (profileData?.company_id && !profileData?.is_super_admin) {
             const { data: companyData } = await supabase
               .from('companies')
               .select('name')
