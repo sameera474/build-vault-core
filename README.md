@@ -4,7 +4,7 @@ Professional SaaS platform for construction materials testing management.
 
 ## Project Overview
 
-**URL**: https://constructiontestpro-85ko01frw-sameeras-projects-7a5677db.vercel.app/
+**URL**: https://construction-test-pro.vercel.app/
 
 ConstructTest Pro is a multi-tenant SaaS web application designed for construction materials testing. This is **Phase 0** - the marketing site and authentication foundation.
 
