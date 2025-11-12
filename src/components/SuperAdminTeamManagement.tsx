@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building, Users, Shield, Edit, Trash2, UserX, UserCheck } from 'lucide-react';
+import { Building, Users, Shield, Edit, Trash2, UserX, UserCheck, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,6 +53,7 @@ export function SuperAdminTeamManagement() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<CompanyUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<CompanyUser | null>(null);
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [editForm, setEditForm] = useState({
     name: '',
     role: '',
@@ -292,6 +294,39 @@ export function SuperAdminTeamManagement() {
     );
   }
 
+  // Group users by company
+  const groupedByCompany = companyUsers.reduce((acc, user) => {
+    const companyId = user.company_id;
+    const companyName = user.company_name || 'Unknown Company';
+    
+    if (!acc[companyId]) {
+      acc[companyId] = {
+        companyId,
+        companyName,
+        users: []
+      };
+    }
+    
+    acc[companyId].users.push(user);
+    return acc;
+  }, {} as Record<string, { companyId: string; companyName: string; users: CompanyUser[] }>);
+
+  const companyGroups = Object.values(groupedByCompany).sort((a, b) => 
+    a.companyName.localeCompare(b.companyName)
+  );
+
+  const toggleCompany = (companyId: string) => {
+    setExpandedCompanies(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(companyId)) {
+        newSet.delete(companyId);
+      } else {
+        newSet.add(companyId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -326,86 +361,152 @@ export function SuperAdminTeamManagement() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : (
-          <div>
-            <h4 className="text-sm font-medium mb-3">
-              Users ({companyUsers.length})
-            </h4>
-            {companyUsers.length > 0 ? (
-              <div className="space-y-2">
-                {companyUsers.map((user) => (
-                  <div key={user.user_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-3 flex-1">
-                      <Users className="h-4 w-4 text-blue-500" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{user.name || 'Unknown User'}</p>
-                          {!user.is_active && (
-                            <Badge variant="outline" className="text-xs">Inactive</Badge>
-                          )}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">
+                {companyGroups.length} {companyGroups.length === 1 ? 'Company' : 'Companies'} • {companyUsers.length} Total Users
+              </h4>
+              {companyGroups.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (expandedCompanies.size === companyGroups.length) {
+                      setExpandedCompanies(new Set());
+                    } else {
+                      setExpandedCompanies(new Set(companyGroups.map(g => g.companyId)));
+                    }
+                  }}
+                >
+                  {expandedCompanies.size === companyGroups.length ? 'Collapse All' : 'Expand All'}
+                </Button>
+              )}
+            </div>
+
+            {companyGroups.length > 0 ? (
+              <div className="space-y-3">
+                {companyGroups.map((group) => (
+                  <Collapsible
+                    key={group.companyId}
+                    open={expandedCompanies.has(group.companyId)}
+                    onOpenChange={() => toggleCompany(group.companyId)}
+                  >
+                    <Card className="overflow-hidden">
+                      <CollapsibleTrigger className="w-full">
+                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer">
+                          <div className="flex items-center gap-3">
+                            <Building className="h-5 w-5 text-primary" />
+                            <div className="text-left">
+                              <h5 className="font-semibold">{group.companyName}</h5>
+                              <p className="text-sm text-muted-foreground">
+                                {group.users.length} {group.users.length === 1 ? 'Worker' : 'Workers'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-sm">
+                              {group.users.length}
+                            </Badge>
+                            {expandedCompanies.has(group.companyId) ? (
+                              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {user.company_name} • {formatRole(user.tenant_role || user.role)}
-                        </p>
-                        {user.job_title && (
-                          <p className="text-xs text-muted-foreground">
-                            {user.job_title}
-                          </p>
-                        )}
-                        {user.department && (
-                          <p className="text-xs text-muted-foreground">
-                            Dept: {user.department}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          Joined {new Date(user.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={getRoleColor(user.tenant_role || user.role)}>
-                        {formatRole(user.tenant_role || user.role)}
-                      </Badge>
-                      {user.is_super_admin && (
-                        <Badge className="bg-red-100 text-red-800">
-                          Super Admin
-                        </Badge>
-                      )}
+                      </CollapsibleTrigger>
                       
-                      {/* Action Buttons */}
-                      <div className="flex gap-1 ml-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditClick(user)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleToggleActive(user)}
-                        >
-                          {user.is_active ? (
-                            <UserX className="h-3 w-3" />
-                          ) : (
-                            <UserCheck className="h-3 w-3" />
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => setDeletingUser(user)}
-                          disabled={user.is_super_admin}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                      <CollapsibleContent>
+                        <div className="border-t">
+                          <div className="p-4 space-y-2">
+                            {group.users.map((user) => (
+                              <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <Users className="h-4 w-4 text-blue-500" />
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium">{user.name || 'Unknown User'}</p>
+                                      {!user.is_active && (
+                                        <Badge variant="outline" className="text-xs">Inactive</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {formatRole(user.tenant_role || user.role)}
+                                    </p>
+                                    {user.job_title && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {user.job_title}
+                                      </p>
+                                    )}
+                                    {user.department && (
+                                      <p className="text-xs text-muted-foreground">
+                                        Dept: {user.department}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                      Joined {new Date(user.created_at).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge className={getRoleColor(user.tenant_role || user.role)}>
+                                    {formatRole(user.tenant_role || user.role)}
+                                  </Badge>
+                                  {user.is_super_admin && (
+                                    <Badge className="bg-red-100 text-red-800">
+                                      Super Admin
+                                    </Badge>
+                                  )}
+                                  
+                                  <div className="flex gap-1 ml-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditClick(user);
+                                      }}
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleActive(user);
+                                      }}
+                                    >
+                                      {user.is_active ? (
+                                        <UserX className="h-3 w-3" />
+                                      ) : (
+                                        <UserCheck className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeletingUser(user);
+                                      }}
+                                      disabled={user.is_super_admin}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-4">
+              <p className="text-muted-foreground text-center py-8">
                 No users found for the selected company.
               </p>
             )}
