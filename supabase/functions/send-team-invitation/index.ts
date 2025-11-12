@@ -80,8 +80,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send invitation email
+    // IMPORTANT: Replace 'onboarding@yourdomain.com' with your verified domain email
+    // The default resend.dev address has strict sending limits
+    const fromEmail = Deno.env.get('INVITATION_FROM_EMAIL') || "ConstructTest Pro <invites@yourdomain.com>";
+    
+    console.log(`[INVITATION] Attempting to send email to: ${email} from: ${fromEmail}`);
+    
     const emailResponse = await resend.emails.send({
-      from: "ConstructTest Pro <onboarding@resend.dev>",
+      from: fromEmail,
       to: [email],
       subject: `You're invited to join ${company_name || 'ConstructTest Pro'}`,
       html: `
@@ -125,13 +131,23 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Invitation email sent successfully:", emailResponse);
+    if (emailResponse.error) {
+      console.error("[INVITATION] Resend error:", emailResponse.error);
+      throw new Error(`Email sending failed: ${emailResponse.error.message || 'Unknown error'}`);
+    }
+
+    console.log("[INVITATION] Email sent successfully:", {
+      id: emailResponse.data?.id,
+      to: email,
+      from: fromEmail
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
       message: "Invitation sent successfully",
       invitation_token: invitationToken,
       invitation_url: invitationUrl,
+      email_id: emailResponse.data?.id
     }), {
       status: 200,
       headers: {
@@ -140,11 +156,16 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in send-team-invitation function:", error);
+    console.error("[INVITATION] Error in send-team-invitation function:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        success: false 
+        error: error.message || 'Failed to send invitation',
+        success: false,
+        details: error.stack
       }),
       {
         status: 500,
