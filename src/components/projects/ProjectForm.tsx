@@ -171,25 +171,6 @@ export function ProjectForm({ project, onSave, onCancel, saveError }: ProjectFor
         </Button>
       </div>
 
-      {/* Error Alert - Shows detailed Supabase errors */}
-      {saveError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Failed to Save Project</AlertTitle>
-          <AlertDescription className="mt-2">
-            <p className="font-mono text-sm">{saveError}</p>
-            <p className="mt-2 text-sm">
-              If you continue to see this error, please check:
-            </p>
-            <ul className="list-disc list-inside text-sm mt-1 space-y-1">
-              <li>You have permission to create projects</li>
-              <li>All required fields are filled correctly</li>
-              <li>Your account and company settings are configured properly</li>
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general" className="flex items-center gap-2">
