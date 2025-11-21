@@ -12,6 +12,7 @@ export default function ProjectEdit() {
   const { profile } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -45,6 +46,8 @@ export default function ProjectEdit() {
 
   const handleSave = async (projectData: Partial<Project> & { company_id: string }) => {
     console.log('ProjectEdit.handleSave called', { routeId: id, projectData });
+    setSaveError(null); // Clear previous errors
+    
     try {
       const isNew = !id || id === 'new';
       if (isNew) {
@@ -66,11 +69,40 @@ export default function ProjectEdit() {
         });
         navigate('/projects');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving project:', error);
+      
+      // Extract detailed error message from Supabase error
+      let errorMessage = 'Failed to save project';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      // Check for specific Supabase error codes
+      if (error?.code === '42501') {
+        errorMessage = 'Permission denied: You do not have permission to create projects. This is a Row Level Security (RLS) policy violation.';
+      } else if (error?.code === '23505') {
+        errorMessage = 'Duplicate entry: A project with this information already exists.';
+      } else if (error?.code === '23503') {
+        errorMessage = 'Invalid reference: The selected company or related data does not exist.';
+      }
+      
+      // Add hint if available
+      if (error?.hint) {
+        errorMessage += ` Hint: ${error.hint}`;
+      }
+      
+      // Add details if available
+      if (error?.details) {
+        errorMessage += ` Details: ${error.details}`;
+      }
+      
+      setSaveError(errorMessage);
+      
       toast({
         title: "Error",
-        description: "Failed to save project",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -93,6 +125,7 @@ export default function ProjectEdit() {
         project={project}
         onSave={handleSave}
         onCancel={() => navigate('/projects')}
+        saveError={saveError}
       />
     </div>
   );
