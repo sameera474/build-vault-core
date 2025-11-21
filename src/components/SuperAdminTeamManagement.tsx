@@ -103,6 +103,7 @@ export function SuperAdminTeamManagement() {
         .select(`
           user_id, 
           name, 
+          email,
           tenant_role, 
           created_at, 
           is_super_admin, 
@@ -523,6 +524,15 @@ export function SuperAdminTeamManagement() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email (Registration)</Label>
+                <Input
+                  id="email"
+                  value={editingUser?.email || 'Not available'}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
               <div>
                 <Label htmlFor="name">Name</Label>
                 <Input
