@@ -10,10 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ImageUpload } from '@/components/projects/ImageUpload';
 import { ProjectRoads } from '@/components/projects/ProjectRoads';
 import { ProjectRoles } from '@/components/projects/ProjectRoles';
-import { ArrowLeft, Save, Building, Users, MapPin, Settings } from 'lucide-react';
+import { ArrowLeft, Save, Building, Users, MapPin, Settings, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectService } from '@/services/projectService';
 import { toast } from '@/hooks/use-toast';
@@ -45,9 +46,10 @@ interface ProjectFormProps {
   project?: Project | null;
   onSave: (data: Partial<Project> & { company_id: string }) => void;
   onCancel: () => void;
+  saveError?: string | null;
 }
 
-export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
+export function ProjectForm({ project, onSave, onCancel, saveError }: ProjectFormProps) {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
   const [companyId, setCompanyId] = useState<string>(project?.company_id || '');
@@ -168,6 +170,25 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
           {isSubmitting ? 'Saving...' : 'Save Project'}
         </Button>
       </div>
+
+      {/* Error Alert - Shows detailed Supabase errors */}
+      {saveError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Failed to Save Project</AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="font-mono text-sm">{saveError}</p>
+            <p className="mt-2 text-sm">
+              If you continue to see this error, please check:
+            </p>
+            <ul className="list-disc list-inside text-sm mt-1 space-y-1">
+              <li>You have permission to create projects</li>
+              <li>All required fields are filled correctly</li>
+              <li>Your account and company settings are configured properly</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
