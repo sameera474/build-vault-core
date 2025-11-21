@@ -1132,6 +1132,10 @@ export type Database = {
           yymmdd: string
         }[]
       }
+      can_create_project_for_company: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
       current_user_company: { Args: never; Returns: string }
       current_user_info: {
         Args: never
