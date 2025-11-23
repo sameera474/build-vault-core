@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Project {
@@ -49,7 +50,6 @@ class ProjectService {
   }
 
   async fetchProjects() {
-    // Use projects table directly; RLS restricts rows to the user's company or super_admin
     const { data, error } = await supabase
       .from('projects')
       .select('*')
@@ -81,18 +81,12 @@ class ProjectService {
     return data as Project;
   }
 
-  async createProject(projectData: Partial<Project> & { company_id: string }) {
+  async createProject(projectData: Partial<Project> & { company_id?: string }) {
     const profile = await this.getProfile();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Check if user is super admin and creating for different company
     const isSuper = (profile as any)?.is_super_admin;
-    const isDifferentCompany = projectData.company_id !== profile.company_id;
 
-    if (isSuper && isDifferentCompany) {
-      // Use Edge Function for super admin cross-company operations
+    if (isSuper && projectData.company_id && projectData.company_id !== profile.company_id) {
       const { data: { session } } = await supabase.auth.getSession();
-      
       const { data, error } = await supabase.functions.invoke('admin-create-project', {
         body: projectData,
         headers: {
@@ -100,36 +94,38 @@ class ProjectService {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating project via edge function:', error);
+        throw error;
+      }
       if (!data?.success) throw new Error((data as any)?.error || 'Failed to create project');
       return (data as any).project as Project;
     } else {
-      // Regular tenant insert (or super admin for their own company)
-      const newProject = {
-        ...projectData,
-        company_id: profile.company_id, // Always use user's company for regular flow
-        created_by: user?.id,
-        status: 'active',
-      };
+      console.log('Attempting to create project via RPC call for user.');
+      const { data, error } = await supabase.rpc('create_new_project', {
+        p_name: projectData.name,
+        p_contract_number: projectData.contract_number,
+        p_contractor_name: projectData.contractor_name,
+        p_client_name: projectData.client_name,
+        p_consultant_name: projectData.consultant_name,
+        p_project_prefix: projectData.project_prefix,
+        p_region_code: projectData.region_code,
+        p_lab_code: projectData.lab_code,
+      });
 
-      console.log('ProjectService.createProject payload', newProject);
-
-      const { data, error } = await supabase
-        .from('projects')
-        .insert(newProject as any)
-        .select()
-        .single();
+      if (error) {
+        console.error('Error saving project via RPC:', error);
+        throw error;
+      }
       
-      if (error) throw error;
       return data as Project;
     }
   }
 
   async updateProject(id: string, updates: Partial<Project>) {
     const profile = await this.getProfile();
-
-    // If super admin, route through edge function to bypass RLS safely
     const isSuper = (profile as any)?.is_super_admin;
+
     if (isSuper) {
       const { data: { session } } = await supabase.auth.getSession();
       const payload = { id, ...updates } as any;
@@ -140,18 +136,17 @@ class ProjectService {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Failed to update project');
       return data.project as Project;
+    } else {
+      const updatesSanitized = { ...updates, company_id: profile.company_id } as any;
+      const { data, error } = await supabase
+        .from('projects')
+        .update(updatesSanitized)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Project;
     }
-
-    // Tenant path: enforce own company id
-    const updatesSanitized = { ...updates, company_id: profile.company_id } as any;
-    const { data, error } = await supabase
-      .from('projects')
-      .update(updatesSanitized)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as Project;
   }
 
   async deleteProject(id: string) {
@@ -163,7 +158,6 @@ class ProjectService {
     if (error) throw error;
   }
 
-  // Project Roads Management
   async fetchProjectRoads(projectId: string) {
     const { data, error } = await supabase
       .from('project_roads')
@@ -202,7 +196,6 @@ class ProjectService {
     if (error) throw error;
   }
 
-  // Upload logo files
   async uploadLogo(file: File, type: 'contractor' | 'client' | 'consultant'): Promise<string> {
     const profile = await this.getProfile();
     const fileName = `${profile.company_id}/${type}/${Date.now()}_${file.name}`;
