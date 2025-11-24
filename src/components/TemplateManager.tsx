@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface Template {
   id: string;
@@ -33,6 +34,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({ onSelectTempla
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -135,11 +137,17 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({ onSelectTempla
   };
 
   const deleteTemplate = async (templateId: string) => {
+    setDeleteTemplateId(templateId);
+  };
+
+  const confirmDeleteTemplate = async () => {
+    if (!deleteTemplateId) return;
+
     try {
       const { error } = await supabase
         .from('templates')
         .delete()
-        .eq('id', templateId);
+        .eq('id', deleteTemplateId);
 
       if (error) throw error;
 
@@ -148,6 +156,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({ onSelectTempla
         description: "Template has been removed successfully.",
       });
 
+      setDeleteTemplateId(null);
       fetchTemplates();
     } catch (error: any) {
       toast({
@@ -428,6 +437,15 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({ onSelectTempla
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTemplateId}
+        onOpenChange={(open) => !open && setDeleteTemplateId(null)}
+        onConfirm={confirmDeleteTemplate}
+        title="Delete Template"
+        description="Are you sure you want to delete this template? This action cannot be undone."
+        confirmText="Delete"
+      />
     </div>
   );
 };

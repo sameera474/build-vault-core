@@ -1132,6 +1132,51 @@ export type Database = {
           yymmdd: string
         }[]
       }
+      can_create_project_for_company: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      create_new_project: {
+        Args: {
+          p_client_name: string
+          p_consultant_name: string
+          p_contract_number: string
+          p_contractor_name: string
+          p_lab_code: string
+          p_name: string
+          p_project_prefix: string
+          p_region_code: string
+        }
+        Returns: {
+          client_logo: string | null
+          client_name: string | null
+          company_id: string
+          consultant_logo: string | null
+          consultant_name: string | null
+          contract_number: string | null
+          contractor_logo: string | null
+          contractor_name: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          lab_code: string
+          location: string | null
+          name: string
+          project_prefix: string
+          region_code: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_user_company: { Args: never; Returns: string }
       current_user_info: {
         Args: never
