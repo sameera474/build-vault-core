@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CreateTestReportDialog } from "@/components/CreateTestReportDialog";
 import FlowDiagram from "@/components/FlowDiagram";
 import { useTestReportPermissions } from "@/hooks/usePermissions";
@@ -321,20 +322,28 @@ export default function TestReports() {
     }
   };
 
+  const [deleteReportId, setDeleteReportId] = useState<string | null>(null);
+
   const handleDelete = async (reportId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this test report? This action cannot be undone."
-      )
-    ) {
+    if (!permissions.canDeleteReport) {
+      toast({
+        title: "Unauthorized",
+        description: "You don't have permission to delete reports",
+        variant: "destructive",
+      });
       return;
     }
+    setDeleteReportId(reportId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteReportId) return;
 
     try {
       const { error } = await supabase
         .from("test_reports")
         .delete()
-        .eq("id", reportId);
+        .eq("id", deleteReportId);
 
       if (error) throw error;
 
@@ -342,6 +351,7 @@ export default function TestReports() {
         title: "Success",
         description: "Report deleted successfully",
       });
+      setDeleteReportId(null);
       fetchReports();
     } catch (error) {
       console.error("Error deleting report:", error);
@@ -730,6 +740,15 @@ export default function TestReports() {
           }
         }}
         existingReportId={editingReportId || undefined}
+      />
+
+      <ConfirmDialog
+        open={!!deleteReportId}
+        onOpenChange={(open) => !open && setDeleteReportId(null)}
+        onConfirm={confirmDelete}
+        title="Delete Test Report"
+        description="Are you sure you want to delete this test report? This action cannot be undone."
+        confirmText="Delete"
       />
     </div>
   );
