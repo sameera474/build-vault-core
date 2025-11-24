@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -80,9 +81,10 @@ export function ProjectManagement() {
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile } = useAuth();
-  const { isSuperAdmin } = usePermissions();
+  const { isSuperAdmin, hasPermission } = usePermissions();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -357,11 +359,25 @@ export function ProjectManagement() {
   };
 
   const handleDelete = async (projectId: string) => {
+    if (!hasPermission('manage_projects')) {
+      toast({
+        title: "Unauthorized",
+        description: "You don't have permission to delete projects",
+        variant: "destructive",
+      });
+      return;
+    }
+    setDeleteProjectId(projectId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteProjectId) return;
+
     try {
       const { error } = await supabase
         .from("projects")
         .delete()
-        .eq("id", projectId);
+        .eq("id", deleteProjectId);
 
       if (error) throw error;
 
@@ -370,6 +386,7 @@ export function ProjectManagement() {
         description: "Project has been deleted successfully.",
       });
 
+      setDeleteProjectId(null);
       fetchProjects();
     } catch (error: any) {
       console.error("Error deleting project:", error);
@@ -687,12 +704,21 @@ export function ProjectManagement() {
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
                   </Button>
-                </div>
+                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteProjectId}
+        onOpenChange={(open) => !open && setDeleteProjectId(null)}
+        onConfirm={confirmDelete}
+        title="Delete Project"
+        description="Are you sure you want to delete this project? This action cannot be undone and will remove all associated data."
+        confirmText="Delete"
+      />
     </div>
   );
 }

@@ -9,6 +9,8 @@ import { Upload, FileText, Download, Trash2, Eye, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface FileItem {
   id: string;
@@ -39,8 +41,10 @@ export function FileManager({ onFileUploaded }: FileManagerProps) {
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [deleteFile, setDeleteFile] = useState<FileItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile } = useAuth();
+  const { hasPermission } = usePermissions();
   const { toast } = useToast();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,18 +104,33 @@ export function FileManager({ onFileUploaded }: FileManagerProps) {
   };
 
   const handleDelete = async (file: FileItem) => {
+    if (!hasPermission('manage_documents')) {
+      toast({
+        title: "Unauthorized",
+        description: "You don't have permission to delete files",
+        variant: "destructive",
+      });
+      return;
+    }
+    setDeleteFile(file);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteFile) return;
+
     try {
       const { error } = await supabase.storage
         .from('documents')
-        .remove([file.path]);
+        .remove([deleteFile.path]);
 
       if (error) throw error;
 
-      setFiles(prev => prev.filter(f => f.id !== file.id));
+      setFiles(prev => prev.filter(f => f.id !== deleteFile.id));
       toast({
         title: "Success",
         description: "File deleted successfully",
       });
+      setDeleteFile(null);
     } catch (error) {
       console.error('Error deleting file:', error);
       toast({
@@ -292,6 +311,15 @@ export function FileManager({ onFileUploaded }: FileManagerProps) {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteFile}
+        onOpenChange={(open) => !open && setDeleteFile(null)}
+        onConfirm={confirmDelete}
+        title="Delete File"
+        description={`Are you sure you want to delete "${deleteFile?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+      />
     </div>
   );
 }
