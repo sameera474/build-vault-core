@@ -205,6 +205,7 @@ export const rolePermissionMap: Record<AppRole, Permission[]> = {
     "view_analytics",
   ],
   project_manager: [
+    "manage_projects",
     "manage_assigned_projects",
     "assign_team_to_project",
     "review_reports",
