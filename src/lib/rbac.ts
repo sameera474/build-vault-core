@@ -105,15 +105,7 @@ export const roleMenuMap: Record<AppRole, string[]> = {
   technician: [
     "Dashboard",
     "Test Reports",
-    "Analytics",
-    "Monthly Summaries",
-    "Chainage Charts",
-    "Laboratory Inventory",
-    "Approvals",
-    "Team",
     "Mobile",
-    "Export",
-    "Templates",
   ],
   supervisor: [
     "Dashboard",
