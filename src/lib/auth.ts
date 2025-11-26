@@ -51,7 +51,7 @@ export const getCurrentUser = async () => {
 export const getUserProfile = async (userId: string) => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('user_id, company_id, name, role, created_at, avatar_url, phone, job_title, department, employee_id, hire_date, is_active, is_super_admin, email')
+    .select('user_id, company_id, name, role, tenant_role, created_at, avatar_url, phone, job_title, department, employee_id, hire_date, is_active, is_super_admin, email')
     .eq('user_id', userId)
     .single();
   
