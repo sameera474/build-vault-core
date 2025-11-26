@@ -102,24 +102,34 @@ create table if not exists public.profiles (
   company_id uuid not null,
   name text,
   email text,
+  tenant_role text,
   is_super_admin boolean default false,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
--- Add comment to is_super_admin column
-comment on column public.profiles.is_super_admin is 'Boolean flag indicating if user has super admin privileges. Only super admins can access system-wide management features.';
+-- Add comments to explain the role system
+comment on column public.profiles.tenant_role is 'Company-level role (e.g., technician, manager, admin). Controls permissions within the user''s company.';
+comment on column public.profiles.is_super_admin is 'System-wide super admin flag. Only super admins can access cross-company features and manage all users.';
+
+-- Create indexes for better performance
+create index if not exists idx_profiles_tenant_role on public.profiles(tenant_role);
+create index if not exists idx_profiles_is_super_admin on public.profiles(is_super_admin) where is_super_admin = true;
 
 -- Enable RLS
 alter table public.profiles enable row level security;
 
 -- RLS Policies
+-- Users can read their own profile
 create policy "read own profile"
 on public.profiles for select
 using (auth.uid() = user_id);
 
+-- Users can update their own profile (except is_super_admin)
 create policy "update own profile"
 on public.profiles for update
-using (auth.uid() = user_id);
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 -- Super admin can read all profiles
 create policy "super admin read all"
@@ -143,6 +153,24 @@ using (
   )
 );
 ```
+
+### Role System Explanation
+
+The application uses a **two-level role system**:
+
+1. **`tenant_role`** (Company-level permissions)
+   - Controls what users can do within their own company
+   - Examples: `technician`, `manager`, `admin`, `viewer`
+   - Set by company admins
+   - Does NOT grant cross-company access
+
+2. **`is_super_admin`** (System-wide permissions)
+   - Boolean flag for system administrators
+   - Grants access to ALL companies and system management features
+   - Can only be set by other super admins
+   - Use sparingly for platform administrators only
+
+**Important**: The old `role` column has been removed to avoid confusion. If you see it in your database, run the migration `20251126_fix_role_system.sql`.
 
 ### Email Templates
 Configure Supabase Auth email templates for password reset functionality.
@@ -183,10 +211,11 @@ Once Phase 0 acceptance tests pass, Phase 1 will include:
 
 ---
 
-**Important**: 
+**Important Notes**:
 - The `role` column has been removed from the profiles table
-- Super admin functionality is now controlled by the `is_super_admin` boolean field
-- Only super admins can grant/revoke super admin privileges to other users
+- Use `tenant_role` for company-level permissions (technician, manager, etc.)
+- Use `is_super_admin` for system-wide administrator access
+- Only super admins can grant/revoke super admin privileges
 - Never expose super_admin credentials publicly
 
 ## License
