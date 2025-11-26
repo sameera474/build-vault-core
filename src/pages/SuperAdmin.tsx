@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Building2, FileText, DollarSign, Activity, Shield, Settings, BarChart3 } from 'lucide-react';
+import { Users, Building2, FileText, DollarSign, Activity, Shield, Settings, BarChart3, FolderOpen } from 'lucide-react';
 import SuperAdminDemoUsers from '@/pages/SuperAdminDemoUsers';
 import { SuperAdminTeamManagement } from '@/components/SuperAdminTeamManagement';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,8 +21,18 @@ interface Company {
   name: string;
   user_count: number;
   report_count: number;
+  project_count: number;
   subscription_status: string;
   created_at: string;
+  projects?: Project[];
+}
+
+interface Project {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+  company_id: string;
 }
 
 interface User {
@@ -41,6 +51,7 @@ interface SystemStats {
   total_users: number;
   total_companies: number;
   total_reports: number;
+  total_projects: number;
   active_subscriptions: number;
   monthly_revenue: number;
   growth_rate: number;
@@ -53,10 +64,12 @@ const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1'];
 export default function SuperAdmin() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
   const [stats, setStats] = useState<SystemStats>({
     total_users: 0,
     total_companies: 0,
     total_reports: 0,
+    total_projects: 0,
     active_subscriptions: 0,
     monthly_revenue: 0,
     growth_rate: 0,
@@ -80,7 +93,6 @@ export default function SuperAdmin() {
       const { data: companiesRes, error: companiesErr } = await getCompanies();
       if (companiesErr) {
         console.error('Error fetching companies:', companiesErr);
-        // Don't throw, continue with empty data
       }
 
       const fetchedCompanies = (companiesRes?.companies || []).map((c: any) => ({
@@ -88,8 +100,10 @@ export default function SuperAdmin() {
         name: c.name,
         user_count: 0,
         report_count: 0,
+        project_count: 0,
         subscription_status: 'active',
         created_at: c.created_at,
+        projects: []
       }));
 
       setCompanies(fetchedCompanies);
@@ -130,12 +144,31 @@ export default function SuperAdmin() {
         return acc;
       }, {} as Record<string, number>);
 
-      const companiesWithCounts = fetchedCompanies.map(c => ({
-        ...c,
-        user_count: userCountByCompany[c.id] || 0
-      }));
+      // Fetch all projects
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('id, name, status, created_at, company_id')
+        .order('created_at', { ascending: false });
 
-      setCompanies(companiesWithCounts);
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError);
+      }
+
+      // Group projects by company
+      const projectsByCompany = projectsData?.reduce((acc, project) => {
+        if (project.company_id) {
+          if (!acc[project.company_id]) {
+            acc[project.company_id] = [];
+          }
+          acc[project.company_id].push(project);
+        }
+        return acc;
+      }, {} as Record<string, typeof projectsData>) || {};
+
+      const projectCountByCompany = Object.entries(projectsByCompany).reduce((acc, [companyId, projects]) => {
+        acc[companyId] = projects.length;
+        return acc;
+      }, {} as Record<string, number>);
 
       // Calculate stats from test_reports
       const { data: reportsData, error: reportsError } = await supabase
@@ -155,12 +188,15 @@ export default function SuperAdmin() {
         return acc;
       }, {} as Record<string, number>) || {};
 
-      const companiesWithReportCounts = companiesWithCounts.map(c => ({
+      const companiesWithCounts = fetchedCompanies.map(c => ({
         ...c,
-        report_count: reportCountByCompany[c.id] || 0
+        user_count: userCountByCompany[c.id] || 0,
+        report_count: reportCountByCompany[c.id] || 0,
+        project_count: projectCountByCompany[c.id] || 0,
+        projects: projectsByCompany[c.id] || []
       }));
 
-      setCompanies(companiesWithReportCounts);
+      setCompanies(companiesWithCounts);
 
       // Calculate active companies (companies with users)
       const activeCompanies = companiesWithCounts.filter(c => c.user_count > 0).length;
@@ -169,10 +205,11 @@ export default function SuperAdmin() {
         total_users: formattedUsers.length,
         total_companies: fetchedCompanies.length,
         total_reports: reportsData?.length || 0,
+        total_projects: projectsData?.length || 0,
         active_subscriptions: activeCompanies,
-        monthly_revenue: 0, // Will be populated when Stripe integration is ready
-        mrr: 0, // Will be populated when Stripe integration is ready
-        balance_available: 0, // Will be populated when Stripe integration is ready
+        monthly_revenue: 0,
+        mrr: 0,
+        balance_available: 0,
         growth_rate: formattedUsers.length > 0 ? 12.5 : 0
       });
 
@@ -361,6 +398,19 @@ export default function SuperAdmin() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Projects</CardTitle>
+            <FolderOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total_projects.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              Across all companies
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Test Reports</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -387,30 +437,15 @@ export default function SuperAdmin() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reports/Company</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.total_companies > 0 ? Math.round(stats.total_reports / stats.total_companies) : 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Average per company
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Users/Company</CardTitle>
+            <CardTitle className="text-sm font-medium">Avg Projects</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats.total_companies > 0 ? Math.round(stats.total_users / stats.total_companies) : 0}
+              {stats.total_companies > 0 ? Math.round(stats.total_projects / stats.total_companies) : 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              Average team size
+              Per company
             </p>
           </CardContent>
         </Card>
@@ -514,7 +549,7 @@ export default function SuperAdmin() {
           <Card>
             <CardHeader>
               <CardTitle>Company Management</CardTitle>
-              <CardDescription>Manage all registered companies</CardDescription>
+              <CardDescription>Manage all registered companies and their projects</CardDescription>
             </CardHeader>
             <CardContent>
               {companies.length === 0 ? (
@@ -523,45 +558,87 @@ export default function SuperAdmin() {
                   <p>No companies found</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Company Name</TableHead>
-                      <TableHead>Users</TableHead>
-                      <TableHead>Reports</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {companies.map((company) => (
-                      <TableRow key={company.id}>
-                        <TableCell className="font-medium">{company.name}</TableCell>
-                        <TableCell>{company.user_count}</TableCell>
-                        <TableCell>{company.report_count}</TableCell>
-                        <TableCell>
+                <div className="space-y-3">
+                  {companies.map((company) => (
+                    <div key={company.id} className="border rounded-lg overflow-hidden">
+                      {/* Company Header Row */}
+                      <div className="flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
+                           onClick={() => setExpandedCompany(expandedCompany === company.id ? null : company.id)}>
+                        <div className="flex items-center gap-3 flex-1">
+                          <Building2 className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="font-semibold">{company.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {company.user_count} users • {company.project_count} projects • {company.report_count} reports
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
                           <Badge variant={company.subscription_status === 'active' ? 'default' : 'secondary'}>
                             {company.subscription_status}
                           </Badge>
-                        </TableCell>
-                        <TableCell>{new Date(company.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">View</Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => suspendCompany(company.id)}
-                            >
-                              Suspend
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(company.created_at).toLocaleDateString()}
+                          </span>
+                          <Button size="sm" variant="outline">
+                            {expandedCompany === company.id ? 'Hide' : 'View'} Projects
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Are you sure you want to suspend ${company.name}?`)) {
+                                suspendCompany(company.id);
+                              }
+                            }}
+                          >
+                            Suspend
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Expanded Projects View */}
+                      {expandedCompany === company.id && (
+                        <div className="p-4 border-t bg-background">
+                          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                            <FolderOpen className="h-4 w-4" />
+                            Projects ({company.projects?.length || 0})
+                          </h4>
+                          {company.projects && company.projects.length > 0 ? (
+                            <div className="space-y-2">
+                              {company.projects.map((project: Project) => (
+                                <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                      <FolderOpen className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-sm">{project.name}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Created {new Date(project.created_at).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline" className={
+                                    project.status === 'active' ? 'border-green-500/50 text-green-600' : ''
+                                  }>
+                                    {project.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-6 text-muted-foreground">
+                              <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">No projects found for this company</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
