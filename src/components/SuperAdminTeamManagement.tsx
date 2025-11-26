@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building, Users, Shield, Edit, Trash2, UserX, UserCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building, Users, Shield, Edit, Trash2, UserX, UserCheck, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -37,13 +37,13 @@ interface Company {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-red-100 text-red-800',
-  project_manager: 'bg-blue-100 text-blue-800',
-  quality_manager: 'bg-purple-100 text-purple-800',
-  material_engineer: 'bg-green-100 text-green-800',
-  technician: 'bg-orange-100 text-orange-800',
-  consultant_engineer: 'bg-cyan-100 text-cyan-800',
-  consultant_technician: 'bg-teal-100 text-teal-800',
+  admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  project_manager: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  quality_manager: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  material_engineer: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  technician: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  consultant_engineer: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+  consultant_technician: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
 };
 
 export function SuperAdminTeamManagement() {
@@ -51,6 +51,7 @@ export function SuperAdminTeamManagement() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<CompanyUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<CompanyUser | null>(null);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
@@ -87,7 +88,10 @@ export function SuperAdminTeamManagement() {
         .eq('is_active', true)
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching companies:', error);
+        return;
+      }
       setCompanies(data || []);
     } catch (error) {
       console.error('Error fetching companies:', error);
@@ -97,59 +101,74 @@ export function SuperAdminTeamManagement() {
   const fetchAllUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      let query = supabase
+      // First, get all users
+      let userQuery = supabase
         .from('profiles')
-        .select(`
-          user_id, 
-          name, 
-          tenant_role, 
-          created_at, 
-          is_super_admin, 
-          phone, 
-          department, 
-          company_id,
-          job_title,
-          is_active,
-          companies(name)
-        `)
+        .select('user_id, name, tenant_role, created_at, is_super_admin, phone, department, company_id, job_title, is_active')
         .order('name');
 
       if (selectedCompany && selectedCompany !== 'all') {
-        query = query.eq('company_id', selectedCompany);
+        userQuery = userQuery.eq('company_id', selectedCompany);
       }
 
-      const { data: users, error } = await query;
+      const { data: users, error: usersError } = await userQuery;
 
-      if (error) throw error;
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        setError('Failed to fetch users. Please try again.');
+        setCompanyUsers([]);
+        setLoading(false);
+        return;
+      }
 
-      // Fetch user_roles separately
+      if (!users || users.length === 0) {
+        setCompanyUsers([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user roles
       const { data: userRoles } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
       const rolesMap = new Map(userRoles?.map(ur => [ur.user_id, ur.role]) || []);
 
-      const formattedUsers = users?.map(user => ({
+      // Fetch company names separately
+      const companyIds = [...new Set(users.map(u => u.company_id).filter(Boolean))];
+      const { data: companiesData } = await supabase
+        .from('companies')
+        .select('id, name')
+        .in('id', companyIds);
+
+      const companiesMap = new Map(companiesData?.map(c => [c.id, c.name]) || []);
+
+      // Combine all data
+      const formattedUsers = users.map(user => ({
         ...user,
         role: rolesMap.get(user.user_id) || user.tenant_role || 'technician',
-        company_name: (user as any).companies?.name || 'Unknown Company'
-      })) || [];
+        company_name: companiesMap.get(user.company_id) || 'Unknown Company',
+      }));
 
       setCompanyUsers(formattedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
+      setError('An unexpected error occurred. Please try again.');
+      setCompanyUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
   const formatRole = (role: string) => {
+    if (!role) return 'Unknown';
     return role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
   };
 
   const getRoleColor = (role: string) => {
-    return ROLE_COLORS[role] || 'bg-gray-100 text-gray-800';
+    return ROLE_COLORS[role] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
   };
 
   const handleEditClick = (user: CompanyUser) => {
@@ -192,7 +211,7 @@ export function SuperAdminTeamManagement() {
           .from('user_roles')
           .insert({
             user_id: editingUser.user_id,
-            role: editForm.role as any, // Cast to app_role enum
+            role: editForm.role as any,
           });
 
         if (roleError) {
@@ -246,20 +265,15 @@ export function SuperAdminTeamManagement() {
     if (!deletingUser) return;
 
     try {
-      // Delete user roles
       await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', deletingUser.user_id);
 
-      // Delete profile
       await supabase
         .from('profiles')
         .delete()
         .eq('user_id', deletingUser.user_id);
-
-      // Delete auth user (requires service role - may fail if using anon key)
-      // This will be handled by CASCADE if RLS is properly configured
 
       toast({
         title: "User deleted",
@@ -294,9 +308,8 @@ export function SuperAdminTeamManagement() {
     );
   }
 
-  // Group users by company
   const groupedByCompany = companyUsers.reduce((acc, user) => {
-    const companyId = user.company_id;
+    const companyId = user.company_id || 'unknown';
     const companyName = user.company_name || 'Unknown Company';
     
     if (!acc[companyId]) {
@@ -328,7 +341,7 @@ export function SuperAdminTeamManagement() {
   };
 
   return (
-    <Card>
+    <Card className="animate-fade-in">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building className="h-5 w-5" />
@@ -356,9 +369,25 @@ export function SuperAdminTeamManagement() {
           </Select>
         </div>
 
+        {error && (
+          <div className="flex items-center gap-2 p-4 text-sm text-red-800 bg-red-50 dark:bg-red-900/20 dark:text-red-200 rounded-lg border border-red-200 dark:border-red-800">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={fetchAllUsers}
+              className="ml-auto"
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <p className="text-sm text-muted-foreground">Loading users...</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -399,7 +428,7 @@ export function SuperAdminTeamManagement() {
                             <div className="text-left">
                               <h5 className="font-semibold">{group.companyName}</h5>
                               <p className="text-sm text-muted-foreground">
-                                {group.users.length} {group.users.length === 1 ? 'Worker' : 'Workers'}
+                                {group.users.length} {group.users.length === 1 ? 'User' : 'Users'}
                               </p>
                             </div>
                           </div>
@@ -421,25 +450,30 @@ export function SuperAdminTeamManagement() {
                           <div className="p-4 space-y-2">
                             {group.users.map((user) => (
                               <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
-                                <div className="flex items-center gap-3 flex-1">
-                                  <Users className="h-4 w-4 text-blue-500" />
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-medium">{user.name || 'Unknown User'}</p>
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className="font-medium truncate">{user.name || 'Unknown User'}</p>
                                       {!user.is_active && (
                                         <Badge variant="outline" className="text-xs">Inactive</Badge>
+                                      )}
+                                      {user.is_super_admin && (
+                                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">
+                                          Super Admin
+                                        </Badge>
                                       )}
                                     </div>
                                     <p className="text-sm text-muted-foreground">
                                       {formatRole(user.tenant_role || user.role)}
                                     </p>
                                     {user.job_title && (
-                                      <p className="text-xs text-muted-foreground">
+                                      <p className="text-xs text-muted-foreground truncate">
                                         {user.job_title}
                                       </p>
                                     )}
                                     {user.department && (
-                                      <p className="text-xs text-muted-foreground">
+                                      <p className="text-xs text-muted-foreground truncate">
                                         Dept: {user.department}
                                       </p>
                                     )}
@@ -448,17 +482,12 @@ export function SuperAdminTeamManagement() {
                                     </p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-shrink-0">
                                   <Badge className={getRoleColor(user.tenant_role || user.role)}>
                                     {formatRole(user.tenant_role || user.role)}
                                   </Badge>
-                                  {user.is_super_admin && (
-                                    <Badge className="bg-red-100 text-red-800">
-                                      Super Admin
-                                    </Badge>
-                                  )}
                                   
-                                  <div className="flex gap-1 ml-2">
+                                  <div className="flex gap-1">
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -506,9 +535,10 @@ export function SuperAdminTeamManagement() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">
-                No users found for the selected company.
-              </p>
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-muted-foreground">No users found for the selected company.</p>
+              </div>
             )}
           </div>
         )}
