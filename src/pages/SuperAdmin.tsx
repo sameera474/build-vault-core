@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,7 @@ interface User {
   email: string;
   name: string;
   company_name: string;
+  tenant_role: string;
   is_super_admin: boolean;
   created_at: string;
   last_sign_in: string;
@@ -101,6 +103,7 @@ export default function SuperAdmin() {
         email: user.email || 'user@example.com',
         name: user.name || 'Unknown',
         company_name: user.company_id ? `Company ${user.company_id.slice(0, 8)}` : 'No Company',
+        tenant_role: user.tenant_role || 'user',
         is_super_admin: user.is_super_admin || false,
         created_at: user.created_at,
         last_sign_in: user.created_at
@@ -139,6 +142,30 @@ export default function SuperAdmin() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateUserTenantRole = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ tenant_role: newRole })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Company role updated",
+        description: "User's company-level role has been updated successfully.",
+      });
+
+      fetchSuperAdminData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -460,7 +487,7 @@ export default function SuperAdmin() {
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
-              <CardDescription>Manage all system users and super admin privileges</CardDescription>
+              <CardDescription>Manage system users, company roles, and super admin privileges</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -469,7 +496,8 @@ export default function SuperAdmin() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Company</TableHead>
-                    <TableHead>Admin Status</TableHead>
+                    <TableHead>Company Role</TableHead>
+                    <TableHead>System Admin</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -478,11 +506,27 @@ export default function SuperAdmin() {
                   {users.slice(0, 10).map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                      <TableCell className="text-xs">{user.email}</TableCell>
                       <TableCell>{user.company_name}</TableCell>
                       <TableCell>
+                        <Select
+                          value={user.tenant_role}
+                          onValueChange={(value) => updateUserTenantRole(user.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="technician">Technician</SelectItem>
+                            <SelectItem value="manager">Manager</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
                         <Badge variant={user.is_super_admin ? 'destructive' : 'secondary'}>
-                          {user.is_super_admin ? 'Super Admin' : 'User'}
+                          {user.is_super_admin ? 'Super Admin' : 'No'}
                         </Badge>
                       </TableCell>
                       <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
@@ -494,7 +538,7 @@ export default function SuperAdmin() {
                             variant={user.is_super_admin ? 'destructive' : 'default'}
                             onClick={() => toggleSuperAdmin(user.id, user.is_super_admin)}
                           >
-                            {user.is_super_admin ? 'Revoke Admin' : 'Grant Admin'}
+                            {user.is_super_admin ? 'Revoke' : 'Grant'} SA
                           </Button>
                         </div>
                       </TableCell>
