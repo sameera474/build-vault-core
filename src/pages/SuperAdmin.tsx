@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Building2, FileText, DollarSign, Activity, Shield, Settings, BarChart3 } from 'lucide-react';
 import SuperAdminDemoUsers from '@/pages/SuperAdminDemoUsers';
+import { SuperAdminTeamManagement } from '@/components/SuperAdminTeamManagement';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  company_id: string;
   company_name: string;
   tenant_role: string;
   is_super_admin: boolean;
@@ -74,7 +76,7 @@ export default function SuperAdmin() {
 
   const fetchSuperAdminData = async () => {
     try {
-      // Fetch companies from dedicated edge function
+      // Fetch companies
       const { data: companiesRes, error: companiesErr } = await getCompanies();
       if (companiesErr) throw companiesErr;
 
@@ -89,20 +91,24 @@ export default function SuperAdmin() {
 
       setCompanies(fetchedCompanies);
 
-      // Fetch user details
+      // Create company lookup map
+      const companyMap = new Map(fetchedCompanies.map(c => [c.id, c.name]));
+
+      // Fetch all users
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .select('user_id, email, name, company_id, tenant_role, is_super_admin, created_at')
+        .order('created_at', { ascending: false });
 
       if (usersError) throw usersError;
 
+      // Format users with real company names
       const formattedUsers = usersData?.map(user => ({
         id: user.user_id,
         email: user.email || 'user@example.com',
         name: user.name || 'Unknown',
-        company_name: user.company_id ? `Company ${user.company_id.slice(0, 8)}` : 'No Company',
+        company_id: user.company_id || '',
+        company_name: user.company_id ? (companyMap.get(user.company_id) || 'Unknown Company') : 'No Company',
         tenant_role: user.tenant_role || 'user',
         is_super_admin: user.is_super_admin || false,
         created_at: user.created_at,
@@ -110,6 +116,21 @@ export default function SuperAdmin() {
       })) || [];
 
       setUsers(formattedUsers);
+
+      // Update company user counts
+      const userCountByCompany = formattedUsers.reduce((acc, user) => {
+        if (user.company_id) {
+          acc[user.company_id] = (acc[user.company_id] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+
+      const companiesWithCounts = fetchedCompanies.map(c => ({
+        ...c,
+        user_count: userCountByCompany[c.id] || 0
+      }));
+
+      setCompanies(companiesWithCounts);
 
       // Calculate stats
       const { data: reportsData, error: reportsError } = await supabase
@@ -130,7 +151,7 @@ export default function SuperAdmin() {
         monthly_revenue: revenueData?.revenue?.last_30_days || 0,
         mrr: revenueData?.subscriptions?.mrr || 0,
         balance_available: revenueData?.balance?.available?.[0]?.amount || 0,
-        growth_rate: 12.5 // Would need historical data to calculate
+        growth_rate: 12.5
       });
 
     } catch (error) {
@@ -195,7 +216,6 @@ export default function SuperAdmin() {
 
   const suspendCompany = async (companyId: string) => {
     try {
-      // In a real implementation, you'd update the company status
       toast({
         title: "Company suspended",
         description: "Company has been suspended successfully.",
@@ -226,7 +246,10 @@ export default function SuperAdmin() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <p className="text-muted-foreground">Loading super admin data...</p>
+        </div>
       </div>
     );
   }
@@ -249,6 +272,19 @@ export default function SuperAdmin() {
     ];
   };
 
+  // Group users by company
+  const usersByCompany = users.reduce((acc, user) => {
+    const companyKey = user.company_id || 'no-company';
+    if (!acc[companyKey]) {
+      acc[companyKey] = {
+        companyName: user.company_name,
+        users: []
+      };
+    }
+    acc[companyKey].users.push(user);
+    return acc;
+  }, {} as Record<string, { companyName: string; users: User[] }>);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -258,7 +294,7 @@ export default function SuperAdmin() {
             System-wide analytics and user management
           </p>
         </div>
-        <Badge variant="secondary" className="bg-red-100 text-red-800">
+        <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
           <Shield className="h-4 w-4 mr-1" />
           Super Admin
         </Badge>
@@ -348,11 +384,16 @@ export default function SuperAdmin() {
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Analytics</TabsTrigger>
+          <TabsTrigger value="team">Team Management</TabsTrigger>
           <TabsTrigger value="demo-users">Demo Users</TabsTrigger>
           <TabsTrigger value="companies">Companies</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="users">Users by Company</TabsTrigger>
           <TabsTrigger value="settings">System Settings</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="team" className="space-y-4">
+          <SuperAdminTeamManagement />
+        </TabsContent>
 
         <TabsContent value="demo-users" className="space-y-4">
           <SuperAdminDemoUsers />
@@ -443,7 +484,7 @@ export default function SuperAdmin() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Company ID</TableHead>
+                    <TableHead>Company Name</TableHead>
                     <TableHead>Users</TableHead>
                     <TableHead>Reports</TableHead>
                     <TableHead>Status</TableHead>
@@ -452,7 +493,7 @@ export default function SuperAdmin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {companies.slice(0, 10).map((company) => (
+                  {companies.slice(0, 20).map((company) => (
                     <TableRow key={company.id}>
                       <TableCell className="font-medium">{company.name}</TableCell>
                       <TableCell>{company.user_count}</TableCell>
@@ -486,66 +527,75 @@ export default function SuperAdmin() {
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>Manage system users, company roles, and super admin privileges</CardDescription>
+              <CardTitle>Users by Company</CardTitle>
+              <CardDescription>All users grouped by their companies</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Company Role</TableHead>
-                    <TableHead>System Admin</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.slice(0, 10).map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell className="text-xs">{user.email}</TableCell>
-                      <TableCell>{user.company_name}</TableCell>
-                      <TableCell>
-                        <Select
-                          value={user.tenant_role}
-                          onValueChange={(value) => updateUserTenantRole(user.id, value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="technician">Technician</SelectItem>
-                            <SelectItem value="manager">Manager</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.is_super_admin ? 'destructive' : 'secondary'}>
-                          {user.is_super_admin ? 'Super Admin' : 'No'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">View</Button>
-                          <Button 
-                            size="sm" 
-                            variant={user.is_super_admin ? 'destructive' : 'default'}
-                            onClick={() => toggleSuperAdmin(user.id, user.is_super_admin)}
-                          >
-                            {user.is_super_admin ? 'Revoke' : 'Grant'} SA
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="space-y-6">
+              {Object.entries(usersByCompany).map(([companyId, { companyName, users: companyUsers }]) => (
+                <div key={companyId} className="space-y-3">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">{companyName}</h3>
+                    </div>
+                    <Badge variant="secondary">{companyUsers.length} users</Badge>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Super Admin</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {companyUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell className="text-xs">{user.email}</TableCell>
+                          <TableCell>
+                            <Select
+                              value={user.tenant_role}
+                              onValueChange={(value) => updateUserTenantRole(user.id, value)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="technician">Technician</SelectItem>
+                                <SelectItem value="supervisor">Supervisor</SelectItem>
+                                <SelectItem value="project_manager">Manager</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.is_super_admin ? 'destructive' : 'secondary'}>
+                              {user.is_super_admin ? 'Yes' : 'No'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline">View</Button>
+                              <Button 
+                                size="sm" 
+                                variant={user.is_super_admin ? 'destructive' : 'default'}
+                                onClick={() => toggleSuperAdmin(user.id, user.is_super_admin)}
+                              >
+                                {user.is_super_admin ? 'Revoke' : 'Grant'} SA
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>
