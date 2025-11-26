@@ -18,6 +18,7 @@ interface Profile {
   company_id: string | null;
   name: string | null;
   role: string;
+  tenant_role?: string | null;
   created_at: string;
   company_name?: string;
   avatar_url?: string | null;
