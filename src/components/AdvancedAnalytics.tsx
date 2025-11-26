@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface AnalyticsData {
   totalReports: number;
@@ -24,25 +25,39 @@ interface AnalyticsData {
 export function AdvancedAnalytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState('30');
   const { profile } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchAnalyticsData();
   }, [profile?.company_id, timeRange]);
 
   const fetchAnalyticsData = async () => {
-    if (!profile?.company_id) return;
-
     try {
       setLoading(true);
+      setError(null);
+
+      // Check if profile and company_id exist
+      if (!profile) {
+        setError('User profile not loaded');
+        setLoading(false);
+        return;
+      }
+
+      if (!profile.company_id) {
+        setError('No company associated with this user');
+        setLoading(false);
+        return;
+      }
       
       // Calculate date range
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(timeRange));
 
-      // Fetch all required data in parallel
+      // Fetch all required data in parallel with error handling
       const [
         reportsResponse,
         projectsResponse,
@@ -53,24 +68,39 @@ export function AdvancedAnalytics() {
           .from('test_reports')
           .select('*')
           .eq('company_id', profile.company_id)
-          .gte('created_at', startDate.toISOString()),
+          .gte('created_at', startDate.toISOString())
+          .then(res => ({ data: res.data || [], error: res.error })),
         
         supabase
           .from('projects')
           .select('*')
-          .eq('company_id', profile.company_id),
+          .eq('company_id', profile.company_id)
+          .then(res => ({ data: res.data || [], error: res.error })),
         
         supabase
           .from('profiles')
           .select('*')
-          .eq('company_id', profile.company_id),
+          .eq('company_id', profile.company_id)
+          .then(res => ({ data: res.data || [], error: res.error })),
         
         supabase
           .from('test_reports')
           .select('*')
           .eq('company_id', profile.company_id)
-          .eq('compliance_status', 'pending')
+          .eq('status', 'pending')
+          .then(res => ({ data: res.data || [], error: res.error }))
       ]);
+
+      // Check for errors but continue with available data
+      if (reportsResponse.error) {
+        console.warn('Error fetching reports:', reportsResponse.error);
+      }
+      if (projectsResponse.error) {
+        console.warn('Error fetching projects:', projectsResponse.error);
+      }
+      if (profilesResponse.error) {
+        console.warn('Error fetching profiles:', profilesResponse.error);
+      }
 
       const reports = reportsResponse.data || [];
       const projects = projectsResponse.data || [];
@@ -82,12 +112,15 @@ export function AdvancedAnalytics() {
       const activeProjects = projects.filter(p => p.status === 'active').length;
       const teamMembers = profiles.length;
       
-      const passedReports = reports.filter(r => r.compliance_status === 'pass').length;
+      const passedReports = reports.filter(r => 
+        r.compliance_status === 'pass' || r.status === 'approved'
+      ).length;
       const complianceRate = totalReports > 0 ? (passedReports / totalReports) * 100 : 0;
 
       // Group by test type
       const testTypeCount = reports.reduce((acc, report) => {
-        acc[report.test_type] = (acc[report.test_type] || 0) + 1;
+        const testType = report.test_type || report.material || 'Unknown';
+        acc[testType] = (acc[testType] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
@@ -109,15 +142,19 @@ export function AdvancedAnalytics() {
         }
         
         acc[month].total++;
-        if (report.compliance_status === 'pass') acc[month].passed++;
-        if (report.compliance_status === 'fail') acc[month].failed++;
+        if (report.compliance_status === 'pass' || report.status === 'approved') {
+          acc[month].passed++;
+        }
+        if (report.compliance_status === 'fail' || report.status === 'rejected') {
+          acc[month].failed++;
+        }
         
         return acc;
       }, {} as Record<string, any>);
 
       const complianceByMonth = Object.values(monthlyData).map((item: any) => ({
         ...item,
-        rate: item.total > 0 ? ((item.passed / item.total) * 100).toFixed(1) : 0
+        rate: item.total > 0 ? Number(((item.passed / item.total) * 100).toFixed(1)) : 0
       }));
 
       // Project progress
@@ -125,12 +162,15 @@ export function AdvancedAnalytics() {
         projects.slice(0, 5).map(async (project) => {
           const { data: projectReports } = await supabase
             .from('test_reports')
-            .select('compliance_status')
+            .select('compliance_status, status')
             .eq('project_id', project.id);
 
           const total = projectReports?.length || 0;
           const completed = projectReports?.filter(r => 
-            r.compliance_status === 'pass' || r.compliance_status === 'fail'
+            r.compliance_status === 'pass' || 
+            r.compliance_status === 'fail' ||
+            r.status === 'approved' ||
+            r.status === 'rejected'
           ).length || 0;
 
           return {
@@ -149,10 +189,10 @@ export function AdvancedAnalytics() {
         .map(report => ({
           id: report.id,
           type: 'test_report',
-          title: `${report.test_type} - ${report.report_number}`,
-          status: report.compliance_status,
+          title: `${report.test_type || report.material || 'Test'} - ${report.report_number || report.id.slice(0, 8)}`,
+          status: report.compliance_status || report.status || 'pending',
           date: report.created_at,
-          technician: report.technician_name
+          technician: report.technician_name || report.created_by
         }));
 
       setData({
@@ -170,6 +210,12 @@ export function AdvancedAnalytics() {
 
     } catch (error) {
       console.error('Error fetching analytics data:', error);
+      setError('Failed to load analytics data. Please try again.');
+      toast({
+        title: 'Error loading analytics',
+        description: 'There was a problem loading the analytics data.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -177,10 +223,17 @@ export function AdvancedAnalytics() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pass': return 'text-green-600 bg-green-100';
-      case 'fail': return 'text-red-600 bg-red-100';
-      case 'pending': return 'text-yellow-600 bg-yellow-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'pass':
+      case 'approved':
+        return 'text-green-600 bg-green-100';
+      case 'fail':
+      case 'rejected':
+        return 'text-red-600 bg-red-100';
+      case 'pending':
+      case 'draft':
+        return 'text-yellow-600 bg-yellow-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
     }
   };
 
@@ -188,8 +241,32 @@ export function AdvancedAnalytics() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto"></div>
+          <p className="text-muted-foreground">Loading analytics data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Error Loading Analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">{error}</p>
+            <Button onClick={fetchAnalyticsData} className="w-full">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -197,7 +274,19 @@ export function AdvancedAnalytics() {
   if (!data) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">No analytics data available</p>
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>No Data Available</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              No analytics data available yet. Start creating test reports to see insights.
+            </p>
+            <Button onClick={() => window.location.href = '/test-reports'} className="mt-4">
+              Create Test Report
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -321,20 +410,26 @@ export function AdvancedAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data.complianceByMonth}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="rate" 
-                    stroke="#8884d8" 
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {data.complianceByMonth.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.complianceByMonth}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line 
+                      type="monotone" 
+                      dataKey="rate" 
+                      stroke="#8884d8" 
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No trend data available
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -347,25 +442,31 @@ export function AdvancedAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data.testTypeDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percentage }) => `${name}: ${percentage}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {data.testTypeDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              {data.testTypeDistribution.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={data.testTypeDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percentage }) => `${name}: ${percentage}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {data.testTypeDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No test type data available
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -378,15 +479,21 @@ export function AdvancedAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.projectProgress}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="progress" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
+              {data.projectProgress.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.projectProgress}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="progress" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No projects available
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -399,20 +506,26 @@ export function AdvancedAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {data.recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between p-2 border rounded">
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{activity.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.technician && `by ${activity.technician} • `}
-                      {new Date(activity.date).toLocaleDateString()}
-                    </p>
+              {data.recentActivity.length > 0 ? (
+                data.recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-center justify-between p-2 border rounded">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{activity.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {activity.technician && `by ${activity.technician} • `}
+                        {new Date(activity.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge className={getStatusColor(activity.status)}>
+                      {activity.status}
+                    </Badge>
                   </div>
-                  <Badge className={getStatusColor(activity.status)}>
-                    {activity.status}
-                  </Badge>
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-8 text-muted-foreground">
+                  No recent activity
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
