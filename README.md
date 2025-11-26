@@ -101,9 +101,13 @@ create table if not exists public.profiles (
   user_id uuid primary key references auth.users on delete cascade,
   company_id uuid not null,
   name text,
-  role text not null default 'admin',
+  email text,
+  is_super_admin boolean default false,
   created_at timestamptz default now()
 );
+
+-- Add comment to is_super_admin column
+comment on column public.profiles.is_super_admin is 'Boolean flag indicating if user has super admin privileges. Only super admins can access system-wide management features.';
 
 -- Enable RLS
 alter table public.profiles enable row level security;
@@ -116,6 +120,28 @@ using (auth.uid() = user_id);
 create policy "update own profile"
 on public.profiles for update
 using (auth.uid() = user_id);
+
+-- Super admin can read all profiles
+create policy "super admin read all"
+on public.profiles for select
+using (
+  exists (
+    select 1 from public.profiles
+    where user_id = auth.uid()
+    and is_super_admin = true
+  )
+);
+
+-- Super admin can update all profiles
+create policy "super admin update all"
+on public.profiles for update
+using (
+  exists (
+    select 1 from public.profiles
+    where user_id = auth.uid()
+    and is_super_admin = true
+  )
+);
 ```
 
 ### Email Templates
@@ -157,7 +183,11 @@ Once Phase 0 acceptance tests pass, Phase 1 will include:
 
 ---
 
-**Important**: Never seed or expose super_admin credentials. Super admin functionality will be added in later phases.
+**Important**: 
+- The `role` column has been removed from the profiles table
+- Super admin functionality is now controlled by the `is_super_admin` boolean field
+- Only super admins can grant/revoke super admin privileges to other users
+- Never expose super_admin credentials publicly
 
 ## License
 
