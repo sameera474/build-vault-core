@@ -78,7 +78,10 @@ export default function SuperAdmin() {
     try {
       // Fetch companies
       const { data: companiesRes, error: companiesErr } = await getCompanies();
-      if (companiesErr) throw companiesErr;
+      if (companiesErr) {
+        console.error('Error fetching companies:', companiesErr);
+        // Don't throw, continue with empty data
+      }
 
       const fetchedCompanies = (companiesRes?.companies || []).map((c: any) => ({
         id: c.id,
@@ -100,7 +103,9 @@ export default function SuperAdmin() {
         .select('user_id, email, name, company_id, tenant_role, is_super_admin, created_at')
         .order('created_at', { ascending: false });
 
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+      }
 
       // Format users with real company names
       const formattedUsers = usersData?.map(user => ({
@@ -132,33 +137,50 @@ export default function SuperAdmin() {
 
       setCompanies(companiesWithCounts);
 
-      // Calculate stats
+      // Calculate stats from test_reports
       const { data: reportsData, error: reportsError } = await supabase
         .from('test_reports')
-        .select('id, created_at')
+        .select('id, created_at, company_id')
         .order('created_at', { ascending: false });
 
-      if (reportsError) throw reportsError;
+      if (reportsError) {
+        console.error('Error fetching reports:', reportsError);
+      }
 
-      // Fetch real Stripe revenue data
-      const { data: revenueData } = await supabase.functions.invoke('get-stripe-revenue');
+      // Update report counts by company
+      const reportCountByCompany = reportsData?.reduce((acc, report) => {
+        if (report.company_id) {
+          acc[report.company_id] = (acc[report.company_id] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      const companiesWithReportCounts = companiesWithCounts.map(c => ({
+        ...c,
+        report_count: reportCountByCompany[c.id] || 0
+      }));
+
+      setCompanies(companiesWithReportCounts);
+
+      // Calculate active companies (companies with users)
+      const activeCompanies = companiesWithCounts.filter(c => c.user_count > 0).length;
       
       setStats({
         total_users: formattedUsers.length,
         total_companies: fetchedCompanies.length,
         total_reports: reportsData?.length || 0,
-        active_subscriptions: revenueData?.subscriptions?.active || 0,
-        monthly_revenue: revenueData?.revenue?.last_30_days || 0,
-        mrr: revenueData?.subscriptions?.mrr || 0,
-        balance_available: revenueData?.balance?.available?.[0]?.amount || 0,
-        growth_rate: 12.5
+        active_subscriptions: activeCompanies,
+        monthly_revenue: 0, // Will be populated when Stripe integration is ready
+        mrr: 0, // Will be populated when Stripe integration is ready
+        balance_available: 0, // Will be populated when Stripe integration is ready
+        growth_rate: formattedUsers.length > 0 ? 12.5 : 0
       });
 
     } catch (error) {
       console.error('Error fetching super admin data:', error);
       toast({
         title: "Error",
-        description: "Failed to load super admin data",
+        description: "Failed to load some super admin data. Please refresh the page.",
         variant: "destructive",
       });
     } finally {
@@ -216,14 +238,23 @@ export default function SuperAdmin() {
 
   const suspendCompany = async (companyId: string) => {
     try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ is_active: false })
+        .eq('id', companyId);
+
+      if (error) throw error;
+
       toast({
         title: "Company suspended",
         description: "Company has been suspended successfully.",
       });
+
+      fetchSuperAdminData();
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || 'Failed to suspend company',
         variant: "destructive",
       });
     }
@@ -323,7 +354,7 @@ export default function SuperAdmin() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.total_companies.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              Active organizations
+              {stats.active_subscriptions} active
             </p>
           </CardContent>
         </Card>
@@ -343,39 +374,43 @@ export default function SuperAdmin() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Subscriptions</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Companies</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.active_subscriptions}</div>
             <p className="text-xs text-muted-foreground">
-              Active paying customers
+              With active users
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue (30d)</CardTitle>
+            <CardTitle className="text-sm font-medium">Reports/Company</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.monthly_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold">
+              {stats.total_companies > 0 ? Math.round(stats.total_reports / stats.total_companies) : 0}
+            </div>
             <p className="text-xs text-muted-foreground">
-              MRR: ${stats.mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              Average per company
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Users/Company</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.growth_rate}%</div>
+            <div className="text-2xl font-bold">
+              {stats.total_companies > 0 ? Math.round(stats.total_users / stats.total_companies) : 0}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Month over month
+              Average team size
             </p>
           </CardContent>
         </Card>
@@ -424,8 +459,8 @@ export default function SuperAdmin() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Subscription Distribution</CardTitle>
-                <CardDescription>Companies by subscription plan</CardDescription>
+                <CardTitle>Company Distribution</CardTitle>
+                <CardDescription>Companies by size</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
@@ -455,8 +490,8 @@ export default function SuperAdmin() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Revenue Trends</CardTitle>
-              <CardDescription>Monthly revenue growth</CardDescription>
+              <CardTitle>Activity Overview</CardTitle>
+              <CardDescription>System activity metrics</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-80">
@@ -465,8 +500,9 @@ export default function SuperAdmin() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
-                    <Bar dataKey="revenue" fill="#8884d8" />
+                    <Tooltip />
+                    <Bar dataKey="users" fill="#8884d8" name="Users" />
+                    <Bar dataKey="companies" fill="#82ca9d" name="Companies" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -481,45 +517,52 @@ export default function SuperAdmin() {
               <CardDescription>Manage all registered companies</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Company Name</TableHead>
-                    <TableHead>Users</TableHead>
-                    <TableHead>Reports</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {companies.slice(0, 20).map((company) => (
-                    <TableRow key={company.id}>
-                      <TableCell className="font-medium">{company.name}</TableCell>
-                      <TableCell>{company.user_count}</TableCell>
-                      <TableCell>{company.report_count}</TableCell>
-                      <TableCell>
-                        <Badge variant={company.subscription_status === 'active' ? 'default' : 'secondary'}>
-                          {company.subscription_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{new Date(company.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">View</Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => suspendCompany(company.id)}
-                          >
-                            Suspend
-                          </Button>
-                        </div>
-                      </TableCell>
+              {companies.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Building2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No companies found</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Company Name</TableHead>
+                      <TableHead>Users</TableHead>
+                      <TableHead>Reports</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {companies.map((company) => (
+                      <TableRow key={company.id}>
+                        <TableCell className="font-medium">{company.name}</TableCell>
+                        <TableCell>{company.user_count}</TableCell>
+                        <TableCell>{company.report_count}</TableCell>
+                        <TableCell>
+                          <Badge variant={company.subscription_status === 'active' ? 'default' : 'secondary'}>
+                            {company.subscription_status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{new Date(company.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">View</Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => suspendCompany(company.id)}
+                            >
+                              Suspend
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -531,71 +574,78 @@ export default function SuperAdmin() {
               <CardDescription>All users grouped by their companies</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {Object.entries(usersByCompany).map(([companyId, { companyName, users: companyUsers }]) => (
-                <div key={companyId} className="space-y-3">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <h3 className="text-lg font-semibold">{companyName}</h3>
-                    </div>
-                    <Badge variant="secondary">{companyUsers.length} users</Badge>
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Super Admin</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {companyUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell className="text-xs">{user.email}</TableCell>
-                          <TableCell>
-                            <Select
-                              value={user.tenant_role}
-                              onValueChange={(value) => updateUserTenantRole(user.id, value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="technician">Technician</SelectItem>
-                                <SelectItem value="supervisor">Supervisor</SelectItem>
-                                <SelectItem value="project_manager">Manager</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={user.is_super_admin ? 'destructive' : 'secondary'}>
-                              {user.is_super_admin ? 'Yes' : 'No'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline">View</Button>
-                              <Button 
-                                size="sm" 
-                                variant={user.is_super_admin ? 'destructive' : 'default'}
-                                onClick={() => toggleSuperAdmin(user.id, user.is_super_admin)}
-                              >
-                                {user.is_super_admin ? 'Revoke' : 'Grant'} SA
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+              {Object.keys(usersByCompany).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No users found</p>
                 </div>
-              ))}
+              ) : (
+                Object.entries(usersByCompany).map(([companyId, { companyName, users: companyUsers }]) => (
+                  <div key={companyId} className="space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">{companyName}</h3>
+                      </div>
+                      <Badge variant="secondary">{companyUsers.length} users</Badge>
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Super Admin</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {companyUsers.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">{user.name}</TableCell>
+                            <TableCell className="text-xs">{user.email}</TableCell>
+                            <TableCell>
+                              <Select
+                                value={user.tenant_role}
+                                onValueChange={(value) => updateUserTenantRole(user.id, value)}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="technician">Technician</SelectItem>
+                                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                                  <SelectItem value="project_manager">Manager</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={user.is_super_admin ? 'destructive' : 'secondary'}>
+                                {user.is_super_admin ? 'Yes' : 'No'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline">View</Button>
+                                <Button 
+                                  size="sm" 
+                                  variant={user.is_super_admin ? 'destructive' : 'default'}
+                                  onClick={() => toggleSuperAdmin(user.id, user.is_super_admin)}
+                                >
+                                  {user.is_super_admin ? 'Revoke' : 'Grant'} SA
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
