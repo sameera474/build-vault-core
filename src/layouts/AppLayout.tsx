@@ -74,8 +74,8 @@ const getNavigationGroups = (isSuperAdmin: boolean, tenantRole: string): Navigat
     label: "Analytics & Insights",
     items: [
       { title: "Analytics", url: "/analytics", icon: TrendingUp, roles: ['manager', 'admin'] },
-      { title: "Monthly Summaries", url: "/monthly-summaries", icon: Calendar, roles: ['manager', 'admin'] },
-      { title: "Chainage Charts", url: "/barchart", icon: Map, roles: ['manager', 'admin'] },
+      { title: "Monthly Summaries", url: "/monthly-summaries", icon: Calendar, roles: ['technician', 'manager', 'admin'] },
+      { title: "Chainage Charts", url: "/barchart", icon: Map, roles: ['technician', 'manager', 'admin'] },
     ]
   });
 
