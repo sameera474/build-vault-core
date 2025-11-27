@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Users, Building2, FileText, DollarSign, Activity, Shield, Settings, BarChart3, FolderOpen } from 'lucide-react';
-import SuperAdminDemoUsers from '@/pages/SuperAdminDemoUsers';
-import { SuperAdminTeamManagement } from '@/components/SuperAdminTeamManagement';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +13,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCompanies } from '@/lib/auth';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+
+// Lazy load heavy components
+const SuperAdminDemoUsers = lazy(() => import('@/pages/SuperAdminDemoUsers'));
+const SuperAdminTeamManagement = lazy(() => import('@/components/SuperAdminTeamManagement').then(module => ({ default: module.SuperAdminTeamManagement })));
 
 interface Company {
   id: string;
@@ -60,6 +62,82 @@ interface SystemStats {
 }
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1'];
+
+// Memoized UserTable component
+const UserTable = React.memo(({ users, onUpdateRole, onToggleSuperAdmin }: {
+  users: User[];
+  onUpdateRole: (userId: string, role: string) => void;
+  onToggleSuperAdmin: (userId: string, currentStatus: boolean) => void;
+}) => {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Super Admin</TableHead>
+          <TableHead>Created</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {users.map((user) => (
+          <TableRow key={user.id}>
+            <TableCell className="font-medium">{user.name}</TableCell>
+            <TableCell className="text-xs">{user.email}</TableCell>
+            <TableCell>
+              <Select
+                value={user.tenant_role}
+                onValueChange={(value) => onUpdateRole(user.id, value)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="technician">Technician</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                  <SelectItem value="project_manager">Manager</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </TableCell>
+            <TableCell>
+              <Badge variant={user.is_super_admin ? 'destructive' : 'secondary'}>
+                {user.is_super_admin ? 'Yes' : 'No'}
+              </Badge>
+            </TableCell>
+            <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+            <TableCell>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline">View</Button>
+                <Button 
+                  size="sm" 
+                  variant={user.is_super_admin ? 'destructive' : 'default'}
+                  onClick={() => onToggleSuperAdmin(user.id, user.is_super_admin)}
+                >
+                  {user.is_super_admin ? 'Revoke' : 'Grant'} SA
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+});
+
+UserTable.displayName = 'UserTable';
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center py-12">
+    <div className="flex flex-col items-center gap-4">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+      <p className="text-muted-foreground">Loading...</p>
+    </div>
+  </div>
+);
 
 export default function SuperAdmin() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -297,6 +375,40 @@ export default function SuperAdmin() {
     }
   };
 
+  // Memoize expensive computations
+  const getGrowthData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    return months.map((month, index) => ({
+      month,
+      users: Math.floor(stats.total_users * (0.6 + index * 0.1)),
+      companies: Math.floor(stats.total_companies * (0.5 + index * 0.15)),
+      revenue: Math.floor(stats.monthly_revenue * (0.4 + index * 0.2))
+    }));
+  }, [stats.total_users, stats.total_companies, stats.monthly_revenue]);
+
+  const getSubscriptionData = useMemo(() => {
+    return [
+      { name: 'Starter', value: Math.floor(stats.total_companies * 0.4), color: CHART_COLORS[0] },
+      { name: 'Professional', value: Math.floor(stats.total_companies * 0.4), color: CHART_COLORS[1] },
+      { name: 'Enterprise', value: Math.floor(stats.total_companies * 0.2), color: CHART_COLORS[2] }
+    ];
+  }, [stats.total_companies]);
+
+  // Memoize grouped users by company
+  const usersByCompany = useMemo(() => {
+    return users.reduce((acc, user) => {
+      const companyKey = user.company_id || 'no-company';
+      if (!acc[companyKey]) {
+        acc[companyKey] = {
+          companyName: user.company_name,
+          users: []
+        };
+      }
+      acc[companyKey].users.push(user);
+      return acc;
+    }, {} as Record<string, { companyName: string; users: User[] }>);
+  }, [users]);
+
   if (!(profile as any)?.is_super_admin) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -312,46 +424,8 @@ export default function SuperAdmin() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-          <p className="text-muted-foreground">Loading super admin data...</p>
-        </div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
-
-  const getGrowthData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    return months.map((month, index) => ({
-      month,
-      users: Math.floor(stats.total_users * (0.6 + index * 0.1)),
-      companies: Math.floor(stats.total_companies * (0.5 + index * 0.15)),
-      revenue: Math.floor(stats.monthly_revenue * (0.4 + index * 0.2))
-    }));
-  };
-
-  const getSubscriptionData = () => {
-    return [
-      { name: 'Starter', value: Math.floor(stats.total_companies * 0.4), color: CHART_COLORS[0] },
-      { name: 'Professional', value: Math.floor(stats.total_companies * 0.4), color: CHART_COLORS[1] },
-      { name: 'Enterprise', value: Math.floor(stats.total_companies * 0.2), color: CHART_COLORS[2] }
-    ];
-  };
-
-  // Group users by company
-  const usersByCompany = users.reduce((acc, user) => {
-    const companyKey = user.company_id || 'no-company';
-    if (!acc[companyKey]) {
-      acc[companyKey] = {
-        companyName: user.company_name,
-        users: []
-      };
-    }
-    acc[companyKey].users.push(user);
-    return acc;
-  }, {} as Record<string, { companyName: string; users: User[] }>);
 
   return (
     <div className="space-y-6">
@@ -462,11 +536,15 @@ export default function SuperAdmin() {
         </TabsList>
 
         <TabsContent value="team" className="space-y-4">
-          <SuperAdminTeamManagement />
+          <Suspense fallback={<LoadingFallback />}>
+            <SuperAdminTeamManagement />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="demo-users" className="space-y-4">
-          <SuperAdminDemoUsers />
+          <Suspense fallback={<LoadingFallback />}>
+            <SuperAdminDemoUsers />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
@@ -479,7 +557,7 @@ export default function SuperAdmin() {
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={getGrowthData()}>
+                    <LineChart data={getGrowthData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -502,7 +580,7 @@ export default function SuperAdmin() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={getSubscriptionData()}
+                        data={getSubscriptionData}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
@@ -511,7 +589,7 @@ export default function SuperAdmin() {
                         fill="#8884d8"
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       >
-                        {getSubscriptionData().map((entry, index) => (
+                        {getSubscriptionData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -531,7 +609,7 @@ export default function SuperAdmin() {
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={getGrowthData()}>
+                  <BarChart data={getGrowthData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -666,60 +744,11 @@ export default function SuperAdmin() {
                       </div>
                       <Badge variant="secondary">{companyUsers.length} users</Badge>
                     </div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Super Admin</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {companyUsers.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.name}</TableCell>
-                            <TableCell className="text-xs">{user.email}</TableCell>
-                            <TableCell>
-                              <Select
-                                value={user.tenant_role}
-                                onValueChange={(value) => updateUserTenantRole(user.id, value)}
-                              >
-                                <SelectTrigger className="w-32">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="technician">Technician</SelectItem>
-                                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                                  <SelectItem value="project_manager">Manager</SelectItem>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={user.is_super_admin ? 'destructive' : 'secondary'}>
-                                {user.is_super_admin ? 'Yes' : 'No'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="outline">View</Button>
-                                <Button 
-                                  size="sm" 
-                                  variant={user.is_super_admin ? 'destructive' : 'default'}
-                                  onClick={() => toggleSuperAdmin(user.id, user.is_super_admin)}
-                                >
-                                  {user.is_super_admin ? 'Revoke' : 'Grant'} SA
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <UserTable 
+                      users={companyUsers}
+                      onUpdateRole={updateUserTenantRole}
+                      onToggleSuperAdmin={toggleSuperAdmin}
+                    />
                   </div>
                 ))
               )}
