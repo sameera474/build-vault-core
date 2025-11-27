@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 export const signIn = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -8,9 +8,14 @@ export const signIn = async (email: string, password: string) => {
   return { data, error };
 };
 
-export const signUp = async (email: string, password: string, name: string, companyName?: string) => {
+export const signUp = async (
+  email: string,
+  password: string,
+  name: string,
+  companyName?: string
+) => {
   const redirectUrl = `${window.location.origin}/`;
-  
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -19,15 +24,15 @@ export const signUp = async (email: string, password: string, name: string, comp
       data: {
         name: name,
         company_name: companyName,
-      }
-    }
+      },
+    },
   });
-  
+
   return { data, error };
 };
 
 export const getCompanies = async () => {
-  const { data, error } = await supabase.functions.invoke('get-companies');
+  const { data, error } = await supabase.functions.invoke("get-companies");
   return { data, error };
 };
 
@@ -44,16 +49,33 @@ export const resetPassword = async (email: string) => {
 };
 
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
   return { user, error };
 };
 
 export const getUserProfile = async (userId: string) => {
   const { data, error } = await supabase
-    .from('profiles')
-    .select('user_id, company_id, name, role, tenant_role, created_at, avatar_url, phone, job_title, department, employee_id, hire_date, is_active, is_super_admin, email')
-    .eq('user_id', userId)
+    .from("profiles")
+    .select(
+      `
+      user_id,
+      company_id,
+      name,
+      email,
+      tenant_role,
+      is_super_admin,
+      avatar_url,
+      phone,
+      department,
+      created_at,
+      updated_at
+    `
+    )
+    .eq("user_id", userId)
     .single();
-  
+
   return { data, error };
 };
