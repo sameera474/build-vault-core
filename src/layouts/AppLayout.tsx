@@ -63,9 +63,9 @@ const getNavigationGroups = (isSuperAdmin: boolean, tenantRole: string): Navigat
   groups.push({
     label: "Testing & Reports",
     items: [
-      { title: "Test Reports", url: "/test-reports", icon: FileText, roles: ['technician', 'manager', 'admin'] },
-      { title: "Templates", url: "/templates", icon: FileSpreadsheet, roles: ['manager', 'admin'] },
-      { title: "Approvals", url: "/approvals", icon: CheckSquare, roles: ['manager', 'admin'] },
+      { title: "Test Reports", url: "/test-reports", icon: FileText, roles: ['technician', 'project_manager', 'quality_manager', 'admin'] },
+      { title: "Templates", url: "/templates", icon: FileSpreadsheet, roles: ['project_manager', 'quality_manager', 'admin'] },
+      { title: "Approvals", url: "/approvals", icon: CheckSquare, roles: ['project_manager', 'quality_manager', 'admin'] },
     ]
   });
 
@@ -73,9 +73,9 @@ const getNavigationGroups = (isSuperAdmin: boolean, tenantRole: string): Navigat
   groups.push({
     label: "Analytics & Insights",
     items: [
-      { title: "Analytics", url: "/analytics", icon: TrendingUp, roles: ['manager', 'admin'] },
-      { title: "Monthly Summaries", url: "/monthly-summaries", icon: Calendar, roles: ['technician', 'manager', 'admin'] },
-      { title: "Chainage Charts", url: "/barchart", icon: Map, roles: ['technician', 'manager', 'admin'] },
+      { title: "Analytics", url: "/analytics", icon: TrendingUp, roles: ['project_manager', 'quality_manager', 'admin'] },
+      { title: "Monthly Summaries", url: "/monthly-summaries", icon: Calendar, roles: ['technician', 'project_manager', 'quality_manager', 'admin'] },
+      { title: "Chainage Charts", url: "/barchart", icon: Map, roles: ['technician', 'project_manager', 'quality_manager', 'admin'] },
     ]
   });
 
@@ -83,8 +83,8 @@ const getNavigationGroups = (isSuperAdmin: boolean, tenantRole: string): Navigat
   groups.push({
     label: "Project Management",
     items: [
-      { title: "Projects", url: "/projects", icon: Building2, roles: ['manager', 'admin'] },
-      { title: "Documents", url: "/documents", icon: FolderOpen, roles: ['manager', 'admin'] },
+      { title: "Projects", url: "/projects", icon: Building2, roles: ['project_manager', 'quality_manager', 'admin'] },
+      { title: "Documents", url: "/documents", icon: FolderOpen, roles: ['project_manager', 'quality_manager', 'admin'] },
       { title: "Laboratory Inventory", url: "/laboratory-inventory", icon: Package, roles: ['admin'] },
     ]
   });
@@ -102,7 +102,7 @@ const getNavigationGroups = (isSuperAdmin: boolean, tenantRole: string): Navigat
   groups.push({
     label: "Tools",
     items: [
-      { title: "Export Data", url: "/export", icon: Download, roles: ['manager', 'admin'] },
+      { title: "Export Data", url: "/export", icon: Download, roles: ['project_manager', 'quality_manager', 'admin'] },
       { title: "Mobile", url: "/mobile", icon: Smartphone },
     ]
   });
