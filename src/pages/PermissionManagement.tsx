@@ -1,29 +1,51 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Shield, Plus, Trash2, Calendar } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Shield, Plus, Trash2, Calendar } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface User {
   user_id: string;
   name: string;
   email: string;
-  role: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
+  tenant_role: string | null;
 }
 
 interface Permission {
@@ -44,12 +66,12 @@ interface Permission {
 }
 
 const MODULES = [
-  'test_reports',
-  'bug_reports',
-  'client_feedback',
-  'documents',
-  'team_management',
-  'project_settings',
+  "test_reports",
+  "bug_reports",
+  "client_feedback",
+  "documents",
+  "team_management",
+  "project_settings",
 ];
 
 export default function PermissionManagement() {
@@ -60,18 +82,18 @@ export default function PermissionManagement() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  
+
   // Form state
-  const [selectedUser, setSelectedUser] = useState('');
-  const [selectedProject, setSelectedProject] = useState('');
-  const [selectedModule, setSelectedModule] = useState('');
+  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedProject, setSelectedProject] = useState("");
+  const [selectedModule, setSelectedModule] = useState("");
   const [canView, setCanView] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
   const [canApprove, setCanApprove] = useState(false);
-  const [expiresAt, setExpiresAt] = useState('');
-  const [notes, setNotes] = useState('');
+  const [expiresAt, setExpiresAt] = useState("");
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -85,42 +107,42 @@ export default function PermissionManagement() {
 
       // Fetch users from same company
       const { data: usersData } = await supabase
-        .from('profiles')
-        .select('user_id, name, email, role')
-        .eq('company_id', profile?.company_id)
-        .neq('user_id', profile?.user_id);
+        .from("profiles")
+        .select("user_id, name, email, tenant_role")
+        .eq("company_id", profile?.company_id)
+        .neq("user_id", profile?.user_id);
 
       // Fetch projects
       const { data: projectsData } = await supabase
-        .from('projects')
-        .select('id, name')
-        .eq('company_id', profile?.company_id);
+        .from("projects")
+        .select("id, name")
+        .eq("company_id", profile?.company_id);
 
       // Fetch existing permissions
       const { data: permissionsData } = await supabase
-        .from('user_project_permissions')
-        .select('*')
-        .in('project_id', projectsData?.map(p => p.id) || []);
+        .from("user_project_permissions")
+        .select("*")
+        .in("project_id", projectsData?.map((p) => p.id) || []);
 
       // Enrich permissions with user and project names
       const enrichedPermissions = await Promise.all(
         (permissionsData || []).map(async (p) => {
-          let userName = 'Unknown';
-          let projectName = 'Unknown';
+          let userName = "Unknown";
+          let projectName = "Unknown";
 
           const { data: userData } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('user_id', p.user_id)
+            .from("profiles")
+            .select("name")
+            .eq("user_id", p.user_id)
             .single();
-          userName = userData?.name || 'Unknown';
+          userName = userData?.name || "Unknown";
 
           const { data: projectData } = await supabase
-            .from('projects')
-            .select('name')
-            .eq('id', p.project_id)
+            .from("projects")
+            .select("name")
+            .eq("id", p.project_id)
             .single();
-          projectName = projectData?.name || 'Unknown';
+          projectName = projectData?.name || "Unknown";
 
           return {
             ...p,
@@ -135,9 +157,9 @@ export default function PermissionManagement() {
       setPermissions(enrichedPermissions);
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -147,15 +169,15 @@ export default function PermissionManagement() {
   const handleGrant = async () => {
     if (!selectedUser || !selectedProject || !selectedModule) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
       });
       return;
     }
 
     try {
-      const { error } = await supabase.from('user_project_permissions').insert({
+      const { error } = await supabase.from("user_project_permissions").insert({
         user_id: selectedUser,
         project_id: selectedProject,
         module_name: selectedModule,
@@ -172,15 +194,19 @@ export default function PermissionManagement() {
       if (error) throw error;
 
       // Log audit event
-      await supabase.rpc('log_audit_event', {
-        _action: 'grant_permission',
-        _resource_type: 'permission',
-        _details: { user_id: selectedUser, project_id: selectedProject, module_name: selectedModule },
+      await supabase.rpc("log_audit_event", {
+        _action: "grant_permission",
+        _resource_type: "permission",
+        _details: {
+          user_id: selectedUser,
+          project_id: selectedProject,
+          module_name: selectedModule,
+        },
       });
 
       toast({
-        title: 'Success',
-        description: 'Permission granted successfully',
+        title: "Success",
+        description: "Permission granted successfully",
       });
 
       resetForm();
@@ -188,9 +214,9 @@ export default function PermissionManagement() {
       fetchData();
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
@@ -198,44 +224,44 @@ export default function PermissionManagement() {
   const handleRevoke = async (permissionId: string) => {
     try {
       const { error } = await supabase
-        .from('user_project_permissions')
+        .from("user_project_permissions")
         .delete()
-        .eq('id', permissionId);
+        .eq("id", permissionId);
 
       if (error) throw error;
 
-      await supabase.rpc('log_audit_event', {
-        _action: 'revoke_permission',
-        _resource_type: 'permission',
+      await supabase.rpc("log_audit_event", {
+        _action: "revoke_permission",
+        _resource_type: "permission",
         _resource_id: permissionId,
       });
 
       toast({
-        title: 'Success',
-        description: 'Permission revoked successfully',
+        title: "Success",
+        description: "Permission revoked successfully",
       });
 
       fetchData();
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
 
   const resetForm = () => {
-    setSelectedUser('');
-    setSelectedProject('');
-    setSelectedModule('');
+    setSelectedUser("");
+    setSelectedProject("");
+    setSelectedModule("");
     setCanView(false);
     setCanCreate(false);
     setCanEdit(false);
     setCanDelete(false);
     setCanApprove(false);
-    setExpiresAt('');
-    setNotes('');
+    setExpiresAt("");
+    setNotes("");
   };
 
   if (loading) {
@@ -255,7 +281,8 @@ export default function PermissionManagement() {
             Permission Management
           </h1>
           <p className="text-muted-foreground mt-2">
-            Grant granular module-level permissions to team members for specific projects
+            Grant granular module-level permissions to team members for specific
+            projects
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -280,9 +307,13 @@ export default function PermissionManagement() {
                     <SelectValue placeholder="Select user" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map(user => (
+                    {users.map((user) => (
                       <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.name} ({user.email})
+                        {user.name} ({user.email}{" "}
+                        {user.tenant_role
+                          ? `– ${user.tenant_role.replace("_", " ")}`
+                          : ""}
+                        )
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -290,12 +321,15 @@ export default function PermissionManagement() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="project">Project</Label>
-                <Select value={selectedProject} onValueChange={setSelectedProject}>
+                <Select
+                  value={selectedProject}
+                  onValueChange={setSelectedProject}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map(project => (
+                    {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
                       </SelectItem>
@@ -305,14 +339,19 @@ export default function PermissionManagement() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="module">Module</Label>
-                <Select value={selectedModule} onValueChange={setSelectedModule}>
+                <Select
+                  value={selectedModule}
+                  onValueChange={setSelectedModule}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select module" />
                   </SelectTrigger>
                   <SelectContent>
-                    {MODULES.map(module => (
+                    {MODULES.map((module) => (
                       <SelectItem key={module} value={module}>
-                        {module.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {module
+                          .replace(/_/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -322,23 +361,38 @@ export default function PermissionManagement() {
                 <Label>Permissions</Label>
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center space-x-2">
-                    <Checkbox checked={canView} onCheckedChange={(checked) => setCanView(!!checked)} />
+                    <Checkbox
+                      checked={canView}
+                      onCheckedChange={(checked) => setCanView(!!checked)}
+                    />
                     <label className="text-sm">View</label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox checked={canCreate} onCheckedChange={(checked) => setCanCreate(!!checked)} />
+                    <Checkbox
+                      checked={canCreate}
+                      onCheckedChange={(checked) => setCanCreate(!!checked)}
+                    />
                     <label className="text-sm">Create</label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox checked={canEdit} onCheckedChange={(checked) => setCanEdit(!!checked)} />
+                    <Checkbox
+                      checked={canEdit}
+                      onCheckedChange={(checked) => setCanEdit(!!checked)}
+                    />
                     <label className="text-sm">Edit</label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox checked={canDelete} onCheckedChange={(checked) => setCanDelete(!!checked)} />
+                    <Checkbox
+                      checked={canDelete}
+                      onCheckedChange={(checked) => setCanDelete(!!checked)}
+                    />
                     <label className="text-sm">Delete</label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox checked={canApprove} onCheckedChange={(checked) => setCanApprove(!!checked)} />
+                    <Checkbox
+                      checked={canApprove}
+                      onCheckedChange={(checked) => setCanApprove(!!checked)}
+                    />
                     <label className="text-sm">Approve</label>
                   </div>
                 </div>
@@ -394,27 +448,44 @@ export default function PermissionManagement() {
             <TableBody>
               {permissions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground"
+                  >
                     No permissions granted yet
                   </TableCell>
                 </TableRow>
               ) : (
-                permissions.map(permission => (
+                permissions.map((permission) => (
                   <TableRow key={permission.id}>
-                    <TableCell className="font-medium">{permission.user_name}</TableCell>
+                    <TableCell className="font-medium">
+                      {permission.user_name}
+                    </TableCell>
                     <TableCell>{permission.project_name}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {permission.module_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {permission.module_name
+                          .replace(/_/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
-                        {permission.can_view && <Badge variant="secondary">View</Badge>}
-                        {permission.can_create && <Badge variant="secondary">Create</Badge>}
-                        {permission.can_edit && <Badge variant="secondary">Edit</Badge>}
-                        {permission.can_delete && <Badge variant="secondary">Delete</Badge>}
-                        {permission.can_approve && <Badge variant="secondary">Approve</Badge>}
+                        {permission.can_view && (
+                          <Badge variant="secondary">View</Badge>
+                        )}
+                        {permission.can_create && (
+                          <Badge variant="secondary">Create</Badge>
+                        )}
+                        {permission.can_edit && (
+                          <Badge variant="secondary">Edit</Badge>
+                        )}
+                        {permission.can_delete && (
+                          <Badge variant="secondary">Delete</Badge>
+                        )}
+                        {permission.can_approve && (
+                          <Badge variant="secondary">Approve</Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -424,7 +495,9 @@ export default function PermissionManagement() {
                           {new Date(permission.expires_at).toLocaleDateString()}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground text-sm">Never</span>
+                        <span className="text-muted-foreground text-sm">
+                          Never
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
