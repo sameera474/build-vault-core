@@ -39,15 +39,9 @@ export function AdvancedAnalytics() {
       setLoading(true);
       setError(null);
 
-      // Check if profile and company_id exist
+      // Check if profile exists
       if (!profile) {
         setError('User profile not loaded');
-        setLoading(false);
-        return;
-      }
-
-      if (!profile.company_id) {
-        setError('No company associated with this user');
         setLoading(false);
         return;
       }
@@ -57,7 +51,7 @@ export function AdvancedAnalytics() {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(timeRange));
 
-      // Fetch all required data in parallel with error handling
+      // Fetch all required data in parallel - RLS policies will filter by company automatically
       const [
         reportsResponse,
         projectsResponse,
@@ -67,14 +61,12 @@ export function AdvancedAnalytics() {
         supabase
           .from('test_reports')
           .select('*')
-          .eq('company_id', profile.company_id)
           .gte('created_at', startDate.toISOString())
           .then(res => ({ data: res.data || [], error: res.error })),
         
         supabase
           .from('projects')
           .select('*')
-          .eq('company_id', profile.company_id)
           .then(res => ({ data: res.data || [], error: res.error })),
         
         supabase
@@ -86,7 +78,6 @@ export function AdvancedAnalytics() {
         supabase
           .from('test_reports')
           .select('*')
-          .eq('company_id', profile.company_id)
           .eq('status', 'pending')
           .then(res => ({ data: res.data || [], error: res.error }))
       ]);
