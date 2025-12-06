@@ -41,7 +41,7 @@ class ProjectService {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('company_id, role, tenant_role, is_super_admin')
+      .select('company_id, tenant_role, is_super_admin')
       .eq('user_id', user.id)
       .single();
 

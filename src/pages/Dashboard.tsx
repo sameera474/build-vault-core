@@ -100,7 +100,7 @@ export default function Dashboard() {
       let teamQuery = supabase.from('profiles').select('*', { count: 'exact' });
       let weekReportsQuery = supabase.from('test_reports').select('*', { count: 'exact' }).gte('created_at', weekAgo.toISOString());
       let monthReportsQuery = supabase.from('test_reports').select('*', { count: 'exact' }).gte('created_at', monthAgo.toISOString());
-      let pendingQuery = supabase.from('test_reports').select('*', { count: 'exact' }).eq('status', 'pending');
+      let pendingQuery = supabase.from('test_reports').select('*', { count: 'exact' }).eq('status', 'submitted');
 
       if (!isSuperAdmin && profile.company_id) {
         projectQuery = projectQuery.eq('company_id', profile.company_id);
@@ -187,7 +187,14 @@ export default function Dashboard() {
     },
   ];
 
-  const activities = recentReports.slice(0, 8).map((report) => ({
+  const activities: Array<{
+    id: string;
+    title: string;
+    description: string;
+    time: string;
+    icon: typeof FileText;
+    status: 'success' | 'warning' | 'error' | 'info';
+  }> = recentReports.slice(0, 8).map((report) => ({
     id: report.id,
     title: `${report.test_type || report.material || 'Test'} Report Created`,
     description: `Report #${report.report_number || report.id.slice(0, 8)}`,

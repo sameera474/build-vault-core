@@ -72,7 +72,7 @@ export default function Team() {
   };
 
   const currentUserRole =
-    (profile as any)?.tenant_role || profile?.role || "technician";
+    (profile as any)?.tenant_role || "technician";
 
   return (
     <div className="space-y-6">

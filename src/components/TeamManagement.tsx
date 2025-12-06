@@ -16,7 +16,6 @@ import { UserAvatar } from '@/components/UserAvatar';
 interface TeamMember {
   user_id: string;
   name: string;
-  role: string;
   tenant_role: string;
   created_at: string;
   is_super_admin?: boolean;
@@ -45,7 +44,6 @@ interface Project {
 interface Invitation {
   id: string;
   email: string;
-  role: string;
   created_at: string;
   expires_at: string;
   accepted_at: string | null;
@@ -118,8 +116,7 @@ export function TeamManagement() {
       member.department?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesRole = roleFilter === 'all' || 
-      member.tenant_role === roleFilter || 
-      member.role === roleFilter;
+      member.tenant_role === roleFilter;
     
     return matchesSearch && matchesRole;
   });
@@ -128,7 +125,7 @@ export function TeamManagement() {
   const getRoleStats = () => {
     const stats: Record<string, number> = {};
     teamMembers.forEach(member => {
-      const role = member.tenant_role || member.role;
+      const role = member.tenant_role;
       stats[role] = (stats[role] || 0) + 1;
     });
     return stats;
@@ -162,25 +159,25 @@ export function TeamManagement() {
       // Fetch team members (exclude super admin from display)
       const { data: members, error: membersError } = await supabase
         .from('profiles')
-        .select('user_id, name, role, tenant_role, created_at, is_super_admin, phone, department, avatar_url, company_id')
+        .select('user_id, name, tenant_role, created_at, is_super_admin, phone, department, avatar_url, company_id')
         .eq('company_id', profile.company_id);
 
       if (membersError) throw membersError;
 
       // Show all members including super admin for better team visibility
-      setTeamMembers(members || []);
+      setTeamMembers((members || []) as TeamMember[]);
 
       // Fetch pending invitations
       const { data: invites, error: invitesError } = await supabase
         .from('team_invitations')
-        .select('id, email, role, created_at, expires_at, accepted_at, invitation_token')
+        .select('id, email, created_at, expires_at, accepted_at, invitation_token')
         .eq('company_id', profile.company_id)
         .is('accepted_at', null)
         .gt('expires_at', new Date().toISOString());
 
       if (invitesError) throw invitesError;
 
-      setInvitations(invites || []);
+      setInvitations((invites || []) as Invitation[]);
     } catch (error) {
       console.error('Error fetching team data:', error);
     } finally {
@@ -238,9 +235,9 @@ export function TeamManagement() {
 
       if (error) throw error;
 
-      const formattedUsers = users?.map(user => ({
+      const formattedUsers = (users as any[])?.map(user => ({
         ...user,
-        company_name: (user as any).companies?.name || 'Unknown Company'
+        company_name: user.companies?.name || 'Unknown Company'
       })) || [];
 
       setAllCompanyUsers(formattedUsers);
@@ -725,7 +722,7 @@ const deleteMember = async (memberId: string) => {
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
+            {(profile?.tenant_role === 'admin' || profile?.tenant_role === 'project_manager' || isSuperAdmin) && (
               <>
                 <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
                   <DialogTrigger asChild>
@@ -911,7 +908,7 @@ const deleteMember = async (memberId: string) => {
               </>
             )}
 
-            {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
+            {(profile?.tenant_role === 'admin' || profile?.tenant_role === 'project_manager' || isSuperAdmin) && (
               <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -982,7 +979,7 @@ const deleteMember = async (memberId: string) => {
                            .filter(member => !member.is_super_admin)
                            .map(member => (
                            <SelectItem key={member.user_id} value={member.user_id}>
-                             {member.name} ({formatRole(member.tenant_role || member.role)})
+                             {member.name} ({formatRole(member.tenant_role)})
                              {isSuperAdmin && (member as any).company_name && ` - ${(member as any).company_name}`}
                            </SelectItem>
                          ))}
@@ -1156,7 +1153,7 @@ const deleteMember = async (memberId: string) => {
                              )}
                            </div>
                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-muted-foreground">
-                             <span>{formatRole(member.tenant_role || member.role)}</span>
+                             <span>{formatRole(member.tenant_role)}</span>
                              {member.department && (
                                <>
                                  <span className="hidden sm:inline">•</span>
@@ -1176,10 +1173,10 @@ const deleteMember = async (memberId: string) => {
                          </div>
                        </div>
                         <div className="flex items-center gap-2 ml-2">
-                          <Badge className={getRoleColor(member.tenant_role || member.role)}>
-                            {formatRole(member.tenant_role || member.role)}
+                          <Badge className={getRoleColor(member.tenant_role)}>
+                            {formatRole(member.tenant_role)}
                           </Badge>
-                          {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
+                          {(profile?.tenant_role === 'admin' || profile?.tenant_role === 'project_manager' || isSuperAdmin) && (
                             <>
                               <Button
                                 variant="outline"
@@ -1260,7 +1257,7 @@ const deleteMember = async (memberId: string) => {
                         <Badge className={getRoleColor(assignment.role)}>
                           {formatRole(assignment.role)}
                         </Badge>
-                        {(profile?.role === 'admin' || profile?.role === 'project_manager' || isSuperAdmin) && (
+                        {(profile?.tenant_role === 'admin' || profile?.tenant_role === 'project_manager' || isSuperAdmin) && (
                           <Button
                             variant="outline"
                             size="sm"

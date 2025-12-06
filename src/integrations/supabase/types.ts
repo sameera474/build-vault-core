@@ -373,17 +373,11 @@ export type Database = {
           created_at: string
           department: string | null
           email: string | null
-          employee_id: string | null
-          hire_date: string | null
-          is_active: boolean | null
-          is_demo_user: boolean | null
-          is_super_admin: boolean | null
-          job_title: string | null
+          is_super_admin: boolean
           name: string | null
           phone: string | null
-          role: string
-          tenant_role: Database["public"]["Enums"]["tenant_role"] | null
-          updated_at: string | null
+          tenant_role: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -392,17 +386,11 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string | null
-          employee_id?: string | null
-          hire_date?: string | null
-          is_active?: boolean | null
-          is_demo_user?: boolean | null
-          is_super_admin?: boolean | null
-          job_title?: string | null
+          is_super_admin?: boolean
           name?: string | null
           phone?: string | null
-          role?: string
-          tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
-          updated_at?: string | null
+          tenant_role?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -411,17 +399,11 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string | null
-          employee_id?: string | null
-          hire_date?: string | null
-          is_active?: boolean | null
-          is_demo_user?: boolean | null
-          is_super_admin?: boolean | null
-          job_title?: string | null
+          is_super_admin?: boolean
           name?: string | null
           phone?: string | null
-          role?: string
-          tenant_role?: Database["public"]["Enums"]["tenant_role"] | null
-          updated_at?: string | null
+          tenant_role?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -440,6 +422,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles_backup: {
+        Row: {
+          avatar_url: string | null
+          company_id: string | null
+          created_at: string | null
+          department: string | null
+          email: string | null
+          is_super_admin: boolean | null
+          name: string | null
+          old_role: string | null
+          phone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string | null
+          is_super_admin?: boolean | null
+          name?: string | null
+          old_role?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string | null
+          is_super_admin?: boolean | null
+          name?: string | null
+          old_role?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       project_members: {
         Row: {
@@ -695,7 +719,6 @@ export type Database = {
           id: string
           invitation_token: string
           invited_by: string | null
-          role: Database["public"]["Enums"]["tenant_role"]
         }
         Insert: {
           accepted_at?: string | null
@@ -706,7 +729,6 @@ export type Database = {
           id?: string
           invitation_token: string
           invited_by?: string | null
-          role?: Database["public"]["Enums"]["tenant_role"]
         }
         Update: {
           accepted_at?: string | null
@@ -717,7 +739,6 @@ export type Database = {
           id?: string
           invitation_token?: string
           invited_by?: string | null
-          role?: Database["public"]["Enums"]["tenant_role"]
         }
         Relationships: []
       }
@@ -1221,7 +1242,7 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
-      is_super_admin: { Args: { user_uuid: string }; Returns: boolean }
+      is_super_admin: { Args: { user_id: string }; Returns: boolean }
       log_audit_event: {
         Args: {
           _action: string
@@ -1240,28 +1261,34 @@ export type Database = {
       user_accessible_projects: {
         Args: never
         Returns: {
-          client_logo: string
-          client_name: string
+          client_logo: string | null
+          client_name: string | null
           company_id: string
-          consultant_logo: string
-          consultant_name: string
-          contract_number: string
-          contractor_logo: string
-          contractor_name: string
+          consultant_logo: string | null
+          consultant_name: string | null
+          contract_number: string | null
+          contractor_logo: string | null
+          contractor_name: string | null
           created_at: string
-          created_by: string
-          description: string
-          end_date: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
           id: string
           lab_code: string
-          location: string
+          location: string | null
           name: string
           project_prefix: string
           region_code: string
-          start_date: string
+          start_date: string | null
           status: string
           updated_at: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       user_can_access_project: {
         Args: { project_uuid: string; user_uuid: string }
@@ -1286,15 +1313,6 @@ export type Database = {
       material_enum: "soil" | "concrete" | "aggregates" | "asphalt" | "custom"
       report_status_enum: "draft" | "submitted" | "approved" | "rejected"
       side_enum: "left" | "right" | "middle"
-      tenant_role:
-        | "admin"
-        | "project_manager"
-        | "quality_manager"
-        | "material_engineer"
-        | "technician"
-        | "consultant_engineer"
-        | "consultant_technician"
-        | "supervisor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1436,16 +1454,6 @@ export const Constants = {
       material_enum: ["soil", "concrete", "aggregates", "asphalt", "custom"],
       report_status_enum: ["draft", "submitted", "approved", "rejected"],
       side_enum: ["left", "right", "middle"],
-      tenant_role: [
-        "admin",
-        "project_manager",
-        "quality_manager",
-        "material_engineer",
-        "technician",
-        "consultant_engineer",
-        "consultant_technician",
-        "supervisor",
-      ],
     },
   },
 } as const

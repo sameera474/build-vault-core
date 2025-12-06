@@ -343,7 +343,7 @@ export default function ReportEditor() {
             </Button>
           )}
           
-          {report.status === 'submitted' && profile?.role === 'admin' && (
+          {report.status === 'submitted' && (profile?.is_super_admin || profile?.tenant_role === 'admin') && (
             <>
               <Button onClick={handleApprove} variant="default" className="bg-green-600">
                 <CheckCircle className="h-4 w-4 mr-2" />

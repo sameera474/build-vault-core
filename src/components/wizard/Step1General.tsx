@@ -384,8 +384,8 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {(profile?.role === "admin" ||
-                profile?.role === "project_manager") && (
+              {(profile?.tenant_role === "admin" ||
+                profile?.tenant_role === "project_manager") && (
                 <Button
                   type="button"
                   variant="outline"
@@ -396,8 +396,8 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                   <Plus className="h-4 w-4" />
                 </Button>
               )}
-              {(profile?.role === "admin" ||
-                profile?.role === "project_manager") && (
+              {(profile?.tenant_role === "admin" ||
+                profile?.tenant_role === "project_manager") && (
                 <Button
                   type="button"
                   variant="destructive"

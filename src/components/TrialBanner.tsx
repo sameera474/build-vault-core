@@ -11,7 +11,7 @@ export function TrialBanner() {
   const { profile } = useAuth();
 
   // Don't show banner for super admins or demo users
-  if (profile?.is_super_admin || profile?.role === 'demo_user') {
+  if (profile?.is_super_admin || profile?.tenant_role === 'demo_user') {
     return null;
   }
 

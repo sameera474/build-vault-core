@@ -104,11 +104,11 @@ export function ProjectRoles({ projectId }: ProjectRolesProps) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, name, role')
+        .select('user_id, name, tenant_role')
         .eq('company_id', profile.company_id);
 
       if (error) throw error;
-      setTeamMembers(data || []);
+      setTeamMembers((data || []).map(d => ({ ...d, role: d.tenant_role })) as TeamMember[]);
     } catch (error) {
       console.error('Error fetching team members:', error);
     }
