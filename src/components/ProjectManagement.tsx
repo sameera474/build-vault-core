@@ -455,8 +455,8 @@ export function ProjectManagement() {
             </div>
           )}
           {(isSuperAdmin ||
-            profile?.role === "admin" ||
-            profile?.role === "project_manager") && (
+            profile?.tenant_role === "admin" ||
+            profile?.tenant_role === "project_manager") && (
             <Button onClick={() => navigate("/projects/new")}>
               <Plus className="h-4 w-4 mr-2" />
               New Project

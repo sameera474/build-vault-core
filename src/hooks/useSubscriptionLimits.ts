@@ -7,7 +7,7 @@ export function useSubscriptionLimits() {
 
   const canCreateReport = () => {
     // Super admins and demo users bypass all limits
-    if (profile?.is_super_admin || profile?.role === 'demo_user') {
+    if (profile?.is_super_admin || profile?.tenant_role === 'demo_user') {
       return true;
     }
 
@@ -46,7 +46,7 @@ export function useSubscriptionLimits() {
       return { isSubscribed: true, message: 'Super Admin Access' };
     }
     
-    if (profile?.role === 'demo_user') {
+    if (profile?.tenant_role === 'demo_user') {
       return { isSubscribed: true, message: 'Demo User Access' };
     }
 

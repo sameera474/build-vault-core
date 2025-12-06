@@ -160,7 +160,7 @@ export default function ConsultantDashboard() {
             <div className="text-sm">
               <span className="font-medium">Role:</span>{" "}
               <span className="text-muted-foreground capitalize">
-                {profile?.role === "consultant_engineer"
+                {profile?.tenant_role === "consultant_engineer"
                   ? "Consultant Engineer"
                   : "Consultant Technician"}
               </span>
@@ -172,7 +172,7 @@ export default function ConsultantDashboard() {
             <ul className="space-y-1 text-sm text-muted-foreground mt-4">
               <li>• View all test reports</li>
               <li>• Access analytics</li>
-              {profile?.role === "consultant_engineer" && (
+              {profile?.tenant_role === "consultant_engineer" && (
                 <li>• Provide final approval if required</li>
               )}
               <li>• No editing permissions</li>

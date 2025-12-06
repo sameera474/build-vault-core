@@ -360,7 +360,7 @@ export default function Profile() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label className="text-muted-foreground">Role</Label>
-              <p className="text-foreground font-medium">{profile?.role || 'N/A'}</p>
+              <p className="text-foreground font-medium">{profile?.tenant_role || 'N/A'}</p>
             </div>
             <div>
               <Label className="text-muted-foreground">Company ID</Label>

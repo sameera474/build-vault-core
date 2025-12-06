@@ -39,7 +39,7 @@ export default function InviteAccept() {
     try {
       const { data, error } = await supabase
         .from('team_invitations')
-        .select('email, role, company_id, expires_at, accepted_at')
+        .select('email, company_id, expires_at, accepted_at')
         .eq('invitation_token', token)
         .maybeSingle();
 

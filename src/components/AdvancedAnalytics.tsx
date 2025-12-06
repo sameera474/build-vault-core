@@ -78,7 +78,7 @@ export function AdvancedAnalytics() {
         supabase
           .from('test_reports')
           .select('*')
-          .eq('status', 'pending')
+          .eq('status', 'submitted')
           .then(res => ({ data: res.data || [], error: res.error }))
       ]);
 

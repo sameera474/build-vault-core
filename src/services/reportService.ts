@@ -51,7 +51,7 @@ class ReportService {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('company_id, role')
+      .select('company_id, tenant_role')
       .eq('user_id', user.id)
       .single();
 

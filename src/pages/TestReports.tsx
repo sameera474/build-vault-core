@@ -214,7 +214,7 @@ export default function TestReports() {
         .select("id, name, description")
         .order("name");
 
-      if (profile.role === "project_manager" && profile.company_id) {
+      if (profile.tenant_role === "project_manager" && profile.company_id) {
         // Project managers can see all projects in their company
         query = query.eq("company_id", profile.company_id);
       } else {
@@ -405,7 +405,7 @@ export default function TestReports() {
           {projects.length === 0 &&
           (permissions.canCreateReport ||
             ["super_admin", "admin", "project_manager"].includes(
-              profile?.role || ""
+              profile?.tenant_role || ""
             )) ? (
             <Button onClick={() => navigate("/projects")}>
               <FolderPlus className="h-4 w-4 mr-2" />
@@ -413,7 +413,7 @@ export default function TestReports() {
             </Button>
           ) : permissions.canCreateReport ||
             ["super_admin", "admin", "project_manager"].includes(
-              profile?.role || ""
+              profile?.tenant_role || ""
             ) ? (
             <Button 
               onClick={() => {
@@ -693,7 +693,7 @@ export default function TestReports() {
                               "super_admin",
                               "admin",
                               "project_manager",
-                            ].includes(profile?.role || "")) && (
+                            ].includes(profile?.tenant_role || "")) && (
                             <Button
                               onClick={() => setIsCreateDialogOpen(true)}
                               className="mt-4"

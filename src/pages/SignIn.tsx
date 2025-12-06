@@ -47,7 +47,7 @@ export default function SignIn() {
         const { data: profileData } = await getUserProfile(data.user.id);
         
         // Redirect based on role
-        const dashboardRoute = getRoleRedirect(profileData?.role);
+        const dashboardRoute = getRoleRedirect(profileData?.tenant_role);
         
         toast({
           title: "Welcome back!",

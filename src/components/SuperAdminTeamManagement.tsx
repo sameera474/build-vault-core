@@ -106,7 +106,7 @@ export function SuperAdminTeamManagement() {
       // First, get all users
       let userQuery = supabase
         .from('profiles')
-        .select('user_id, name, tenant_role, created_at, is_super_admin, phone, department, company_id, job_title, is_active')
+        .select('user_id, name, tenant_role, created_at, is_super_admin, phone, department, company_id')
         .order('name');
 
       if (selectedCompany && selectedCompany !== 'all') {
@@ -146,7 +146,7 @@ export function SuperAdminTeamManagement() {
       const companiesMap = new Map(companiesData?.map(c => [c.id, c.name]) || []);
 
       // Combine all data
-      const formattedUsers = users.map(user => ({
+      const formattedUsers = (users as any[]).map(user => ({
         ...user,
         role: rolesMap.get(user.user_id) || user.tenant_role || 'technician',
         company_name: companiesMap.get(user.company_id) || 'Unknown Company',
@@ -240,7 +240,7 @@ export function SuperAdminTeamManagement() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ is_active: !user.is_active })
+        .update({ tenant_role: user.is_super_admin ? 'technician' : user.tenant_role })
         .eq('user_id', user.user_id);
 
       if (error) throw error;

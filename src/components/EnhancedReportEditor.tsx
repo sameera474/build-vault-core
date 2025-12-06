@@ -324,16 +324,16 @@ export function EnhancedReportEditor() {
 
   const canEdit = () => {
     // Super admin can always edit
-    if (profile?.role === 'super_admin') return true;
+    if (profile?.is_super_admin || profile?.tenant_role === 'super_admin') return true;
     
     // For other roles, check status and permissions
     return (report?.status === 'draft' || report?.status === 'rejected') && 
-           ['admin', 'company_admin'].includes(profile?.role || '');
+           ['admin'].includes(profile?.tenant_role || '');
   };
 
   const canApprove = () => {
     return report?.status === 'submitted' && 
-           ['super_admin', 'admin', 'company_admin'].includes(profile?.role || '');
+           (profile?.is_super_admin || ['admin'].includes(profile?.tenant_role || ''));
   };
 
   if (loading) {

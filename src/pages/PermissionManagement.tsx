@@ -48,6 +48,11 @@ interface User {
   tenant_role: string | null;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 interface Permission {
   id: string;
   user_id: string;

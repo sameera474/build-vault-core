@@ -28,7 +28,7 @@ export function useTestReportPermissions(): TestReportPermissions {
   const { profile } = useAuth();
   
   return useMemo(() => {
-    const role = profile?.tenant_role ?? profile?.role ?? null;
+    const role = profile?.tenant_role ?? null;
     
     // Map RBAC permissions to test report permissions
     return {
@@ -42,13 +42,13 @@ export function useTestReportPermissions(): TestReportPermissions {
       isViewOnly: !rbacHasAnyPermission(role, ['create_reports', 'edit_own_reports', 'approve_reports']),
       role,
     };
-  }, [profile?.tenant_role, profile?.role]);
+  }, [profile?.tenant_role]);
 }
 
 // Main permissions hook using RBAC
 export function usePermissions() {
   const { profile } = useAuth();
-  const role = profile?.tenant_role ?? profile?.role ?? null;
+  const role = profile?.tenant_role ?? null;
 
   return useMemo(() => {
     const hasPermission = (permission: string): boolean => {

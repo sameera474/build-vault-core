@@ -17,8 +17,7 @@ interface Profile {
   user_id: string;
   company_id: string | null;
   name: string | null;
-  role: string;
-  tenant_role?: string | null;
+  tenant_role: string;
   created_at: string;
   company_name?: string;
   avatar_url?: string | null;
@@ -30,6 +29,7 @@ interface Profile {
   is_active?: boolean;
   is_super_admin?: boolean;
   email?: string | null;
+  updated_at?: string;
 }
 
 interface AuthContextType {

@@ -206,13 +206,13 @@ export default function SuperAdmin() {
         name: user.name || 'Unknown',
         company_id: user.company_id || '',
         company_name: user.company_id ? (companyMap.get(user.company_id) || 'Unknown Company') : 'No Company',
-        tenant_role: user.tenant_role || 'user',
+        tenant_role: user.tenant_role || 'technician',
         is_super_admin: user.is_super_admin || false,
         created_at: user.created_at,
         last_sign_in: user.created_at
       })) || [];
 
-      setUsers(formattedUsers);
+      setUsers(formattedUsers as User[]);
 
       // Update company user counts
       const userCountByCompany = formattedUsers.reduce((acc, user) => {
