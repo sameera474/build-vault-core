@@ -153,14 +153,19 @@ export function TeamManagement() {
   }, [selectedCompany]);
 
   const fetchTeamData = async () => {
-    if (!profile?.company_id) return;
+    if (!profile?.company_id && !isSuperAdmin) return;
 
     try {
-      // Fetch team members (exclude super admin from display)
-      const { data: members, error: membersError } = await supabase
+      // For super admin, fetch all users; for others, fetch only company members
+      let membersQuery = supabase
         .from('profiles')
-        .select('user_id, name, tenant_role, created_at, is_super_admin, phone, department, avatar_url, company_id')
-        .eq('company_id', profile.company_id);
+        .select('user_id, name, tenant_role, created_at, is_super_admin, phone, department, avatar_url, company_id, email');
+
+      if (!isSuperAdmin) {
+        membersQuery = membersQuery.eq('company_id', profile?.company_id);
+      }
+
+      const { data: members, error: membersError } = await membersQuery;
 
       if (membersError) throw membersError;
 
@@ -168,12 +173,17 @@ export function TeamManagement() {
       setTeamMembers((members || []) as TeamMember[]);
 
       // Fetch pending invitations
-      const { data: invites, error: invitesError } = await supabase
+      let invitesQuery = supabase
         .from('team_invitations')
         .select('id, email, created_at, expires_at, accepted_at, invitation_token')
-        .eq('company_id', profile.company_id)
         .is('accepted_at', null)
         .gt('expires_at', new Date().toISOString());
+
+      if (!isSuperAdmin) {
+        invitesQuery = invitesQuery.eq('company_id', profile?.company_id);
+      }
+
+      const { data: invites, error: invitesError } = await invitesQuery;
 
       if (invitesError) throw invitesError;
 
