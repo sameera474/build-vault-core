@@ -1307,7 +1307,7 @@ const deleteMember = async (memberId: string) => {
                       </div>
         <div className="flex items-center gap-2">
           <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-            {formatRole(invitation.role)}
+            Pending
           </Badge>
           <Button
             variant="outline"
@@ -1390,7 +1390,7 @@ const deleteMember = async (memberId: string) => {
                                 )}
                               </div>
                               <p className="text-sm text-muted-foreground">
-                                {(user as any).company_name} • {formatRole(user.tenant_role || user.role)}
+                                {(user as any).company_name} • {formatRole(user.tenant_role)}
                               </p>
                               {user.email && (
                                 <p className="text-xs text-muted-foreground truncate">
@@ -1403,8 +1403,8 @@ const deleteMember = async (memberId: string) => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge className={getRoleColor(user.tenant_role || user.role)}>
-                              {formatRole(user.tenant_role || user.role)}
+                            <Badge className={getRoleColor(user.tenant_role)}>
+                              {formatRole(user.tenant_role)}
                             </Badge>
                             {isSuperAdmin && (
                               <>

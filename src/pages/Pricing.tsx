@@ -196,7 +196,7 @@ export default function Pricing() {
                       <>
                         <div className="flex items-baseline justify-center gap-x-2">
                           <span className="text-5xl font-bold tracking-tight text-foreground">
-                            ${billingInterval === 'monthly' ? tier.price.monthly : Math.floor(tier.price.annually / 12)}
+                            ${billingInterval === 'monthly' ? tier.price.monthly : Math.floor(Number(tier.price.annually) / 12)}
                           </span>
                           <span className="text-sm font-semibold text-muted-foreground">
                             /month
