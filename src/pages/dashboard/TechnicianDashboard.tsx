@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText,
   CheckCircle,
   Clock,
   TrendingUp,
   Loader2,
+  Users,
+  Mail,
+  Building2,
 } from "lucide-react";
 import {
   PieChart,
@@ -17,6 +20,16 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserAvatar } from "@/components/UserAvatar";
+import { Badge } from "@/components/ui/badge";
+
+interface TeamMember {
+  user_id: string;
+  name: string | null;
+  email: string | null;
+  tenant_role: string;
+  avatar_url: string | null;
+}
 
 export default function TechnicianDashboard() {
   const { profile } = useAuth();
@@ -27,10 +40,11 @@ export default function TechnicianDashboard() {
     pendingTests: 0,
     totalTests: 0,
   });
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!profile?.user_id) return;
+    const fetchData = async () => {
+      if (!profile?.user_id || !profile?.company_id) return;
       setLoading(true);
 
       try {
@@ -39,20 +53,28 @@ export default function TechnicianDashboard() {
         const [
           { count: todayCount, error: todayError },
           { data: allTests, error: allTestsError },
+          { data: members },
         ] = await Promise.all([
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
-            .eq("created_by", profile.user_id)
+            .eq("company_id", profile.company_id)
             .gte("test_date", today),
           supabase
             .from("test_reports")
             .select("compliance_status, status")
-            .eq("created_by", profile.user_id),
+            .eq("company_id", profile.company_id),
+          supabase
+            .from("profiles")
+            .select("user_id, name, email, tenant_role, avatar_url")
+            .eq("company_id", profile.company_id)
+            .eq("is_super_admin", false),
         ]);
 
         if (todayError) throw todayError;
         if (allTestsError) throw allTestsError;
+
+        setTeamMembers((members || []) as TeamMember[]);
 
         const passing =
           allTests?.filter((r) => r.compliance_status === "pass").length || 0;
@@ -72,8 +94,12 @@ export default function TechnicianDashboard() {
       }
     };
 
-    fetchStats();
-  }, [profile?.user_id]);
+    fetchData();
+  }, [profile?.user_id, profile?.company_id]);
+
+  const formatRole = (role: string) => {
+    return role.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
 
   if (loading) {
     return (
@@ -151,7 +177,7 @@ export default function TechnicianDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Your Test Status Overview</CardTitle>
+          <CardTitle>Company Test Status Overview</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-80">
@@ -186,6 +212,75 @@ export default function TechnicianDashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* My Profile Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            My Profile
+          </CardTitle>
+          <CardDescription>Your account details</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <UserAvatar
+              userName={profile?.name}
+              avatarUrl={profile?.avatar_url}
+              className="h-16 w-16 text-lg"
+            />
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold">{profile?.name || "Unknown"}</h3>
+              <Badge variant="secondary">{formatRole(profile?.tenant_role || "technician")}</Badge>
+              {profile?.email && (
+                <p className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+                  <Mail className="h-3 w-3" />
+                  {profile.email}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Team Members Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Team Members
+          </CardTitle>
+          <CardDescription>
+            {teamMembers.length} team members in {profile?.company_name}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {teamMembers.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No team members found</p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {teamMembers.map((member) => (
+                <div
+                  key={member.user_id}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                >
+                  <UserAvatar
+                    userName={member.name}
+                    avatarUrl={member.avatar_url}
+                    className="h-10 w-10"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{member.name || "Unknown"}</p>
+                    <Badge variant="outline" className="text-xs">
+                      {formatRole(member.tenant_role)}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
