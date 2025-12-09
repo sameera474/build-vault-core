@@ -156,13 +156,15 @@ export function TeamManagement() {
     if (!profile?.company_id && !isSuperAdmin) return;
 
     try {
-      // For super admin, fetch all users; for others, fetch only company members
+      // For super admin, fetch all users; for others, fetch only company members (excluding super admins)
       let membersQuery = supabase
         .from('profiles')
         .select('user_id, name, tenant_role, created_at, is_super_admin, phone, department, avatar_url, company_id, email');
 
       if (!isSuperAdmin) {
-        membersQuery = membersQuery.eq('company_id', profile?.company_id);
+        membersQuery = membersQuery
+          .eq('company_id', profile?.company_id)
+          .eq('is_super_admin', false); // Hide super admins from regular company views
       }
 
       const { data: members, error: membersError } = await membersQuery;
