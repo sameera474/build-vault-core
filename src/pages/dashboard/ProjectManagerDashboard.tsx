@@ -12,6 +12,10 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  Users,
+  Mail,
+  Phone,
+  Building2,
 } from "lucide-react";
 import {
   LineChart,
@@ -24,6 +28,17 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserAvatar } from "@/components/UserAvatar";
+import { Badge } from "@/components/ui/badge";
+
+interface TeamMember {
+  user_id: string;
+  name: string | null;
+  email: string | null;
+  tenant_role: string;
+  department: string | null;
+  avatar_url: string | null;
+}
 
 export default function ProjectManagerDashboard() {
   const { profile } = useAuth();
@@ -37,10 +52,11 @@ export default function ProjectManagerDashboard() {
   const [complianceTrend, setComplianceTrend] = useState<
     { month: string; rate: number }[]
   >([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!profile?.user_id) return;
+    const fetchData = async () => {
+      if (!profile?.user_id || !profile?.company_id) return;
       setLoading(true);
 
       try {
@@ -49,6 +65,7 @@ export default function ProjectManagerDashboard() {
           { count: pendingCount },
           { count: totalReportsCount },
           { data: allReports },
+          { data: members },
         ] = await Promise.all([
           supabase
             .from("projects")
@@ -64,7 +81,15 @@ export default function ProjectManagerDashboard() {
           supabase
             .from("test_reports")
             .select("compliance_status, created_at"),
+          supabase
+            .from("profiles")
+            .select("user_id, name, email, tenant_role, department, avatar_url")
+            .eq("company_id", profile.company_id)
+            .eq("is_super_admin", false),
         ]);
+
+        // Set team members
+        setTeamMembers((members || []) as TeamMember[]);
 
         let complianceRate = 100;
         if (allReports && allReports.length > 0) {
@@ -107,14 +132,18 @@ export default function ProjectManagerDashboard() {
           complianceRate,
         });
       } catch (error) {
-        console.error("Error fetching PM stats:", error);
+        console.error("Error fetching PM data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
-  }, [profile?.user_id]);
+    fetchData();
+  }, [profile?.user_id, profile?.company_id]);
+
+  const formatRole = (role: string) => {
+    return role.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
 
   if (loading) {
     return (
@@ -228,6 +257,91 @@ export default function ProjectManagerDashboard() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* My Profile Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            My Profile
+          </CardTitle>
+          <CardDescription>Your account details</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <UserAvatar
+              userName={profile?.name}
+              avatarUrl={profile?.avatar_url}
+              className="h-16 w-16 text-lg"
+            />
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold">{profile?.name || "Unknown"}</h3>
+              <Badge variant="secondary">{formatRole(profile?.tenant_role || "project_manager")}</Badge>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+                {profile?.email && (
+                  <span className="flex items-center gap-1">
+                    <Mail className="h-3 w-3" />
+                    {profile.email}
+                  </span>
+                )}
+                {profile?.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {profile.phone}
+                  </span>
+                )}
+              </div>
+              {profile?.department && (
+                <p className="text-sm text-muted-foreground">Department: {profile.department}</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Team Management Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Team Members
+          </CardTitle>
+          <CardDescription>
+            {teamMembers.length} team members in {profile?.company_name}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {teamMembers.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No team members found</p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {teamMembers.map((member) => (
+                <div
+                  key={member.user_id}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                >
+                  <UserAvatar
+                    userName={member.name}
+                    avatarUrl={member.avatar_url}
+                    className="h-10 w-10"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{member.name || "Unknown"}</p>
+                    <Badge variant="outline" className="text-xs">
+                      {formatRole(member.tenant_role)}
+                    </Badge>
+                    {member.email && (
+                      <p className="text-xs text-muted-foreground truncate mt-1">
+                        {member.email}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
