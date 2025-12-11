@@ -721,6 +721,10 @@ export default function TestReports() {
                           }
                         }}
                         onDelete={() => handleDelete(report.id)}
+                        onSubmitForApproval={() => handleSubmitForApproval(report.id)}
+                        onApprove={() => handleApprove(report.id)}
+                        onReject={() => handleReject(report.id)}
+                        canApprove={permissions.canApproveReport}
                       />
                     ))
                   )}
