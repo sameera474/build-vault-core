@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,86 +62,106 @@ export function NewTestReportWizard({
   const [isLoadingExisting, setIsLoadingExisting] = useState(
     !!existingReportId
   );
+  
+  // Track if we've already loaded the report to prevent infinite loops
+  const hasLoadedRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  
+  // Keep onClose ref updated
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
 
-  // Load existing report data if editing
+  // Load existing report data if editing - only run once per existingReportId
   useEffect(() => {
-    if (existingReportId) {
-      const loadExistingReport = async () => {
-        setIsLoadingExisting(true);
-        try {
-          const report = await reportService.fetchReport(existingReportId);
+    // Skip if no existingReportId or already loaded for this ID
+    if (!existingReportId || hasLoadedRef.current) return;
+    
+    // Mark as loading to prevent duplicate calls
+    hasLoadedRef.current = true;
+    
+    const loadExistingReport = async () => {
+      setIsLoadingExisting(true);
+      try {
+        const report = await reportService.fetchReport(existingReportId);
 
-          // Populate wizard data from existing report
-          const loadedData: WizardData = {
-            project_id: report.project_id,
-            gps_latitude: report.gps_latitude,
-            gps_longitude: report.gps_longitude,
-            road_name: report.road_name,
-            material:
-              report.material ||
-              (report.custom_material ? "custom" : undefined),
-            custom_material: report.custom_material,
-            test_type: report.test_type,
-            doc_code: report.doc_code,
-            report_number: report.report_number,
-            chainage_from: report.chainage_from,
-            chainage_to: report.chainage_to,
-            test_date: report.test_date,
-            time_of_test: report.time_of_test,
-            side: report.side,
-            technician_name: report.technician_name,
-            technician_id: report.technician_id,
-            weather_conditions: report.weather_conditions,
-            site_conditions: report.site_conditions,
-            data_json: report.data_json || {},
-            summary_json: report.summary_json || {},
-            compliance_status: report.compliance_status,
-            notes: report.notes,
-          };
+        // Populate wizard data from existing report
+        const loadedData: WizardData = {
+          project_id: report.project_id,
+          gps_latitude: report.gps_latitude,
+          gps_longitude: report.gps_longitude,
+          road_name: report.road_name,
+          material:
+            report.material ||
+            (report.custom_material ? "custom" : undefined),
+          custom_material: report.custom_material,
+          test_type: report.test_type,
+          doc_code: report.doc_code,
+          report_number: report.report_number,
+          chainage_from: report.chainage_from,
+          chainage_to: report.chainage_to,
+          test_date: report.test_date,
+          time_of_test: report.time_of_test,
+          side: report.side,
+          technician_name: report.technician_name,
+          technician_id: report.technician_id,
+          weather_conditions: report.weather_conditions,
+          site_conditions: report.site_conditions,
+          data_json: report.data_json || {},
+          summary_json: report.summary_json || {},
+          compliance_status: report.compliance_status,
+          notes: report.notes,
+        };
 
-          setWizardData(loadedData);
+        setWizardData(loadedData);
 
-          // Determine which step to start from based on completion
-          let startStep = 1;
-          if (
-            loadedData.data_json &&
-            Object.keys(loadedData.data_json).length > 0
-          ) {
-            startStep = 3; // Has test data, start at summary
-          } else if (loadedData.test_type && loadedData.project_id) {
-            startStep = 2; // Has basic info, start at data entry
-          }
-
-          setCurrentStep(startStep);
-
-          toast({
-            title: "Draft Loaded",
-            description:
-              "Continue editing your test report from where you left off.",
-          });
-        } catch (error) {
-          console.error("Error loading existing report:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load the draft report. Please try again.",
-            variant: "destructive",
-          });
-          if (onClose) {
-            onClose();
-          } else {
-            navigate("/test-reports");
-          }
-        } finally {
-          setIsLoadingExisting(false);
+        // Determine which step to start from based on completion
+        let startStep = 1;
+        if (
+          loadedData.data_json &&
+          Object.keys(loadedData.data_json).length > 0
+        ) {
+          startStep = 3; // Has test data, start at summary
+        } else if (loadedData.test_type && loadedData.project_id) {
+          startStep = 2; // Has basic info, start at data entry
         }
-      };
 
-      loadExistingReport();
-    }
-  }, [existingReportId, navigate, onClose]);
+        setCurrentStep(startStep);
+
+        toast({
+          title: "Draft Loaded",
+          description:
+            "Continue editing your test report from where you left off.",
+        });
+      } catch (error) {
+        console.error("Error loading existing report:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load the draft report. Please try again.",
+          variant: "destructive",
+        });
+        if (onCloseRef.current) {
+          onCloseRef.current();
+        } else {
+          navigate("/test-reports");
+        }
+      } finally {
+        setIsLoadingExisting(false);
+      }
+    };
+
+    loadExistingReport();
+  }, [existingReportId, navigate]);
+  
+  // Reset the hasLoadedRef when existingReportId changes to a different value
+  useEffect(() => {
+    return () => {
+      hasLoadedRef.current = false;
+    };
+  }, [existingReportId]);
 
   // Auto-save when moving between steps
   const autoSave = async (data: WizardData) => {
