@@ -13,6 +13,9 @@ import {
   Edit,
   Trash2,
   MoreVertical,
+  Send,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 
 interface PassFailProps {
@@ -49,12 +52,20 @@ interface TestReportsListItemProps {
   r: any;
   onOpen: () => void;
   onDelete?: () => void;
+  onSubmitForApproval?: () => void;
+  onApprove?: () => void;
+  onReject?: () => void;
+  canApprove?: boolean;
 }
 
 export function TestReportsListItem({
   r,
   onOpen,
   onDelete,
+  onSubmitForApproval,
+  onApprove,
+  onReject,
+  canApprove = false,
 }: TestReportsListItemProps) {
   const getPrimaryKpi = () => {
     // First check summary_json for KPIs
@@ -140,6 +151,24 @@ export function TestReportsListItem({
                 <Edit className="h-4 w-4 mr-2" />
                 {isDraft ? "Edit Draft" : "View/Edit"}
               </DropdownMenuItem>
+              {isDraft && onSubmitForApproval && (
+                <DropdownMenuItem onClick={onSubmitForApproval} className="text-primary">
+                  <Send className="h-4 w-4 mr-2" />
+                  Submit for Approval
+                </DropdownMenuItem>
+              )}
+              {r.status === "submitted" && canApprove && onApprove && (
+                <DropdownMenuItem onClick={onApprove} className="text-green-600">
+                  <ThumbsUp className="h-4 w-4 mr-2" />
+                  Approve
+                </DropdownMenuItem>
+              )}
+              {r.status === "submitted" && canApprove && onReject && (
+                <DropdownMenuItem onClick={onReject} className="text-destructive">
+                  <ThumbsDown className="h-4 w-4 mr-2" />
+                  Reject
+                </DropdownMenuItem>
+              )}
               {onDelete && (
                 <DropdownMenuItem
                   onClick={onDelete}
