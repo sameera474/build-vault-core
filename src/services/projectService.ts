@@ -170,15 +170,24 @@ class ProjectService {
   }
 
   async createProjectRoad(roadData: { project_id: string; name: string }) {
-    const profile = await this.getProfile();
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Get company_id from the project (needed for super admins who may not have a company_id)
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('company_id')
+      .eq('id', roadData.project_id)
+      .single();
+
+    if (projectError || !project) throw new Error('Project not found');
 
     const { data, error } = await supabase
       .from('project_roads')
       .insert({
         ...roadData,
-        company_id: profile.company_id,
-        created_by: user?.id,
+        company_id: project.company_id,
+        created_by: user.id,
       })
       .select()
       .single();
