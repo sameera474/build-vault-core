@@ -15,11 +15,30 @@ serve(async (req) => {
   }
 
   try {
-    const { project_id, year, month } = await req.json();
+    const body = await req.json();
+    const { project_id, year, month, start_date, end_date, road_name, material } = body;
     
-    if (!project_id || !year || !month) {
-      throw new Error('Project ID, year, and month are required');
+    // Support both old (year/month) and new (start_date/end_date) formats
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (start_date && end_date) {
+      // New format: date range
+      startDate = new Date(start_date);
+      endDate = new Date(end_date);
+    } else if (year && month) {
+      // Legacy format: year and month
+      startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      endDate = new Date(parseInt(year), parseInt(month), 0);
+    } else {
+      throw new Error('Either (start_date and end_date) or (year and month) are required');
     }
+    
+    if (!project_id) {
+      throw new Error('Project ID is required');
+    }
+
+    console.log('Generating PDF for project:', project_id, 'from', startDate, 'to', endDate);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -37,18 +56,26 @@ serve(async (req) => {
       throw new Error('Project not found');
     }
 
-    // Calculate date range
-    const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-    const endDate = new Date(parseInt(year), parseInt(month), 0);
-
-    // Fetch all reports for the month
-    const { data: reports, error: reportsError } = await supabase
+    // Build query for reports
+    let query = supabase
       .from('test_reports')
-      .select('id, status, test_type, test_date, report_number, compliance_status, technician_name')
+      .select('id, status, test_type, test_date, report_number, compliance_status, technician_name, road_name, material')
       .eq('project_id', project_id)
       .gte('test_date', startDate.toISOString().split('T')[0])
       .lte('test_date', endDate.toISOString().split('T')[0])
       .order('test_date', { ascending: true });
+
+    // Filter by road name if specified
+    if (road_name && road_name !== 'all') {
+      query = query.eq('road_name', road_name);
+    }
+
+    // Filter by material if specified
+    if (material && material !== 'all') {
+      query = query.eq('material', material);
+    }
+
+    const { data: reports, error: reportsError } = await query;
 
     if (reportsError) {
       throw reportsError;
@@ -78,12 +105,13 @@ serve(async (req) => {
     
     // Header
     doc.setFontSize(20);
-    doc.text('MONTHLY SUMMARY REPORT', 105, 20, { align: 'center' });
+    doc.text('SUMMARY REPORT', 105, 20, { align: 'center' });
     
     doc.setFontSize(12);
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                       'July', 'August', 'September', 'October', 'November', 'December'];
-    doc.text(`${monthNames[parseInt(month) - 1]} ${year}`, 105, 30, { align: 'center' });
+    // Format date range for display
+    const formatDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const dateRangeText = `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    doc.text(dateRangeText, 105, 30, { align: 'center' });
     
     // Project Information
     let yPos = 50;
