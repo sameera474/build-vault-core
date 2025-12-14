@@ -85,7 +85,7 @@ const getNavigationGroups = (isSuperAdmin: boolean, tenantRole: string): Navigat
     items: [
       { title: "Projects", url: "/projects", icon: Building2, roles: ['project_manager', 'quality_manager', 'admin'] },
       { title: "Documents", url: "/documents", icon: FolderOpen, roles: ['project_manager', 'quality_manager', 'admin'] },
-      { title: "Laboratory Inventory", url: "/laboratory-inventory", icon: Package, roles: ['admin'] },
+      { title: "Laboratory Inventory", url: "/laboratory-inventory", icon: Package, roles: ['admin', 'project_manager', 'quality_manager', 'technician'] },
     ]
   });
 
