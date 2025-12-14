@@ -70,17 +70,21 @@ export default function ProjectManagerDashboard() {
           supabase
             .from("projects")
             .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id)
             .eq("status", "active"),
           supabase
             .from("test_reports")
             .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id)
             .eq("status", "submitted"),
           supabase
             .from("test_reports")
-            .select("*", { count: "exact", head: true }),
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", profile.company_id),
           supabase
             .from("test_reports")
-            .select("compliance_status, created_at"),
+            .select("compliance_status, created_at")
+            .eq("company_id", profile.company_id),
           supabase
             .from("profiles")
             .select("user_id, name, email, tenant_role, department, avatar_url")
