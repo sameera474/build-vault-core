@@ -126,9 +126,25 @@ class ProjectService {
     const profile = await this.getProfile();
     const isSuper = (profile as any)?.is_super_admin;
 
+    // Normalize date fields so empty strings are sent as null (valid for Postgres date columns)
+    const sanitizeDates = (values: Partial<Project>): Partial<Project> => {
+      const sanitized: any = { ...values };
+      const dateFields: (keyof Project)[] = ['start_date', 'end_date'];
+
+      for (const field of dateFields) {
+        const value = sanitized[field];
+        if (typeof value === 'string' && value.trim() === '') {
+          sanitized[field] = null;
+        }
+      }
+
+      return sanitized as Partial<Project>;
+    };
+
     if (isSuper) {
       const { data: { session } } = await supabase.auth.getSession();
-      const payload = { id, ...updates } as any;
+      const sanitizedUpdates = sanitizeDates(updates);
+      const payload = { id, ...sanitizedUpdates } as any;
       const { data, error } = await supabase.functions.invoke('admin-update-project', {
         body: payload,
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -137,7 +153,8 @@ class ProjectService {
       if (!data?.success) throw new Error(data?.error || 'Failed to update project');
       return data.project as Project;
     } else {
-      const updatesSanitized = { ...updates, company_id: profile.company_id } as any;
+      const baseUpdates = sanitizeDates(updates);
+      const updatesSanitized = { ...baseUpdates, company_id: profile.company_id } as any;
       const { data, error } = await supabase
         .from('projects')
         .update(updatesSanitized)
