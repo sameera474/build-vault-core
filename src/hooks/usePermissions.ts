@@ -49,17 +49,22 @@ export function useTestReportPermissions(): TestReportPermissions {
 export function usePermissions() {
   const { profile } = useAuth();
   const role = profile?.tenant_role ?? null;
+  const isSuperAdminFlag = profile?.is_super_admin ?? false;
 
   return useMemo(() => {
     const hasPermission = (permission: string): boolean => {
+      // Super admins have all permissions
+      if (isSuperAdminFlag) return true;
       return rbacHasPermission(role, permission as Permission);
     };
 
     const hasAnyPermission = (permissionList: string[]): boolean => {
+      if (isSuperAdminFlag) return true;
       return rbacHasAnyPermission(role, permissionList as Permission[]);
     };
 
     const hasAllPermissions = (permissionList: string[]): boolean => {
+      if (isSuperAdminFlag) return true;
       return rbacHasAllPermissions(role, permissionList as Permission[]);
     };
 
@@ -68,9 +73,9 @@ export function usePermissions() {
       hasAnyPermission,
       hasAllPermissions,
       loading: false, // No longer async since we're using in-memory maps
-      isAdmin: role === 'admin' || role === 'super_admin',
-      isSuperAdmin: role === 'super_admin',
+      isAdmin: isSuperAdminFlag || role === 'admin' || role === 'super_admin',
+      isSuperAdmin: isSuperAdminFlag || role === 'super_admin',
       userRole: role || '',
     };
-  }, [role]);
+  }, [role, isSuperAdminFlag]);
 }
