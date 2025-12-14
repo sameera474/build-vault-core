@@ -28,6 +28,7 @@ interface SampleData {
 interface ClaySiltDustFractionTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function ClaySiltDustFractionTest({

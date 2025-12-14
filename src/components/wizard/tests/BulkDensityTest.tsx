@@ -25,6 +25,7 @@ interface SampleData {
 interface BulkDensityTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {

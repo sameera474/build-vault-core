@@ -27,6 +27,7 @@ interface SpecimenData {
 interface ConcreteCompressionTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function ConcreteCompressionTest({
@@ -356,34 +357,34 @@ export function ConcreteCompressionTest({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Specimen
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Dimensions (mm)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Volume (cm³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Area (cm²)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Density (g/cm³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Machine Reading (KN)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Max Load (KN)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Compressive Strength (N/mm²)
                   </th>
                 </tr>
@@ -391,10 +392,10 @@ export function ConcreteCompressionTest({
               <tbody>
                 {day7Specimens.map((specimen, index) => (
                   <tr key={specimen.id}>
-                    <td className="border border-gray-300 p-2 font-medium">
+                    <td className="border border-border p-2 font-medium text-foreground">
                       {specimen.id}
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <Input
                         value={specimen.weight}
                         onChange={(e) =>
@@ -404,7 +405,7 @@ export function ConcreteCompressionTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <div className="flex gap-1">
                         <Input
                           value={specimen.length}
@@ -434,7 +435,7 @@ export function ConcreteCompressionTest({
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       {specimen.length && specimen.breadth && specimen.height
                         ? (
                             (parseFloat(specimen.length) *
@@ -444,8 +445,8 @@ export function ConcreteCompressionTest({
                           ).toFixed(0)
                         : "3375"}
                     </td>
-                    <td className="border border-gray-300 p-2">225</td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">225</td>
+                    <td className="border border-border p-2 text-foreground">
                       {specimen.weight &&
                       specimen.length &&
                       specimen.breadth &&
@@ -458,7 +459,7 @@ export function ConcreteCompressionTest({
                           ).toFixed(3)
                         : ""}
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <Input
                         value={specimen.machineReading}
                         onChange={(e) =>
@@ -472,7 +473,7 @@ export function ConcreteCompressionTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <Input
                         value={specimen.maxLoad}
                         onChange={(e) =>
@@ -482,21 +483,21 @@ export function ConcreteCompressionTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <Input
                         value={specimen.compressiveStrength}
                         readOnly
                         placeholder="26.9"
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-gray-50 font-medium">
-                  <td className="border border-gray-300 p-2" colSpan={8}>
+                <tr className="bg-muted font-medium">
+                  <td className="border border-border p-2 text-foreground" colSpan={8}>
                     Average Compressive Strength (7 days)
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-border p-2 text-foreground">
                     {calculateAverage("compressiveStrength", day7Specimens)}
                   </td>
                 </tr>
@@ -513,34 +514,34 @@ export function ConcreteCompressionTest({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Specimen
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Dimensions (mm)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Volume (cm³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Area (cm²)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Density (g/cm³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Machine Reading (KN)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Max Load (KN)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Compressive Strength (N/mm²)
                   </th>
                 </tr>
@@ -548,10 +549,10 @@ export function ConcreteCompressionTest({
               <tbody>
                 {day28Specimens.map((specimen, index) => (
                   <tr key={specimen.id}>
-                    <td className="border border-gray-300 p-2 font-medium">
+                    <td className="border border-border p-2 font-medium text-foreground">
                       {specimen.id}
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <Input
                         value={specimen.weight}
                         onChange={(e) =>
@@ -561,7 +562,7 @@ export function ConcreteCompressionTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <div className="flex gap-1">
                         <Input
                           value={specimen.length}
@@ -591,7 +592,7 @@ export function ConcreteCompressionTest({
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       {specimen.length && specimen.breadth && specimen.height
                         ? (
                             (parseFloat(specimen.length) *
@@ -601,8 +602,8 @@ export function ConcreteCompressionTest({
                           ).toFixed(0)
                         : "3375"}
                     </td>
-                    <td className="border border-gray-300 p-2">225</td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">225</td>
+                    <td className="border border-border p-2 text-foreground">
                       {specimen.weight &&
                       specimen.length &&
                       specimen.breadth &&
@@ -615,7 +616,7 @@ export function ConcreteCompressionTest({
                           ).toFixed(3)
                         : ""}
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <Input
                         value={specimen.machineReading}
                         onChange={(e) =>
@@ -629,7 +630,7 @@ export function ConcreteCompressionTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <Input
                         value={specimen.maxLoad}
                         onChange={(e) =>
@@ -639,21 +640,21 @@ export function ConcreteCompressionTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       <Input
                         value={specimen.compressiveStrength}
                         readOnly
                         placeholder="24.7"
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-gray-50 font-medium">
-                  <td className="border border-gray-300 p-2" colSpan={8}>
+                <tr className="bg-muted font-medium">
+                  <td className="border border-border p-2 text-foreground" colSpan={8}>
                     Average Compressive Strength (28 days)
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-border p-2 text-foreground">
                     {calculateAverage("compressiveStrength", day28Specimens)}
                   </td>
                 </tr>

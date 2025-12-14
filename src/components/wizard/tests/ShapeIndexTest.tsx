@@ -26,6 +26,7 @@ interface SampleData {
 interface ShapeIndexTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function ShapeIndexTest({ data, onUpdate }: ShapeIndexTestProps) {

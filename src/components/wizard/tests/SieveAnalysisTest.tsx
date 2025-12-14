@@ -25,6 +25,7 @@ interface SieveData {
 interface SieveAnalysisTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function SieveAnalysisTest({ data, onUpdate }: SieveAnalysisTestProps) {

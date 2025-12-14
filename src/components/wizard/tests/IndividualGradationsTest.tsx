@@ -24,6 +24,7 @@ interface FractionData {
 interface IndividualGradationsTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function IndividualGradationsTest({

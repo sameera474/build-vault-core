@@ -23,6 +23,7 @@ interface SampleData {
 interface AggregateCrushingValueTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function AggregateCrushingValueTest({

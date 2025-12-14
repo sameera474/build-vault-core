@@ -14,6 +14,7 @@ import {
 interface LosAngelesAbrasionTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function LosAngelesAbrasionTest({

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 interface AggregateImpactValueTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function AggregateImpactValueTest({ data, onUpdate }: AggregateImpactValueTestProps) {
