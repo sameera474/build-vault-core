@@ -49,7 +49,6 @@ import {
 import { cn } from "@/lib/utils";
 import TestTypeSummaryTable, { type TestReport } from "@/components/monthly-summary/TestTypeSummaryTable";
 import SummaryHeader from "@/components/monthly-summary/SummaryHeader";
-import SummarySignatureBlock from "@/components/monthly-summary/SummarySignatureBlock";
 import { exportToExcel } from "@/components/monthly-summary/exportToExcel";
 
 interface Project {
@@ -670,7 +669,6 @@ export default function MonthlySummaries() {
                         reports={reports}
                         projectName={currentProject?.name}
                       />
-                      <SummarySignatureBlock />
                     </CardContent>
                   </Card>
                 ))
@@ -710,7 +708,6 @@ export default function MonthlySummaries() {
                   reports={reports}
                   projectName={currentProject?.name}
                 />
-                <SummarySignatureBlock />
               </div>
             ))}
           </div>
