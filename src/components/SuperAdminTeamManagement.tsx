@@ -145,12 +145,14 @@ export function SuperAdminTeamManagement() {
 
       const companiesMap = new Map(companiesData?.map(c => [c.id, c.name]) || []);
 
-      // Combine all data
-      const formattedUsers = (users as any[]).map(user => ({
-        ...user,
-        role: rolesMap.get(user.user_id) || user.tenant_role || 'technician',
-        company_name: companiesMap.get(user.company_id) || 'Unknown Company',
-      }));
+      // Combine all data and filter out super admins (they don't belong to any company)
+      const formattedUsers = (users as any[])
+        .filter(user => !user.is_super_admin) // Exclude super admins from company list
+        .map(user => ({
+          ...user,
+          role: rolesMap.get(user.user_id) || user.tenant_role || 'technician',
+          company_name: companiesMap.get(user.company_id) || 'Unknown Company',
+        }));
 
       setCompanyUsers(formattedUsers);
     } catch (error) {
