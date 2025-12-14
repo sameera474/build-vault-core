@@ -50,6 +50,7 @@ export function SuperAdminTeamManagement() {
   const [selectedCompany, setSelectedCompany] = useState('all');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
+  const [superAdmins, setSuperAdmins] = useState<CompanyUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<CompanyUser | null>(null);
@@ -145,16 +146,19 @@ export function SuperAdminTeamManagement() {
 
       const companiesMap = new Map(companiesData?.map(c => [c.id, c.name]) || []);
 
-      // Combine all data and filter out super admins (they don't belong to any company)
-      const formattedUsers = (users as any[])
-        .filter(user => !user.is_super_admin) // Exclude super admins from company list
-        .map(user => ({
-          ...user,
-          role: rolesMap.get(user.user_id) || user.tenant_role || 'technician',
-          company_name: companiesMap.get(user.company_id) || 'Unknown Company',
-        }));
+      // Separate super admins from regular users
+      const allFormattedUsers = (users as any[]).map(user => ({
+        ...user,
+        role: rolesMap.get(user.user_id) || user.tenant_role || 'technician',
+        company_name: companiesMap.get(user.company_id) || 'Unknown Company',
+      }));
 
-      setCompanyUsers(formattedUsers);
+      // Filter super admins into separate list
+      const superAdminUsers = allFormattedUsers.filter(user => user.is_super_admin);
+      const regularUsers = allFormattedUsers.filter(user => !user.is_super_admin);
+
+      setSuperAdmins(superAdminUsers);
+      setCompanyUsers(regularUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       setError('An unexpected error occurred. Please try again.');
@@ -392,7 +396,71 @@ export function SuperAdminTeamManagement() {
             <p className="text-sm text-muted-foreground">Loading users...</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Super Admins Section */}
+            {superAdmins.length > 0 && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Super Admins</CardTitle>
+                    <Badge variant="secondary" className="ml-auto">
+                      {superAdmins.length}
+                    </Badge>
+                  </div>
+                  <CardDescription>
+                    Website owners - Cannot be deleted
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {superAdmins.map((user) => (
+                    <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg bg-background hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Shield className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium truncate">{user.name || 'Unknown User'}</p>
+                            <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
+                              Super Admin
+                            </Badge>
+                          </div>
+                          {user.department && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              Dept: {user.department}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Joined {new Date(user.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(user);
+                          }}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={true}
+                          title="Super admin accounts cannot be deleted"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Company Users Section */}
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium">
                 {companyGroups.length} {companyGroups.length === 1 ? 'Company' : 'Companies'} • {companyUsers.length} Total Users
