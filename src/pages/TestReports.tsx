@@ -268,7 +268,7 @@ export default function TestReports() {
         .from("test_reports")
         .update({
           status: "approved",
-          compliance_status: "approved",
+          compliance_status: "pass",
           approved_by: user?.id,
           approved_at: new Date().toISOString(),
         })
