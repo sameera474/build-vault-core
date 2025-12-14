@@ -63,6 +63,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchAndSetProfile = async (userId: string) => {
+    try {
+      const { data: profileData } = await getUserProfile(userId);
+
+      if (!profileData) {
+        setProfile(null);
+        return;
+      }
+
+      if (profileData.company_id && !profileData.is_super_admin) {
+        const { data: companyData } = await supabase
+          .from('companies')
+          .select('name')
+          .eq('id', profileData.company_id)
+          .single();
+
+        if (companyData) {
+          setProfile({ ...profileData, company_name: companyData.name } as typeof profileData & { company_name: string });
+          return;
+        }
+      }
+
+      setProfile(profileData);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      setProfile(null);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (!user) return;
+    await fetchAndSetProfile(user.id);
+  };
+
   useEffect(() => {
     let mounted = true;
 
