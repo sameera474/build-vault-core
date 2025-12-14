@@ -1201,17 +1201,18 @@ const deleteMember = async (memberId: string) => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  const isSuperAdminTarget = member.is_super_admin;
-                                  const confirmMsg = isSuperAdminTarget 
-                                    ? `⚠️ WARNING: You are about to delete a SUPER ADMIN account (${member.name})!\n\nThis is a critical action. Are you absolutely sure?`
-                                    : `Are you sure you want to delete ${member.name}?`;
-                                  
-                                  if (confirm(confirmMsg)) {
+                                  if (confirm(`Are you sure you want to delete ${member.name}?`)) {
                                     deleteMember(member.user_id);
                                   }
                                 }}
-                                disabled={member.user_id === profile?.user_id}
-                                title={member.user_id === profile?.user_id ? "You cannot delete yourself" : "Delete member"}
+                                disabled={member.user_id === profile?.user_id || member.is_super_admin}
+                                title={
+                                  member.is_super_admin 
+                                    ? "Super admin accounts cannot be deleted" 
+                                    : member.user_id === profile?.user_id 
+                                      ? "You cannot delete yourself" 
+                                      : "Delete member"
+                                }
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1431,17 +1432,18 @@ const deleteMember = async (memberId: string) => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    const isSuperAdminTarget = user.is_super_admin;
-                                    const confirmMsg = isSuperAdminTarget 
-                                      ? `⚠️ WARNING: You are about to delete a SUPER ADMIN account (${user.name})!\n\nThis is a critical action. Are you absolutely sure?`
-                                      : `Are you sure you want to delete ${user.name}?`;
-                                    
-                                    if (confirm(confirmMsg)) {
+                                    if (confirm(`Are you sure you want to delete ${user.name}?`)) {
                                       deleteMember(user.user_id);
                                     }
                                   }}
-                                  disabled={user.user_id === profile?.user_id}
-                                  title={user.user_id === profile?.user_id ? "You cannot delete yourself" : "Delete member"}
+                                  disabled={user.user_id === profile?.user_id || user.is_super_admin}
+                                  title={
+                                    user.is_super_admin 
+                                      ? "Super admin accounts cannot be deleted" 
+                                      : user.user_id === profile?.user_id 
+                                        ? "You cannot delete yourself" 
+                                        : "Delete member"
+                                  }
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
