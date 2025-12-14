@@ -40,6 +40,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -174,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signOut: handleSignOut,
     refreshSubscription,
+    refreshProfile,
   };
 
   return (
