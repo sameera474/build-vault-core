@@ -42,8 +42,10 @@ const ROLE_COLORS: Record<string, string> = {
   quality_manager: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   material_engineer: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   technician: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  supervisor: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
   consultant_engineer: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
   consultant_technician: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+  client_admin: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
 };
 
 export function SuperAdminTeamManagement() {
@@ -664,37 +666,19 @@ export function SuperAdminTeamManagement() {
               </div>
               <div>
                 <Label htmlFor="tenant_role">Designation</Label>
-                <Select value={editForm.tenant_role} onValueChange={(value) => setEditForm({ ...editForm, tenant_role: value })}>
+                <Select value={editForm.tenant_role} onValueChange={(value) => setEditForm({ ...editForm, tenant_role: value, role: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select designation" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="technician">Technician</SelectItem>
-                    <SelectItem value="project_manager">Project Manager</SelectItem>
-                    <SelectItem value="quality_manager">Quality Manager</SelectItem>
-                    <SelectItem value="supervisor">Supervisor</SelectItem>
-                    <SelectItem value="material_engineer">Material Engineer</SelectItem>
-                    <SelectItem value="consultant_engineer">Consultant Engineer</SelectItem>
-                    <SelectItem value="consultant_technician">Consultant Technician</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="role">App Role (RBAC)</Label>
-                <Select value={editForm.role} onValueChange={(value) => setEditForm({ ...editForm, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="super_admin">Super Admin</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="client_admin">Client Admin</SelectItem>
                     <SelectItem value="project_manager">Project Manager</SelectItem>
                     <SelectItem value="quality_manager">Quality Manager</SelectItem>
                     <SelectItem value="supervisor">Supervisor</SelectItem>
+                    <SelectItem value="technician">Technician</SelectItem>
                     <SelectItem value="consultant_engineer">Consultant Engineer</SelectItem>
                     <SelectItem value="consultant_technician">Consultant Technician</SelectItem>
-                    <SelectItem value="technician">Technician</SelectItem>
+                    <SelectItem value="client_admin">Client Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
