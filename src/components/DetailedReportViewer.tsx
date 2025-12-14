@@ -49,13 +49,51 @@ export function DetailedReportViewer({ report, project, company }: DetailedRepor
     });
   };
 
+  // Helper function to format values properly for display
+  const formatValue = (value: any): string => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'number') return value.toFixed(2);
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'string') return value || '-';
+    if (Array.isArray(value)) {
+      // If array of primitives, join them
+      if (value.every(v => typeof v !== 'object')) {
+        return value.join(', ');
+      }
+      // For array of objects, return count
+      return `${value.length} items`;
+    }
+    if (typeof value === 'object') {
+      // Try to extract meaningful data from nested objects
+      const keys = Object.keys(value);
+      if (keys.length === 0) return '-';
+      // Show key-value pairs for small objects
+      if (keys.length <= 3) {
+        return keys.map(k => `${k}: ${formatValue(value[k])}`).join(', ');
+      }
+      return `${keys.length} fields`;
+    }
+    return String(value);
+  };
+
+  // Format key names for display
+  const formatKeyName = (key: string): string => {
+    return key
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   const renderDataTable = (data: any) => {
     if (!data || typeof data !== 'object') return null;
     
+    // Handle arrays - render as table
     if (Array.isArray(data)) {
       if (data.length === 0) return <p className="text-muted-foreground">No data available</p>;
       
-      const headers = Object.keys(data[0] || {});
+      // Get all unique headers from all rows
+      const headers = [...new Set(data.flatMap(row => Object.keys(row || {})))];
+      
       return (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-border rounded-lg">
@@ -63,7 +101,7 @@ export function DetailedReportViewer({ report, project, company }: DetailedRepor
               <tr>
                 {headers.map((header) => (
                   <th key={header} className="px-3 py-2 text-left text-sm font-medium border-b border-border">
-                    {header}
+                    {formatKeyName(header)}
                   </th>
                 ))}
               </tr>
@@ -73,7 +111,7 @@ export function DetailedReportViewer({ report, project, company }: DetailedRepor
                 <tr key={index} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
                   {headers.map((header) => (
                     <td key={header} className="px-3 py-2 text-sm border-b border-border">
-                      {row[header] || '-'}
+                      {formatValue(row?.[header])}
                     </td>
                   ))}
                 </tr>
@@ -84,14 +122,47 @@ export function DetailedReportViewer({ report, project, company }: DetailedRepor
       );
     }
     
+    // Handle objects - render as key-value pairs
+    // Skip the 'kpis' key as it's rendered separately
+    const entries = Object.entries(data).filter(([key]) => key !== 'kpis');
+    
+    if (entries.length === 0) return <p className="text-muted-foreground">No data available</p>;
+    
     return (
       <div className="grid gap-2">
-        {Object.entries(data).map(([key, value]) => (
-          <div key={key} className="flex justify-between items-center p-2 bg-muted/20 rounded">
-            <span className="font-medium">{key}:</span>
-            <span>{String(value)}</span>
-          </div>
-        ))}
+        {entries.map(([key, value]) => {
+          // If value is an array, render it specially
+          if (Array.isArray(value) && value.length > 0) {
+            return (
+              <div key={key} className="space-y-2">
+                <div className="font-medium text-sm">{formatKeyName(key)}:</div>
+                {renderDataTable(value)}
+              </div>
+            );
+          }
+          
+          // If value is a complex object, render it recursively
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            const objEntries = Object.entries(value);
+            if (objEntries.length > 3) {
+              return (
+                <div key={key} className="space-y-2">
+                  <div className="font-medium text-sm">{formatKeyName(key)}:</div>
+                  <div className="pl-4 border-l-2 border-muted">
+                    {renderDataTable(value)}
+                  </div>
+                </div>
+              );
+            }
+          }
+          
+          return (
+            <div key={key} className="flex justify-between items-center p-2 bg-muted/20 rounded">
+              <span className="font-medium text-sm">{formatKeyName(key)}:</span>
+              <span className="text-right">{formatValue(value)}</span>
+            </div>
+          );
+        })}
       </div>
     );
   };
