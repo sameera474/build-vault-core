@@ -14,6 +14,7 @@ interface SummaryHeaderProps {
   dateRange?: { from: Date; to: Date };
   clientLogo?: string;
   contractorLogo?: string;
+  consultantLogo?: string;
 }
 
 export default function SummaryHeader({
@@ -29,6 +30,7 @@ export default function SummaryHeader({
   dateRange,
   clientLogo,
   contractorLogo,
+  consultantLogo,
 }: SummaryHeaderProps) {
   const getMonthName = (m: string) => {
     const months = [
@@ -48,12 +50,12 @@ export default function SummaryHeader({
     <div className="bg-muted/30 border rounded-lg p-6 mb-6 print:bg-white">
       {/* Header with logos */}
       <div className="flex justify-between items-start mb-4">
-        {/* Client logo placeholder */}
-        <div className="w-24 h-16 border border-dashed rounded flex items-center justify-center text-xs text-muted-foreground">
+        {/* Client logo */}
+        <div className="w-24 h-16 border border-dashed rounded flex items-center justify-center text-xs text-muted-foreground bg-background overflow-hidden">
           {clientLogo ? (
             <img src={clientLogo} alt="Client Logo" className="max-h-full max-w-full object-contain" />
           ) : (
-            "Client Logo"
+            <span className="text-center px-1">Client Logo</span>
           )}
         </div>
 
@@ -68,12 +70,12 @@ export default function SummaryHeader({
           )}
         </div>
 
-        {/* Contractor logo placeholder */}
-        <div className="w-24 h-16 border border-dashed rounded flex items-center justify-center text-xs text-muted-foreground">
+        {/* Contractor logo */}
+        <div className="w-24 h-16 border border-dashed rounded flex items-center justify-center text-xs text-muted-foreground bg-background overflow-hidden">
           {contractorLogo ? (
             <img src={contractorLogo} alt="Contractor Logo" className="max-h-full max-w-full object-contain" />
           ) : (
-            "Contractor Logo"
+            <span className="text-center px-1">Contractor Logo</span>
           )}
         </div>
       </div>
@@ -85,8 +87,11 @@ export default function SummaryHeader({
           <p className="font-medium">{clientName || "-"}</p>
         </div>
         <div className="text-center">
-          <span className="text-muted-foreground">ENGINEER:</span>
+          <span className="text-muted-foreground">ENGINEER/CONSULTANT:</span>
           <p className="font-medium">{consultantName || "-"}</p>
+          {consultantLogo && (
+            <img src={consultantLogo} alt="Consultant Logo" className="h-8 mx-auto mt-1 object-contain" />
+          )}
         </div>
         <div className="text-right">
           <span className="text-muted-foreground">CONTRACTOR:</span>
