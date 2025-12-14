@@ -24,7 +24,6 @@ interface CompanyUser {
   email?: string;
   phone?: string;
   department?: string;
-  job_title?: string;
   is_active?: boolean;
   company_id: string;
   company_name?: string;
@@ -63,7 +62,6 @@ export function SuperAdminTeamManagement() {
     role: '',
     tenant_role: '',
     department: '',
-    job_title: '',
     company_id: '',
   });
   const { profile } = useAuth();
@@ -186,7 +184,6 @@ export function SuperAdminTeamManagement() {
       role: user.role || '',
       tenant_role: user.tenant_role || '',
       department: user.department || '',
-      job_title: user.job_title || '',
       company_id: user.company_id || '',
     });
   };
@@ -200,7 +197,6 @@ export function SuperAdminTeamManagement() {
         .update({
           name: editForm.name,
           department: editForm.department,
-          job_title: editForm.job_title,
           company_id: editForm.company_id,
           tenant_role: editForm.tenant_role as any,
         })
@@ -539,11 +535,6 @@ export function SuperAdminTeamManagement() {
                                     <p className="text-sm text-muted-foreground">
                                       {formatRole(user.tenant_role || user.role)}
                                     </p>
-                                    {user.job_title && (
-                                      <p className="text-xs text-muted-foreground truncate">
-                                        {user.job_title}
-                                      </p>
-                                    )}
                                     {user.department && (
                                       <p className="text-xs text-muted-foreground truncate">
                                         Dept: {user.department}
@@ -631,14 +622,6 @@ export function SuperAdminTeamManagement() {
                   id="name"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="job_title">Job Title</Label>
-                <Input
-                  id="job_title"
-                  value={editForm.job_title}
-                  onChange={(e) => setEditForm({ ...editForm, job_title: e.target.value })}
                 />
               </div>
               <div>
