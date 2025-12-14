@@ -15,6 +15,7 @@ interface SummaryHeaderProps {
   clientLogo?: string;
   contractorLogo?: string;
   consultantLogo?: string;
+  showDescriptionSection?: boolean;
 }
 
 export default function SummaryHeader({
@@ -31,6 +32,7 @@ export default function SummaryHeader({
   clientLogo,
   contractorLogo,
   consultantLogo,
+  showDescriptionSection = true,
 }: SummaryHeaderProps) {
   const getMonthName = (m: string) => {
     const months = [
@@ -80,24 +82,26 @@ export default function SummaryHeader({
         </div>
       </div>
 
-      {/* Info grid */}
-      <div className="grid grid-cols-3 gap-4 text-sm border-t pt-4">
-        <div>
-          <span className="text-muted-foreground">CLIENT:</span>
-          <p className="font-medium">{clientName || "-"}</p>
+      {/* Info grid - conditionally rendered */}
+      {showDescriptionSection && (
+        <div className="grid grid-cols-3 gap-4 text-sm border-t pt-4">
+          <div>
+            <span className="text-muted-foreground">CLIENT:</span>
+            <p className="font-medium">{clientName || "-"}</p>
+          </div>
+          <div className="text-center">
+            <span className="text-muted-foreground">ENGINEER/CONSULTANT:</span>
+            <p className="font-medium">{consultantName || "-"}</p>
+            {consultantLogo && (
+              <img src={consultantLogo} alt="Consultant Logo" className="h-8 mx-auto mt-1 object-contain" />
+            )}
+          </div>
+          <div className="text-right">
+            <span className="text-muted-foreground">CONTRACTOR:</span>
+            <p className="font-medium">{contractorName || "-"}</p>
+          </div>
         </div>
-        <div className="text-center">
-          <span className="text-muted-foreground">ENGINEER/CONSULTANT:</span>
-          <p className="font-medium">{consultantName || "-"}</p>
-          {consultantLogo && (
-            <img src={consultantLogo} alt="Consultant Logo" className="h-8 mx-auto mt-1 object-contain" />
-          )}
-        </div>
-        <div className="text-right">
-          <span className="text-muted-foreground">CONTRACTOR:</span>
-          <p className="font-medium">{contractorName || "-"}</p>
-        </div>
-      </div>
+      )}
 
       {/* Summary title */}
       <div className="mt-4 pt-4 border-t">

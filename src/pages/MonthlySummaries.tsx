@@ -36,6 +36,7 @@ import {
   Eye,
   Printer,
   Loader2,
+  Settings2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -50,6 +51,8 @@ import { cn } from "@/lib/utils";
 import TestTypeSummaryTable, { type TestReport } from "@/components/monthly-summary/TestTypeSummaryTable";
 import SummaryHeader from "@/components/monthly-summary/SummaryHeader";
 import { exportToExcel } from "@/components/monthly-summary/exportToExcel";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Project {
   id: string;
@@ -95,6 +98,7 @@ export default function MonthlySummaries() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingExcel, setGeneratingExcel] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [showDescriptionSection, setShowDescriptionSection] = useState(true);
 
   const materialOptions = [
     "all",
@@ -542,7 +546,7 @@ export default function MonthlySummaries() {
 
           {/* Tabs for Overview and Detailed Preview */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="print:hidden">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <TabsList>
                 <TabsTrigger value="overview" className="gap-2">
                   <BarChart3 className="h-4 w-4" />
@@ -554,7 +558,17 @@ export default function MonthlySummaries() {
                 </TabsTrigger>
               </TabsList>
               
-              <div className="flex gap-2">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="show-description"
+                    checked={showDescriptionSection}
+                    onCheckedChange={setShowDescriptionSection}
+                  />
+                  <Label htmlFor="show-description" className="text-sm cursor-pointer">
+                    Show Description Section
+                  </Label>
+                </div>
                 <Button
                   onClick={generateExcelSummary}
                   disabled={generatingExcel}
@@ -658,6 +672,7 @@ export default function MonthlySummaries() {
                   clientLogo={currentProject.client_logo}
                   contractorLogo={currentProject.contractor_logo}
                   consultantLogo={currentProject.consultant_logo}
+                  showDescriptionSection={showDescriptionSection}
                 />
               )}
 
@@ -703,6 +718,7 @@ export default function MonthlySummaries() {
                 clientLogo={currentProject.client_logo}
                 contractorLogo={currentProject.contractor_logo}
                 consultantLogo={currentProject.consultant_logo}
+                showDescriptionSection={showDescriptionSection}
               />
             )}
             
