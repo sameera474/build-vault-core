@@ -287,7 +287,15 @@ export default function MonthlySummaries() {
       if (error) throw error;
 
       if (data?.url) {
-        window.open(data.url, "_blank");
+        // Use download link approach to avoid popup blockers
+        const link = document.createElement("a");
+        link.href = data.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.download = `monthly-summary-${currentProject?.name || "report"}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
         toast({
           title: "Success",
