@@ -30,17 +30,19 @@ interface SampleData {
 interface UnitWeightSandConeTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any; // Step 1 data passed from wizard
 }
 
 export function UnitWeightSandConeTest({
   data,
   onUpdate,
+  parentData,
 }: UnitWeightSandConeTestProps) {
   const [formData, setFormData] = useState({
     projectName: data.projectName || "",
-    testLocation: data.testLocation || "",
-    dateOfTesting: data.dateOfTesting || "",
-    testedBy: data.testedBy || "",
+    testLocation: data.testLocation || parentData?.chainage_from || "",
+    dateOfTesting: data.dateOfTesting || parentData?.test_date || "",
+    testedBy: data.testedBy || parentData?.technician_name || "",
     materialType: data.materialType || "Soil",
     sandConeCalibration: data.sandConeCalibration || "0.0005", // m³/g (volume per gram of sand)
     sampleData: data.sampleData || [

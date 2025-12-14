@@ -11,15 +11,36 @@ import { toast } from '@/hooks/use-toast';
 interface FieldDensityTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any; // Step 1 data passed from wizard
 }
 
-export function FieldDensityTest({ data, onUpdate }: FieldDensityTestProps) {
+export function FieldDensityTest({ data, onUpdate, parentData }: FieldDensityTestProps) {
   const [proctorReports, setProctorReports] = useState<any[]>([]);
+  
+  // Auto-fill from parent Step 1 data if available
+  const getInitialTestLocation = () => {
+    if (data.test_location) return data.test_location;
+    if (parentData?.chainage_from) return parentData.chainage_from;
+    return '';
+  };
+  
+  const getInitialSide = () => {
+    if (data.side) return data.side;
+    if (parentData?.side) return parentData.side;
+    return '';
+  };
+  
+  const getInitialOffset = () => {
+    if (data.offset_m) return data.offset_m;
+    if (parentData?.road_offset) return parentData.road_offset;
+    return '';
+  };
+
   const [testData, setTestData] = useState({
-    // Test Location
-    test_location: data.test_location || '',
-    side: data.side || '',
-    offset_m: data.offset_m || '',
+    // Test Location - auto-filled from Step 1
+    test_location: getInitialTestLocation(),
+    side: getInitialSide(),
+    offset_m: getInitialOffset(),
     depth_mm: data.depth_mm || '',
     hole_depth_mm: data.hole_depth_mm || '',
     

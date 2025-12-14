@@ -83,9 +83,20 @@ export function Step2DataEntry({
   };
 
   const renderTestInterface = () => {
+    // Pass parent data (Step 1 fields) to test components for auto-fill
+    const parentData = {
+      side: data.side,
+      chainage_from: data.chainage_from,
+      chainage_to: data.chainage_to,
+      road_offset: data.road_offset,
+      road_name: data.road_name,
+      test_date: data.test_date,
+      technician_name: data.technician_name,
+    };
+
     switch (testType) {
       case "Field Density":
-        return <FieldDensityTest data={testData} onUpdate={updateTestData} />;
+        return <FieldDensityTest data={testData} onUpdate={updateTestData} parentData={parentData} />;
 
       case "Compressive Strength of Concrete":
         return (
@@ -99,11 +110,11 @@ export function Step2DataEntry({
 
       case "Proctor Compaction":
         return (
-          <ProctorCompactionTest data={testData} onUpdate={updateTestData} />
+          <ProctorCompactionTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "CBR":
-        return <CBRTest data={testData} onUpdate={updateTestData} />;
+        return <CBRTest data={testData} onUpdate={updateTestData} parentData={parentData} />;
 
       case "Sieve Analysis":
         return <SieveAnalysisTest data={testData} onUpdate={updateTestData} />;
@@ -135,12 +146,12 @@ export function Step2DataEntry({
 
       case "Unit Weight of Sand Cone":
         return (
-          <UnitWeightSandConeTest data={testData} onUpdate={updateTestData} />
+          <UnitWeightSandConeTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Asphalt Laying Record":
         return (
-          <AsphaltLayingRecordTest data={testData} onUpdate={updateTestData} />
+          <AsphaltLayingRecordTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Asphalt Core Density":

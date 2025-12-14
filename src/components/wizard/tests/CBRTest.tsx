@@ -21,14 +21,15 @@ interface CBRData {
 interface CBRTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any; // Step 1 data passed from wizard
 }
 
-export function CBRTest({ data, onUpdate }: CBRTestProps) {
+export function CBRTest({ data, onUpdate, parentData }: CBRTestProps) {
   const [formData, setFormData] = useState({
     sampleDescription: data.sampleDescription || "",
     testType: data.testType || "Unsoaked CBR",
-    dateOfTesting: data.dateOfTesting || "",
-    testedBy: data.testedBy || "",
+    dateOfTesting: data.dateOfTesting || parentData?.test_date || "",
+    testedBy: data.testedBy || parentData?.technician_name || "",
     soakingPeriod: data.soakingPeriod || "",
     plungerArea: data.plungerArea || "19.35", // cm² for standard 50mm diameter plunger
     surchargeWeight: data.surchargeWeight || "",

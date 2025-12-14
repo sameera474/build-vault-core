@@ -27,21 +27,23 @@ interface TestContainerData {
 interface ProctorCompactionTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any; // Step 1 data passed from wizard
 }
 
 export function ProctorCompactionTest({
   data,
   onUpdate,
+  parentData,
 }: ProctorCompactionTestProps) {
   const [testData, setTestData] = useState(() => {
     const initialData = {
-      // Header information
+      // Header information - auto-fill from Step 1
       dateOfSampling: data.dateOfSampling || '',
-      dateOfTesting: data.dateOfTesting || '',
+      dateOfTesting: data.dateOfTesting || parentData?.test_date || '',
       typeOfMaterial: data.typeOfMaterial || '',
       sampleNo: data.sampleNo || '',
       source: data.source || '',
-      location: data.location || '',
+      location: data.location || parentData?.chainage_from || '',
       
       // Mould specifications
       mouldNo: data.mouldNo || '',

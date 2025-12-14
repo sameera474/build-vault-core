@@ -26,22 +26,24 @@ interface LayerData {
 interface AsphaltLayingRecordTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any; // Step 1 data passed from wizard
 }
 
 export function AsphaltLayingRecordTest({
   data,
   onUpdate,
+  parentData,
 }: AsphaltLayingRecordTestProps) {
   const [formData, setFormData] = useState({
     projectName: data.projectName || "",
-    roadSection: data.roadSection || "",
-    chainageFrom: data.chainageFrom || "",
-    chainageTo: data.chainageTo || "",
-    dateOfLaying: data.dateOfLaying || "",
+    roadSection: data.roadSection || parentData?.road_name || "",
+    chainageFrom: data.chainageFrom || parentData?.chainage_from || "",
+    chainageTo: data.chainageTo || parentData?.chainage_to || "",
+    dateOfLaying: data.dateOfLaying || parentData?.test_date || "",
     startTime: data.startTime || "",
     endTime: data.endTime || "",
     contractorName: data.contractorName || "",
-    supervisorName: data.supervisorName || "",
+    supervisorName: data.supervisorName || parentData?.technician_name || "",
     mixType: data.mixType || "Dense Bituminous Macadam",
     asphaltContent: data.asphaltContent || "",
     aggregateType: data.aggregateType || "",
