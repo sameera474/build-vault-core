@@ -143,6 +143,8 @@ export default function Profile() {
 
       if (updateError) throw updateError;
 
+      await refreshProfile();
+
       toast({
         title: 'Success',
         description: 'Avatar updated successfully',
