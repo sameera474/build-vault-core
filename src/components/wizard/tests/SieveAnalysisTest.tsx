@@ -340,28 +340,28 @@ export function SieveAnalysisTest({ data, onUpdate }: SieveAnalysisTestProps) {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Sieve Size (mm)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Weight Retained (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Cum. Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     % Retained
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Cum. %
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     % Passing
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -369,7 +369,7 @@ export function SieveAnalysisTest({ data, onUpdate }: SieveAnalysisTestProps) {
               <tbody>
                 {formData.sieveData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.sieveSize}
                         onChange={(e) =>
@@ -379,7 +379,7 @@ export function SieveAnalysisTest({ data, onUpdate }: SieveAnalysisTestProps) {
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.weightRetained}
                         onChange={(e) =>
@@ -393,35 +393,35 @@ export function SieveAnalysisTest({ data, onUpdate }: SieveAnalysisTestProps) {
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.cumulativeWeight}
                         readOnly
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.percentRetained}
                         readOnly
-                        className="w-16 bg-gray-50"
+                        className="w-16 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.cumulativePercent}
                         readOnly
-                        className="w-16 bg-gray-50"
+                        className="w-16 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.percentPassing}
                         readOnly
-                        className="w-16 bg-gray-50"
+                        className="w-16 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -452,20 +452,20 @@ export function SieveAnalysisTest({ data, onUpdate }: SieveAnalysisTestProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">Fineness Modulus</h4>
-              <p className="text-3xl font-mono text-blue-800">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">Fineness Modulus</h4>
+              <p className="text-3xl font-mono text-foreground">
                 {finenessModulus}
               </p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Sum of cumulative % / 100
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">
                 Material Classification
               </h4>
-              <div className="text-green-800 mt-2">
+              <div className="text-foreground mt-2">
                 {parseFloat(finenessModulus) >= 6.0 && <p>Coarse Aggregate</p>}
                 {parseFloat(finenessModulus) >= 3.0 &&
                   parseFloat(finenessModulus) < 6.0 && <p>Medium Aggregate</p>}
@@ -474,31 +474,31 @@ export function SieveAnalysisTest({ data, onUpdate }: SieveAnalysisTestProps) {
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Particle Size Distribution
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
               <div>
-                <span className="font-medium">D₁₀:</span>
+                <span className="font-medium text-foreground">D₁₀:</span>
                 <p className="text-muted-foreground">{particleSize.d10} mm</p>
               </div>
               <div>
-                <span className="font-medium">D₃₀:</span>
+                <span className="font-medium text-foreground">D₃₀:</span>
                 <p className="text-muted-foreground">{particleSize.d30} mm</p>
               </div>
               <div>
-                <span className="font-medium">D₆₀:</span>
+                <span className="font-medium text-foreground">D₆₀:</span>
                 <p className="text-muted-foreground">{particleSize.d60} mm</p>
               </div>
               <div>
-                <span className="font-medium">Uniformity (Cu):</span>
+                <span className="font-medium text-foreground">Uniformity (Cu):</span>
                 <p className="text-muted-foreground">
                   {particleSize.uniformity}
                 </p>
               </div>
               <div>
-                <span className="font-medium">Curvature (Cc):</span>
+                <span className="font-medium text-foreground">Curvature (Cc):</span>
                 <p className="text-muted-foreground">
                   {particleSize.curvature}
                 </p>
@@ -506,11 +506,11 @@ export function SieveAnalysisTest({ data, onUpdate }: SieveAnalysisTestProps) {
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Interpretation Guidelines
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>
                 • Uniformity Coefficient (Cu) greater than 6: Well-graded
                 material

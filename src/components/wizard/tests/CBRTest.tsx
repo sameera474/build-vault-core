@@ -226,19 +226,19 @@ export function CBRTest({ data, onUpdate, parentData }: CBRTestProps) {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Penetration (mm)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Load Reading (kg)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Corrected Load (kg)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Load per cm² (kg/cm²)
                   </th>
                 </tr>
@@ -246,10 +246,10 @@ export function CBRTest({ data, onUpdate, parentData }: CBRTestProps) {
               <tbody>
                 {formData.cbrData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2 font-medium">
+                    <td className="border border-border p-2 font-medium text-foreground">
                       {item.penetration}
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.load}
                         onChange={(e) =>
@@ -259,14 +259,14 @@ export function CBRTest({ data, onUpdate, parentData }: CBRTestProps) {
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.correctedLoad}
                         readOnly
-                        className="w-24 bg-gray-50"
+                        className="w-24 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2 text-foreground">
                       {item.correctedLoad && formData.plungerArea
                         ? (
                             (parseFloat(item.correctedLoad) * 1000) /
@@ -289,20 +289,20 @@ export function CBRTest({ data, onUpdate, parentData }: CBRTestProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">
                 California Bearing Ratio (CBR)
               </h4>
-              <p className="text-3xl font-mono text-blue-800">{cbr}%</p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-3xl font-mono text-foreground">{cbr}%</p>
+              <p className="text-sm text-muted-foreground mt-1">
                 Based on lower value of 2.5mm and 5.0mm penetration
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">
                 Test Classification
               </h4>
-              <div className="text-green-800 mt-2">
+              <div className="text-foreground mt-2">
                 {parseFloat(cbr) >= 80 && <p>Excellent (≥80%)</p>}
                 {parseFloat(cbr) >= 50 && parseFloat(cbr) < 80 && (
                   <p>Good (50-79%)</p>
@@ -318,27 +318,27 @@ export function CBRTest({ data, onUpdate, parentData }: CBRTestProps) {
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Standard Load Values (Crushed Stone)
             </h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium">2.5mm penetration:</span>
+                <span className="font-medium text-foreground">2.5mm penetration:</span>
                 <p className="text-muted-foreground">1370 kg</p>
               </div>
               <div>
-                <span className="font-medium">5.0mm penetration:</span>
+                <span className="font-medium text-foreground">5.0mm penetration:</span>
                 <p className="text-muted-foreground">2055 kg</p>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Interpretation Guidelines
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• CBR ≥ 80%: Suitable for sub-base and base courses</li>
               <li>• CBR 50-79%: Suitable for sub-base with proper design</li>
               <li>• CBR 30-49%: May require stabilization or thicker layers</li>
