@@ -72,11 +72,17 @@ Deno.serve(async (req) => {
       "lab_code",
     ] as const;
 
+    const dateFields = ["start_date", "end_date"];
     const update: Record<string, unknown> = {};
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(body, key)) {
         const v = (body as any)[key];
-        update[key] = v === undefined ? null : v;
+        // Convert empty strings to null, especially for date fields
+        if (v === undefined || v === "" || (dateFields.includes(key) && !v)) {
+          update[key] = null;
+        } else {
+          update[key] = v;
+        }
       }
     }
 
