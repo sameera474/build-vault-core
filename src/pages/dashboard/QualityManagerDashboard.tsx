@@ -182,13 +182,13 @@ export default function QualityManagerDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Quality Metrics Overview</CardTitle>
+          <CardDescription>Test results and quality indicators</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={[
-                  { name: "Pass Rate", value: stats.passRate, fill: "#22c55e" },
                   {
                     name: "Failed Tests",
                     value: stats.failedTests,
@@ -210,17 +210,17 @@ export default function QualityManagerDashboard() {
                     background: "hsl(var(--background))",
                     borderColor: "hsl(var(--border))",
                   }}
-                  formatter={(value, name) => {
-                    if (name === "Pass Rate") {
-                      return [`${value}%`, name];
-                    }
-                    return [value, name];
-                  }}
                 />
                 <Legend />
-                <Bar dataKey="value" name="Value" />
+                <Bar dataKey="value" name="Count" />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <span className="text-sm text-muted-foreground">Overall Pass Rate:</span>
+            <span className={`text-lg font-bold ${stats.passRate >= 80 ? 'text-green-500' : stats.passRate >= 60 ? 'text-orange-500' : 'text-red-500'}`}>
+              {stats.passRate}%
+            </span>
           </div>
         </CardContent>
       </Card>

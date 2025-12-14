@@ -38,6 +38,7 @@ export default function TechnicianDashboard() {
     testsToday: 0,
     passingTests: 0,
     pendingTests: 0,
+    failedTests: 0,
     totalTests: 0,
   });
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -80,11 +81,14 @@ export default function TechnicianDashboard() {
           allTests?.filter((r) => r.compliance_status === "pass").length || 0;
         const pending =
           allTests?.filter((r) => r.status === "draft").length || 0;
+        const failed =
+          allTests?.filter((r) => r.compliance_status === "fail").length || 0;
 
         setStats({
           testsToday: todayCount || 0,
           passingTests: passing,
           pendingTests: pending,
+          failedTests: failed,
           totalTests: allTests?.length || 0,
         });
       } catch (error) {
@@ -112,8 +116,9 @@ export default function TechnicianDashboard() {
   const pieData = [
     { name: "Passing", value: stats.passingTests },
     { name: "Pending", value: stats.pendingTests },
-  ];
-  const COLORS = ["#22c55e", "#f97316"];
+    { name: "Failed", value: stats.failedTests },
+  ].filter(item => item.value > 0);
+  const COLORS = ["#22c55e", "#f97316", "#ef4444"];
 
   return (
     <div className="space-y-6">
