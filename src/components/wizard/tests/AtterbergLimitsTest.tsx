@@ -309,28 +309,28 @@ export function AtterbergLimitsTest({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Test No.
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Container No.
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Container Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Wet Soil + Container (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Dry Soil + Container (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Moisture Content (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     No. of Blows
                   </th>
                 </tr>
@@ -338,10 +338,10 @@ export function AtterbergLimitsTest({
               <tbody>
                 {formData.liquidLimitData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2 font-medium">
+                    <td className="border border-border p-2 font-medium text-foreground">
                       {item.id}
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.containerNo}
                         onChange={(e) =>
@@ -355,7 +355,7 @@ export function AtterbergLimitsTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.containerWeight}
                         onChange={(e) =>
@@ -369,7 +369,7 @@ export function AtterbergLimitsTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.wetSoilWeight}
                         onChange={(e) =>
@@ -383,7 +383,7 @@ export function AtterbergLimitsTest({
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.drySoilWeight}
                         onChange={(e) =>
@@ -397,14 +397,14 @@ export function AtterbergLimitsTest({
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.moistureContent}
                         readOnly
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.blows}
                         onChange={(e) =>
@@ -419,12 +419,12 @@ export function AtterbergLimitsTest({
               </tbody>
             </table>
           </div>
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
-            <h4 className="font-semibold text-blue-900">
+          <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded">
+            <h4 className="font-semibold text-foreground">
               Calculated Liquid Limit
             </h4>
-            <p className="text-blue-800 text-lg font-mono">{liquidLimit}%</p>
-            <p className="text-sm text-blue-700 mt-1">
+            <p className="text-foreground text-lg font-mono">{liquidLimit}%</p>
+            <p className="text-sm text-muted-foreground mt-1">
               Calculated using flow curve method at 25 blows
             </p>
           </div>
@@ -438,25 +438,25 @@ export function AtterbergLimitsTest({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Test No.
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Container No.
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Container Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Wet Soil + Container (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Dry Soil + Container (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Moisture Content (%)
                   </th>
                 </tr>
@@ -464,10 +464,10 @@ export function AtterbergLimitsTest({
               <tbody>
                 {formData.plasticLimitData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2 font-medium">
+                    <td className="border border-border p-2 font-medium text-foreground">
                       {item.id}
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.containerNo}
                         onChange={(e) =>
@@ -481,7 +481,7 @@ export function AtterbergLimitsTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.containerWeight}
                         onChange={(e) =>
@@ -495,7 +495,7 @@ export function AtterbergLimitsTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.wetSoilWeight}
                         onChange={(e) =>
@@ -509,7 +509,7 @@ export function AtterbergLimitsTest({
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.drySoilWeight}
                         onChange={(e) =>
@@ -523,11 +523,11 @@ export function AtterbergLimitsTest({
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.moistureContent}
                         readOnly
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
                   </tr>
@@ -535,12 +535,12 @@ export function AtterbergLimitsTest({
               </tbody>
             </table>
           </div>
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
-            <h4 className="font-semibold text-green-900">
+          <div className="mt-4 p-4 bg-accent/20 border border-accent/30 rounded">
+            <h4 className="font-semibold text-foreground">
               Calculated Plastic Limit
             </h4>
-            <p className="text-green-800 text-lg font-mono">{plasticLimit}%</p>
-            <p className="text-sm text-green-700 mt-1">
+            <p className="text-foreground text-lg font-mono">{plasticLimit}%</p>
+            <p className="text-sm text-muted-foreground mt-1">
               Average of all plastic limit determinations
             </p>
           </div>
@@ -554,33 +554,33 @@ export function AtterbergLimitsTest({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">Liquid Limit (LL)</h4>
-              <p className="text-2xl font-mono text-blue-800">{liquidLimit}%</p>
+            <div className="text-center p-4 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">Liquid Limit (LL)</h4>
+              <p className="text-2xl font-mono text-foreground">{liquidLimit}%</p>
             </div>
-            <div className="text-center p-4 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">
+            <div className="text-center p-4 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">
                 Plastic Limit (PL)
               </h4>
-              <p className="text-2xl font-mono text-green-800">
+              <p className="text-2xl font-mono text-foreground">
                 {plasticLimit}%
               </p>
             </div>
-            <div className="text-center p-4 bg-purple-50 border border-purple-200 rounded">
-              <h4 className="font-semibold text-purple-900">
+            <div className="text-center p-4 bg-secondary border border-border rounded">
+              <h4 className="font-semibold text-foreground">
                 Plasticity Index (PI)
               </h4>
-              <p className="text-2xl font-mono text-purple-800">
+              <p className="text-2xl font-mono text-foreground">
                 {plasticityIndex}
               </p>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Soil Classification (Based on PI)
             </h4>
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-muted-foreground">
               {parseFloat(plasticityIndex) <= 0 && <p>Non-plastic soil</p>}
               {parseFloat(plasticityIndex) > 0 &&
                 parseFloat(plasticityIndex) <= 7 && (
