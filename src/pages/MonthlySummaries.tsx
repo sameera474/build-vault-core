@@ -60,6 +60,7 @@ interface Project {
   contractor_name?: string;
   client_logo?: string;
   contractor_logo?: string;
+  consultant_logo?: string;
 }
 
 interface ProjectRoad {
@@ -656,6 +657,7 @@ export default function MonthlySummaries() {
                   dateRange={{ from: date.from, to: date.to }}
                   clientLogo={currentProject.client_logo}
                   contractorLogo={currentProject.contractor_logo}
+                  consultantLogo={currentProject.consultant_logo}
                 />
               )}
 
@@ -698,6 +700,9 @@ export default function MonthlySummaries() {
                 roadName={selectedRoad}
                 testType={selectedTestType !== "all" ? selectedTestType : undefined}
                 dateRange={{ from: date.from, to: date.to }}
+                clientLogo={currentProject.client_logo}
+                contractorLogo={currentProject.contractor_logo}
+                consultantLogo={currentProject.consultant_logo}
               />
             )}
             
