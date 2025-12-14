@@ -605,7 +605,7 @@ export function EnhancedReportEditor() {
 
         <TabsContent value="detailed-view" className="space-y-6">
           <DetailedReportViewer 
-            report={report} 
+            report={{ ...report, summary_json: summaryData, compliance_status: computedCompliance }} 
             project={report.project}
             company={report.project?.company || {}}
           />
