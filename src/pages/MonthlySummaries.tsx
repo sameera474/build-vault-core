@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CalendarIcon,
   Download,
@@ -32,9 +33,12 @@ import {
   FileText,
   CheckCircle,
   FileSpreadsheet,
+  Eye,
+  Printer,
+  Loader2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -43,10 +47,20 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import TestTypeSummaryTable, { type TestReport } from "@/components/monthly-summary/TestTypeSummaryTable";
+import SummaryHeader from "@/components/monthly-summary/SummaryHeader";
+import SummarySignatureBlock from "@/components/monthly-summary/SummarySignatureBlock";
+import { exportToExcel } from "@/components/monthly-summary/exportToExcel";
 
 interface Project {
   id: string;
   name: string;
+  contract_number?: string;
+  client_name?: string;
+  consultant_name?: string;
+  contractor_name?: string;
+  client_logo?: string;
+  contractor_logo?: string;
 }
 
 interface ProjectRoad {
@@ -71,13 +85,16 @@ export default function MonthlySummaries() {
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [selectedRoad, setSelectedRoad] = useState<string>("all");
   const [selectedMaterial, setSelectedMaterial] = useState<string>("all");
+  const [selectedTestType, setSelectedTestType] = useState<string>("all");
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     to: new Date(),
   });
   const [summary, setSummary] = useState<MonthlySummary | null>(null);
+  const [detailedReports, setDetailedReports] = useState<TestReport[]>([]);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingExcel, setGeneratingExcel] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const materialOptions = [
     "all",
@@ -88,6 +105,38 @@ export default function MonthlySummaries() {
     "custom",
   ];
 
+  const currentProject = useMemo(() => 
+    projects.find(p => p.id === selectedProject),
+    [projects, selectedProject]
+  );
+
+  // Group reports by test type
+  const reportsByTestType = useMemo(() => {
+    const grouped: Record<string, TestReport[]> = {};
+    detailedReports.forEach(report => {
+      const testType = report.test_type || "Other";
+      if (!grouped[testType]) {
+        grouped[testType] = [];
+      }
+      grouped[testType].push(report);
+    });
+    return grouped;
+  }, [detailedReports]);
+
+  // Get unique test types for filter
+  const availableTestTypes = useMemo(() => {
+    return ["all", ...Object.keys(reportsByTestType).sort()];
+  }, [reportsByTestType]);
+
+  // Filter reports by selected test type
+  const filteredReportsByTestType = useMemo(() => {
+    if (selectedTestType === "all") return reportsByTestType;
+    if (reportsByTestType[selectedTestType]) {
+      return { [selectedTestType]: reportsByTestType[selectedTestType] };
+    }
+    return {};
+  }, [reportsByTestType, selectedTestType]);
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -95,7 +144,7 @@ export default function MonthlySummaries() {
   useEffect(() => {
     if (selectedProject) {
       fetchRoads();
-      setSelectedRoad("all"); // Reset road selection when project changes
+      setSelectedRoad("all");
     }
   }, [selectedProject]);
 
@@ -154,12 +203,14 @@ export default function MonthlySummaries() {
 
     setLoading(true);
     try {
+      // Fetch detailed reports with data_json and summary_json
       let query = supabase
         .from("test_reports")
-        .select("id, status, test_type, material, created_at, road_name")
+        .select("id, status, test_type, test_date, report_number, compliance_status, technician_name, road_name, material, covered_chainage, chainage_from, chainage_to, side, data_json, summary_json, laboratory_test_no")
         .eq("project_id", selectedProject)
         .gte("test_date", date.from.toISOString().split("T")[0])
-        .lte("test_date", date.to.toISOString().split("T")[0]);
+        .lte("test_date", date.to.toISOString().split("T")[0])
+        .order("test_date", { ascending: true });
 
       if (selectedMaterial !== "all") {
         query = query.eq("material", selectedMaterial as "aggregates" | "asphalt" | "concrete" | "custom" | "soil");
@@ -173,6 +224,8 @@ export default function MonthlySummaries() {
 
       if (error) throw error;
 
+      setDetailedReports(reports || []);
+
       const testTypeCounts: { [key: string]: number } = {};
       reports?.forEach((report) => {
         if (report.test_type) {
@@ -182,21 +235,15 @@ export default function MonthlySummaries() {
       });
 
       const summaryData: MonthlySummary = {
-        month: `${format(date.from, "LLL dd, y")} - ${format(
-          date.to,
-          "LLL dd, y"
-        )}`,
+        month: `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`,
         total_reports: reports?.length || 0,
-        approved_reports:
-          reports?.filter((r) => r.status === "approved").length || 0,
-        pending_reports:
-          reports?.filter(
-            (r) => r.status === "draft" || r.status === "submitted"
-          ).length || 0,
+        approved_reports: reports?.filter((r) => r.status === "approved").length || 0,
+        pending_reports: reports?.filter((r) => r.status === "draft" || r.status === "submitted").length || 0,
         test_types: testTypeCounts,
       };
 
       setSummary(summaryData);
+      setSelectedTestType("all");
     } catch (error: any) {
       console.error("Error fetching summary:", error);
       toast({
@@ -228,6 +275,7 @@ export default function MonthlySummaries() {
             start_date: date?.from?.toISOString(),
             end_date: date?.to?.toISOString(),
             material: selectedMaterial,
+            test_type: selectedTestType !== "all" ? selectedTestType : undefined,
           },
         }
       );
@@ -235,12 +283,11 @@ export default function MonthlySummaries() {
       if (error) throw error;
 
       if (data?.url) {
-        // Open the PDF in a new tab
         window.open(data.url, "_blank");
 
         toast({
           title: "Success",
-          description: "Monthly summary PDF has been generated and downloaded",
+          description: "Monthly summary PDF has been generated",
         });
       } else {
         throw new Error("No download URL returned");
@@ -258,44 +305,32 @@ export default function MonthlySummaries() {
   };
 
   const generateExcelSummary = () => {
-    if (!summary) return;
+    if (!summary || !currentProject || !date?.from || !date?.to) return;
     setGeneratingExcel(true);
 
     try {
-      const headers = ["Test Type", "Count", "Percentage"];
-      const data = Object.entries(summary.test_types).map(
-        ([testType, count]) => [
-          testType,
-          count,
-          `${Math.round((count / summary.total_reports) * 100)}%`,
-        ]
-      );
+      const fileName = exportToExcel({
+        project: currentProject,
+        dateRange: { from: date.from, to: date.to },
+        roadName: selectedRoad,
+        material: selectedMaterial,
+        reportsByTestType: filteredReportsByTestType,
+      });
 
-      const csvContent = [
-        `Monthly Summary for Project ID: ${selectedProject}`,
-        selectedRoad !== "all" ? `Road: ${selectedRoad}` : "",
-        `Period: ${summary.month}`,
-        `Material: ${selectedMaterial}`,
-        "",
-        headers.join(","),
-        ...data.map((row) => row.join(",")),
-      ].filter(line => line !== "").join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `monthly_summary_${selectedProject}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast({ title: "Excel file generated" });
+      toast({ 
+        title: "Excel file generated",
+        description: `Downloaded: ${fileName}`,
+      });
     } catch (error) {
+      console.error("Error generating Excel:", error);
       toast({ title: "Failed to generate Excel file", variant: "destructive" });
     } finally {
       setGeneratingExcel(false);
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   if (loading && projects.length === 0) {
@@ -308,28 +343,28 @@ export default function MonthlySummaries() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center print:hidden">
         <div>
           <h1 className="text-3xl font-bold">Monthly Summaries</h1>
           <p className="text-muted-foreground">
-            Generate and view monthly test report summaries
+            Generate and view monthly test report summaries by test type
           </p>
         </div>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="print:hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Generate Summary
           </CardTitle>
           <CardDescription>
-            Select project and period to generate monthly summary
+            Select project, filters, and period to generate monthly summary
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
             <div>
               <label className="text-sm font-medium mb-2 block">Project</label>
               <Select
@@ -387,6 +422,25 @@ export default function MonthlySummaries() {
               </Select>
             </div>
             <div>
+              <label className="text-sm font-medium mb-2 block">Test Type</label>
+              <Select
+                value={selectedTestType}
+                onValueChange={setSelectedTestType}
+                disabled={availableTestTypes.length <= 1}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Test Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTestTypes.map((testType) => (
+                    <SelectItem key={testType} value={testType}>
+                      {testType === "all" ? "All Test Types" : testType}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <label className="text-sm font-medium mb-2 block">Date range</label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -435,7 +489,7 @@ export default function MonthlySummaries() {
       {summary && (
         <>
           {/* Overview Cards */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3 print:hidden">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -464,9 +518,7 @@ export default function MonthlySummaries() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {summary.total_reports > 0
-                    ? `${Math.round(
-                        (summary.approved_reports / summary.total_reports) * 100
-                      )}% approved`
+                    ? `${Math.round((summary.approved_reports / summary.total_reports) * 100)}% approved`
                     : "No reports"}
                 </p>
               </CardContent>
@@ -488,73 +540,185 @@ export default function MonthlySummaries() {
             </Card>
           </div>
 
-          {/* Test Types Breakdown */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Test Types Breakdown</CardTitle>
-                <CardDescription>
-                  Distribution of test types for {summary.month}
-                </CardDescription>
-              </div>
+          {/* Tabs for Overview and Detailed Preview */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="print:hidden">
+            <div className="flex items-center justify-between">
+              <TabsList>
+                <TabsTrigger value="overview" className="gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="preview" className="gap-2">
+                  <Eye className="h-4 w-4" />
+                  Detailed Preview
+                </TabsTrigger>
+              </TabsList>
+              
               <div className="flex gap-2">
                 <Button
                   onClick={generateExcelSummary}
                   disabled={generatingExcel}
                   variant="outline"
+                  size="sm"
                 >
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  {generatingExcel ? "Generating..." : "Export Excel"}
+                  {generatingExcel ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  )}
+                  Export Excel
                 </Button>
-                <Button onClick={generatePdfSummary} disabled={generatingPdf}>
-                  <Download className="h-4 w-4 mr-2" />
-                  {generatingPdf ? "Generating..." : "Export PDF"}
+                <Button 
+                  onClick={generatePdfSummary} 
+                  disabled={generatingPdf}
+                  size="sm"
+                >
+                  {generatingPdf ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Export PDF
+                </Button>
+                <Button
+                  onClick={handlePrint}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              {Object.keys(summary.test_types).length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Test Type</TableHead>
-                      <TableHead className="text-right">Count</TableHead>
-                      <TableHead className="text-right">Percentage</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Object.entries(summary.test_types)
-                      .sort(([, a], [, b]) => b - a)
-                      .map(([testType, count]) => (
-                        <TableRow key={testType}>
-                          <TableCell className="font-medium">
-                            {testType}
-                          </TableCell>
-                          <TableCell className="text-right">{count}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge variant="secondary">
-                              {Math.round(
-                                (count / summary.total_reports) * 100
-                              )}
-                              %
-                            </Badge>
-                          </TableCell>
+            </div>
+
+            <TabsContent value="overview" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Test Types Breakdown</CardTitle>
+                  <CardDescription>
+                    Distribution of test types for {summary.month}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {Object.keys(summary.test_types).length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Test Type</TableHead>
+                          <TableHead className="text-right">Count</TableHead>
+                          <TableHead className="text-right">Percentage</TableHead>
                         </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className="text-center text-muted-foreground py-8">
-                  No test reports found for this period
-                </p>
+                      </TableHeader>
+                      <TableBody>
+                        {Object.entries(summary.test_types)
+                          .sort(([, a], [, b]) => b - a)
+                          .map(([testType, count]) => (
+                            <TableRow 
+                              key={testType}
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => {
+                                setSelectedTestType(testType);
+                                setActiveTab("preview");
+                              }}
+                            >
+                              <TableCell className="font-medium">
+                                {testType}
+                              </TableCell>
+                              <TableCell className="text-right">{count}</TableCell>
+                              <TableCell className="text-right">
+                                <Badge variant="secondary">
+                                  {Math.round((count / summary.total_reports) * 100)}%
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">
+                      No test reports found for this period
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="preview" className="mt-4 space-y-6">
+              {/* Summary Header for Preview/Print */}
+              {currentProject && date?.from && date?.to && (
+                <SummaryHeader
+                  projectName={currentProject.name}
+                  contractNumber={currentProject.contract_number}
+                  clientName={currentProject.client_name}
+                  consultantName={currentProject.consultant_name}
+                  contractorName={currentProject.contractor_name}
+                  roadName={selectedRoad}
+                  testType={selectedTestType !== "all" ? selectedTestType : undefined}
+                  dateRange={{ from: date.from, to: date.to }}
+                  clientLogo={currentProject.client_logo}
+                  contractorLogo={currentProject.contractor_logo}
+                />
               )}
-            </CardContent>
-          </Card>
+
+              {/* Test Type Tables */}
+              {Object.keys(filteredReportsByTestType).length > 0 ? (
+                Object.entries(filteredReportsByTestType).map(([testType, reports]) => (
+                  <Card key={testType}>
+                    <CardContent className="pt-6">
+                      <TestTypeSummaryTable
+                        testType={testType}
+                        reports={reports}
+                        projectName={currentProject?.name}
+                      />
+                      <SummarySignatureBlock />
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold">No Reports Found</h3>
+                    <p className="text-muted-foreground mt-2 text-center">
+                      No test reports match the selected filters
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          {/* Print-only content */}
+          <div className="hidden print:block">
+            {currentProject && date?.from && date?.to && (
+              <SummaryHeader
+                projectName={currentProject.name}
+                contractNumber={currentProject.contract_number}
+                clientName={currentProject.client_name}
+                consultantName={currentProject.consultant_name}
+                contractorName={currentProject.contractor_name}
+                roadName={selectedRoad}
+                testType={selectedTestType !== "all" ? selectedTestType : undefined}
+                dateRange={{ from: date.from, to: date.to }}
+              />
+            )}
+            
+            {Object.entries(filteredReportsByTestType).map(([testType, reports]) => (
+              <div key={testType} className="mb-8 break-inside-avoid">
+                <TestTypeSummaryTable
+                  testType={testType}
+                  reports={reports}
+                  projectName={currentProject?.name}
+                />
+                <SummarySignatureBlock />
+              </div>
+            ))}
+          </div>
         </>
       )}
 
       {!summary && selectedProject && (
-        <Card>
+        <Card className="print:hidden">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold">No Data Available</h3>
