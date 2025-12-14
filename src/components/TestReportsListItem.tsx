@@ -91,6 +91,24 @@ export function TestReportsListItem({
       };
     }
 
+    // Check summary_json for direct result values
+    if (r.summary_json && typeof r.summary_json === "object") {
+      const summaryFields = [
+        "result", "final_result", "value", "average", "bulk_density", 
+        "compaction", "strength", "stability", "cbr_value"
+      ];
+      
+      for (const field of summaryFields) {
+        if (r.summary_json[field] !== undefined && r.summary_json[field] !== null) {
+          const val = r.summary_json[field];
+          return {
+            name: field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+            value: typeof val === "number" ? val.toFixed(2) : String(val)
+          };
+        }
+      }
+    }
+
     // Fallback to data_json if summary_json is not available
     if (r.data_json && typeof r.data_json === "object") {
       // Look for common result fields in data_json
@@ -111,6 +129,14 @@ export function TestReportsListItem({
       }
     }
 
+    // If approved/rejected, show compliance status as result
+    if (r.compliance_status === "pass") {
+      return { name: "Result", value: "Pass" };
+    }
+    if (r.compliance_status === "fail") {
+      return { name: "Result", value: "Fail" };
+    }
+
     return { name: "Result", value: "Pending" };
   };
 
@@ -129,7 +155,7 @@ export function TestReportsListItem({
             {r.project?.name || r.project_name || "—"}
           </div>
           <div className="text-xs text-muted-foreground">
-            {r.project?.region_code || r.region_code || "R?"} •{" "}
+            {r.road_name || r.project?.name || "—"} •{" "}
             {r.chainage_from || "—"} - {r.chainage_to || "—"}
           </div>
         </div>
