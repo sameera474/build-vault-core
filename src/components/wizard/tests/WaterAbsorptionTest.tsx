@@ -25,6 +25,7 @@ interface SampleData {
 interface WaterAbsorptionTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function WaterAbsorptionTest({

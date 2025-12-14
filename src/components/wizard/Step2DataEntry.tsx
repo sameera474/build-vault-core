@@ -100,12 +100,12 @@ export function Step2DataEntry({
 
       case "Compressive Strength of Concrete":
         return (
-          <ConcreteCompressionTest data={testData} onUpdate={updateTestData} />
+          <ConcreteCompressionTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Atterberg Limits":
         return (
-          <AtterbergLimitsTest data={testData} onUpdate={updateTestData} />
+          <AtterbergLimitsTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Proctor Compaction":
@@ -117,31 +117,31 @@ export function Step2DataEntry({
         return <CBRTest data={testData} onUpdate={updateTestData} parentData={parentData} />;
 
       case "Sieve Analysis":
-        return <SieveAnalysisTest data={testData} onUpdate={updateTestData} />;
+        return <SieveAnalysisTest data={testData} onUpdate={updateTestData} parentData={parentData} />;
 
       case "Aggregate Impact Value":
         return (
-          <AggregateImpactValueTest data={testData} onUpdate={updateTestData} />
+          <AggregateImpactValueTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Water Absorption":
         return (
-          <WaterAbsorptionTest data={testData} onUpdate={updateTestData} />
+          <WaterAbsorptionTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Los Angeles Abrasion":
         return (
-          <LosAngelesAbrasionTest data={testData} onUpdate={updateTestData} />
+          <LosAngelesAbrasionTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Marshall Stability":
         return (
-          <MarshallStabilityTest data={testData} onUpdate={updateTestData} />
+          <MarshallStabilityTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Spread Rate of Binder":
         return (
-          <SpreadRateOfBinderTest data={testData} onUpdate={updateTestData} />
+          <SpreadRateOfBinderTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Unit Weight of Sand Cone":
@@ -156,7 +156,7 @@ export function Step2DataEntry({
 
       case "Asphalt Core Density":
         return (
-          <AsphaltCoreDensityTest data={testData} onUpdate={updateTestData} />
+          <AsphaltCoreDensityTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Quantitative Extraction":
@@ -164,25 +164,27 @@ export function Step2DataEntry({
           <QuantitativeExtractionTest
             data={testData}
             onUpdate={updateTestData}
+            parentData={parentData}
           />
         );
 
       case "Individual Gradations":
         return (
-          <IndividualGradationsTest data={testData} onUpdate={updateTestData} />
+          <IndividualGradationsTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Hot Mix Design":
-        return <HotMixDesignTest data={testData} onUpdate={updateTestData} />;
+        return <HotMixDesignTest data={testData} onUpdate={updateTestData} parentData={parentData} />;
 
       case "Shape Index (Flakiness/Elongation)":
-        return <ShapeIndexTest data={testData} onUpdate={updateTestData} />;
+        return <ShapeIndexTest data={testData} onUpdate={updateTestData} parentData={parentData} />;
 
       case "Bulk Specific Gravity (Fine)":
         return (
           <BulkSpecificGravityFineTest
             data={testData}
             onUpdate={updateTestData}
+            parentData={parentData}
           />
         );
 
@@ -191,12 +193,13 @@ export function Step2DataEntry({
           <BulkSpecificGravityCoarseTest
             data={testData}
             onUpdate={updateTestData}
+            parentData={parentData}
           />
         );
 
       case "Clay Silt Dust Fraction":
         return (
-          <ClaySiltDustFractionTest data={testData} onUpdate={updateTestData} />
+          <ClaySiltDustFractionTest data={testData} onUpdate={updateTestData} parentData={parentData} />
         );
 
       case "Aggregate Crushing Value":
@@ -204,11 +207,12 @@ export function Step2DataEntry({
           <AggregateCrushingValueTest
             data={testData}
             onUpdate={updateTestData}
+            parentData={parentData}
           />
         );
 
       case "Bulk Density":
-        return <BulkDensityTest data={testData} onUpdate={updateTestData} />;
+        return <BulkDensityTest data={testData} onUpdate={updateTestData} parentData={parentData} />;
 
       default:
         return (

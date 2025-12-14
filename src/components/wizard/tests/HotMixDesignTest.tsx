@@ -28,6 +28,7 @@ interface MixTrial {
 interface HotMixDesignTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {

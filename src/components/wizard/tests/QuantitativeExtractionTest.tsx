@@ -26,6 +26,7 @@ interface SampleData {
 interface QuantitativeExtractionTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function QuantitativeExtractionTest({

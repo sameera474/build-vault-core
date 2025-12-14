@@ -30,6 +30,7 @@ interface CoreData {
 interface AsphaltCoreDensityTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function AsphaltCoreDensityTest({

@@ -27,6 +27,7 @@ interface SampleData {
 interface MarshallStabilityTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function MarshallStabilityTest({

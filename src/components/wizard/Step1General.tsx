@@ -569,7 +569,7 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                       : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-50" align="start">
                   <Calendar
                     mode="single"
                     selected={
@@ -579,7 +579,6 @@ export function Step1General({ data, onUpdate }: Step1GeneralProps) {
                       onUpdate({ test_date: date?.toISOString().split("T")[0] })
                     }
                     initialFocus
-                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>

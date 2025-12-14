@@ -26,6 +26,7 @@ interface SampleData {
 interface BulkSpecificGravityCoarseTestProps {
   data: any;
   onUpdate: (data: any) => void;
+  parentData?: any;
 }
 
 export function BulkSpecificGravityCoarseTest({
