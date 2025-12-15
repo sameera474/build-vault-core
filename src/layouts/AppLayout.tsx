@@ -162,7 +162,7 @@ function AppSidebar() {
     <Sidebar>
       <SidebarContent>
         <div className="p-4">
-          <Link to="/dashboard" className="flex items-center gap-2">
+          <Link to={isSuperAdmin ? "/super-admin" : "/dashboard"} className="flex items-center gap-2">
             <HardHat className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold text-foreground">ConstructTest Pro</span>
           </Link>
