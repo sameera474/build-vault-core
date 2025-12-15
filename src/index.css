@@ -22,6 +22,7 @@
     --primary-hover: 215 85% 20%;
 
     /* Text/SURFACE on Primary backgrounds (always high-contrast) */
+    --on-primary: 0 0% 98%; /* white text on primary backgrounds */
     --on-primary-foreground: 0 0% 98%; /* white text on primary backgrounds */
     --on-primary-surface: 0 0% 100%; /* white surface elements on primary */
 
@@ -102,6 +103,7 @@
     --primary-hover: 215 100% 70%;
 
     /* Text/SURFACE on Primary backgrounds (always high-contrast) */
+    --on-primary: 0 0% 98%;
     --on-primary-foreground: 0 0% 98%;
     --on-primary-surface: 0 0% 100%;
 
