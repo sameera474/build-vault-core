@@ -38,7 +38,7 @@ const demoUsers: DemoUser[] = [
     role: 'technician',
     email: 'mike.tech@beta.com',
     password: 'DemoPass123!',
-    company: 'Beta Engineering Corp',
+    company: 'Alpha Construction Ltd',
     permissions: 'Create reports only',
   },
   {
@@ -46,7 +46,7 @@ const demoUsers: DemoUser[] = [
     role: 'admin',
     email: 'emily.admin@beta.com',
     password: 'DemoPass123!',
-    company: 'Beta Engineering Corp',
+    company: 'Alpha Construction Ltd',
     permissions: 'Full company access',
   },
   {
@@ -54,7 +54,7 @@ const demoUsers: DemoUser[] = [
     role: 'supervisor',
     email: 'robert.supervisor@gamma.com',
     password: 'DemoPass123!',
-    company: 'Gamma Materials Inc',
+    company: 'Alpha Construction Ltd',
     permissions: 'Team & approvals',
   },
 ];
