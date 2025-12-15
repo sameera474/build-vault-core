@@ -49,9 +49,9 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
-        on: {
-          primary: "hsl(var(--on-primary-foreground))",
-          "primary-surface": "hsl(var(--on-primary-surface))",
+        "on-primary": {
+          DEFAULT: "hsl(var(--on-primary))",
+          surface: "hsl(var(--on-primary-surface))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",

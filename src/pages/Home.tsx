@@ -580,11 +580,11 @@ export default function Home() {
         
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center space-y-6 sm:space-y-8 animate-fade-in">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-on-primary">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">
               Ready to transform your{' '}
               <span className="block sm:inline">testing workflow?</span>
             </h2>
-            <p className="text-base sm:text-lg lg:text-xl text-on-primary/90 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-white/90 max-w-2xl mx-auto">
               Join construction professionals who trust ConstructTest Pro for their materials testing needs.
               Start your free trial today—no credit card required.
             </p>
@@ -592,7 +592,7 @@ export default function Home() {
               <Link to="/register" className="w-full sm:w-auto">
                 <Button 
                   size="lg" 
-                  className="w-full sm:w-auto bg-on-primary-surface text-primary hover:bg-on-primary-surface/90 hover:scale-105 transition-smooth group shadow-elegant text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6"
+                  className="w-full sm:w-auto bg-white text-primary hover:bg-white/90 hover:scale-105 transition-smooth group shadow-elegant text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6"
                 >
                   Start free trial today
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -602,23 +602,23 @@ export default function Home() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="w-full sm:w-auto border-2 border-on-primary/30 text-on-primary hover:bg-on-primary-surface/10 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6"
+                  className="w-full sm:w-auto border-2 border-white/30 text-white bg-white/10 hover:bg-white/20 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6"
                 >
                   Contact sales
                 </Button>
               </Link>
             </div>
-            <div className="flex items-center justify-center gap-8 text-xs sm:text-sm text-on-primary/90 pt-4">
+            <div className="flex items-center justify-center gap-8 text-xs sm:text-sm text-white/90 pt-4">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-on-primary" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 <span>14-day free trial</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-on-primary" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 <span>No credit card</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-on-primary" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 <span>Cancel anytime</span>
               </div>
             </div>
