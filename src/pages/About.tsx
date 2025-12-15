@@ -63,18 +63,28 @@ export default function About() {
   return (
     <div className="bg-background">
       {/* Hero Section */}
-      <section className="relative isolate px-6 pt-14 lg:px-8 overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 via-background to-accent/5"></div>
-        <div className="mx-auto max-w-4xl py-32 sm:py-48 lg:py-56">
+      <section className="relative isolate overflow-hidden px-6 pt-14 lg:px-8">
+        {/* Stylish Gradient Background like Pricing/Contact */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.1),transparent_50%)]" />
+        </div>
+        
+        <div className="mx-auto max-w-4xl py-20 sm:py-32 lg:py-40">
           <div className="text-center space-y-8 animate-fade-in">
-            <Badge className="mb-4">Our Story</Badge>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
+            <Badge className="mb-4" variant="secondary">
+              Our Story
+            </Badge>
+            
+            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
               About{' '}
-              <span className="text-gradient">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
                 ConstructTest Pro
               </span>
             </h1>
-            <p className="mt-6 text-lg leading-8 text-muted-foreground max-w-3xl mx-auto">
+            
+            <p className="mt-6 text-lg sm:text-xl leading-8 text-muted-foreground max-w-2xl mx-auto">
               We're revolutionizing construction materials testing with modern technology, 
               making it easier for engineering teams to ensure quality and compliance 
               across all their projects.
