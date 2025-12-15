@@ -38,24 +38,29 @@ const stats = [
 
 const achievements = [
   {
-    title: 'Industry Recognition',
-    description: 'Awarded Best Construction Software Solution 2024 by Construction Tech Magazine.',
-    year: '2024',
+    title: 'Official Launch',
+    description: 'ConstructTest Pro officially launched as a comprehensive construction materials testing platform.',
+    year: 'December 2025',
   },
   {
-    title: 'Trusted by Leaders',
-    description: 'Partnered with top 10 construction firms in North America.',
-    year: '2023',
+    title: 'Beta Testing Complete',
+    description: 'Successfully completed beta testing with construction companies, incorporating valuable feedback.',
+    year: 'November 2025',
   },
   {
-    title: 'Global Expansion',
-    description: 'Expanded operations to 25+ countries across 5 continents.',
-    year: '2023',
+    title: 'Thesis Development',
+    description: 'Developed ConstructTest Pro as a thesis project, focusing on revolutionizing construction testing workflows.',
+    year: 'August 2025',
   },
   {
-    title: 'Product Launch',
-    description: 'Successfully launched ConstructTest Pro with revolutionary testing automation.',
-    year: '2022',
+    title: 'Research & Planning',
+    description: 'Extensive research on construction industry pain points and requirement analysis for materials testing management.',
+    year: 'June 2025',
+  },
+  {
+    title: 'Concept & Vision',
+    description: 'Initial concept developed to address the gap in modern construction materials testing software.',
+    year: 'April 2025',
   },
 ];
 
