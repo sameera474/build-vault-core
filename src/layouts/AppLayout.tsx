@@ -51,14 +51,15 @@ interface NavigationGroup {
 const getNavigationGroups = (isSuperAdmin: boolean, tenantRole: string): NavigationGroup[] => {
   const groups: NavigationGroup[] = [];
 
-  // Main Section - Everyone sees dashboard
-  groups.push({
-    label: "Main",
-    items: [
-      { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
-    ]
-  });
-
+  // Main Section - Regular users see dashboard, super admins skip (they have Super Admin Dashboard)
+  if (!isSuperAdmin) {
+    groups.push({
+      label: "Main",
+      items: [
+        { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
+      ]
+    });
+  }
   // Testing & Reports - Core functionality
   groups.push({
     label: "Testing & Reports",
