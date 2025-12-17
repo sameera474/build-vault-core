@@ -211,22 +211,22 @@ export function AggregateCrushingValueTest({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Sample ID
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Total Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Passing Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Crushing Value (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -234,7 +234,7 @@ export function AggregateCrushingValueTest({
               <tbody>
                 {formData.sampleData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.sampleId}
                         onChange={(e) =>
@@ -244,7 +244,7 @@ export function AggregateCrushingValueTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.totalWeight}
                         onChange={(e) =>
@@ -254,7 +254,7 @@ export function AggregateCrushingValueTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.passingWeight}
                         onChange={(e) =>
@@ -268,14 +268,14 @@ export function AggregateCrushingValueTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.crushingValue}
                         readOnly
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -306,18 +306,18 @@ export function AggregateCrushingValueTest({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">
                 Average Crushing Value
               </h4>
-              <p className="text-3xl font-mono text-blue-800">
+              <p className="text-3xl font-mono text-foreground">
                 {averageCrushingValue}%
               </p>
-              <p className="text-sm text-blue-700 mt-1">Lower is better</p>
+              <p className="text-sm text-muted-foreground mt-1">Lower is better</p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">Quality Status</h4>
-              <div className="text-green-800 mt-2">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">Quality Status</h4>
+              <div className="text-foreground mt-2">
                 <p className="text-lg font-medium">
                   {parseFloat(averageCrushingValue) !== 0
                     ? crushingValueStatus
@@ -325,40 +325,40 @@ export function AggregateCrushingValueTest({
                 </p>
               </div>
             </div>
-            <div className="text-center p-6 bg-orange-50 border border-orange-200 rounded">
-              <h4 className="font-semibold text-orange-900">Test Standard</h4>
-              <p className="text-lg font-mono text-orange-800">
+            <div className="text-center p-6 bg-secondary border border-border rounded">
+              <h4 className="font-semibold text-foreground">Test Standard</h4>
+              <p className="text-lg font-mono text-foreground">
                 IS 2386 / BS 812
               </p>
-              <p className="text-sm text-orange-700 mt-1">Part 4</p>
+              <p className="text-sm text-muted-foreground mt-1">Part 4</p>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Method Summary
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium">Project:</span>
+                <span className="font-medium text-foreground">Project:</span>
                 <p className="text-muted-foreground">
                   {formData.projectName || "Not specified"}
                 </p>
               </div>
               <div>
-                <span className="font-medium">Aggregate Size:</span>
+                <span className="font-medium text-foreground">Aggregate Size:</span>
                 <p className="text-muted-foreground">
                   {formData.aggregateSize}
                 </p>
               </div>
               <div>
-                <span className="font-medium">Number of Samples:</span>
+                <span className="font-medium text-foreground">Number of Samples:</span>
                 <p className="text-muted-foreground">
                   {formData.sampleData.length}
                 </p>
               </div>
               <div>
-                <span className="font-medium">Test Method:</span>
+                <span className="font-medium text-foreground">Test Method:</span>
                 <p className="text-muted-foreground">
                   Compression testing machine
                 </p>
@@ -366,11 +366,11 @@ export function AggregateCrushingValueTest({
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Crushing Value Specifications
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• ACV ≤ 10% for very high strength concrete</li>
               <li>• ACV ≤ 15% for high strength concrete</li>
               <li>• ACV ≤ 20% for normal concrete applications</li>
@@ -379,11 +379,11 @@ export function AggregateCrushingValueTest({
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-            <h4 className="font-semibold text-purple-900 mb-2">
+          <div className="mt-4 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Procedure
             </h4>
-            <ul className="text-sm text-purple-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Prepare aggregate sample (10-12.5mm or 12.5-16mm size)</li>
               <li>• Fill cylindrical measure with aggregate in 3 layers</li>
               <li>• Compact each layer with 25 strokes of tamping rod</li>
@@ -394,11 +394,11 @@ export function AggregateCrushingValueTest({
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
-            <h4 className="font-semibold text-red-900 mb-2">
+          <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Quality Control Notes
             </h4>
-            <div className="text-sm text-red-800">
+            <div className="text-sm text-muted-foreground">
               <ul className="space-y-1">
                 <li>• ACV indicates aggregate resistance to crushing</li>
                 <li>
