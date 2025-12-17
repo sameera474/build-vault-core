@@ -46,8 +46,13 @@ export default function SignIn() {
         // Fetch user profile to get role
         const { data: profileData } = await getUserProfile(data.user.id);
         
-        // Redirect based on role
-        const dashboardRoute = getRoleRedirect(profileData?.tenant_role);
+        // Redirect based on is_super_admin flag first, then tenant_role
+        let dashboardRoute = '/dashboard';
+        if (profileData?.is_super_admin) {
+          dashboardRoute = '/super-admin';
+        } else {
+          dashboardRoute = getRoleRedirect(profileData?.tenant_role);
+        }
         
         toast({
           title: "Welcome back!",
