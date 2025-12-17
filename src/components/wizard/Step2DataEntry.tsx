@@ -74,7 +74,7 @@ export function Step2DataEntry({
   }, [testData, onUpdate, saveStatus, toast]);
 
   useEffect(() => {
-    const timer = setTimeout(autoSave, 2000); // Auto-save after 2 seconds of inactivity
+    const timer = setTimeout(autoSave, 10000); // Auto-save after 10 seconds of inactivity
     return () => clearTimeout(timer);
   }, [testData, autoSave]);
 
