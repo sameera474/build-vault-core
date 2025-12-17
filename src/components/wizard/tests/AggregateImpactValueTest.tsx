@@ -230,34 +230,34 @@ export function AggregateImpactValueTest({ data, onUpdate }: AggregateImpactValu
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">Aggregate Impact Value (AIV)</h4>
-              <p className="text-3xl font-mono text-blue-800">{aiv}%</p>
-              <p className="text-sm text-blue-700 mt-1">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">Aggregate Impact Value (AIV)</h4>
+              <p className="text-3xl font-mono text-foreground">{aiv}%</p>
+              <p className="text-sm text-muted-foreground mt-1">
                 Impact resistance of aggregate
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">Percentage Fines</h4>
-              <p className="text-3xl font-mono text-green-800">{percentageFines}%</p>
-              <p className="text-sm text-green-700 mt-1">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">Percentage Fines</h4>
+              <p className="text-3xl font-mono text-foreground">{percentageFines}%</p>
+              <p className="text-sm text-muted-foreground mt-1">
                 Material broken during test
               </p>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">Aggregate Classification</h4>
-            <div className="text-gray-800">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">Aggregate Classification</h4>
+            <div className="text-foreground">
               {parseFloat(aiv) !== 0 && (
                 <p className="text-lg font-medium">{getClassification(parseFloat(aiv))}</p>
               )}
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">AIV Classification Standards</h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">AIV Classification Standards</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• AIV ≤ 10%: Exceptionally strong aggregate</li>
               <li>• AIV 10-20%: Strong aggregate</li>
               <li>• AIV 20-30%: Satisfactory for road surfacing</li>
@@ -266,9 +266,9 @@ export function AggregateImpactValueTest({ data, onUpdate }: AggregateImpactValu
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-            <h4 className="font-semibold text-purple-900 mb-2">Test Method Notes</h4>
-            <ul className="text-sm text-purple-800 space-y-1">
+          <div className="mt-4 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">Test Method Notes</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Sample size: 350-400g retained on 2.36mm sieve</li>
               <li>• Hammer: 13.5kg dropped from 380mm height</li>
               <li>• Number of blows: 15</li>

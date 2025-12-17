@@ -236,20 +236,20 @@ export function LosAngelesAbrasionTest({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">Abrasion Loss</h4>
-              <p className="text-3xl font-mono text-blue-800">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">Abrasion Loss</h4>
+              <p className="text-3xl font-mono text-foreground">
                 {abrasionLoss}%
               </p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Percentage of material lost
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">
                 Aggregate Quality
               </h4>
-              <div className="text-green-800 mt-2">
+              <div className="text-foreground mt-2">
                 {parseFloat(abrasionLoss) !== 0 && (
                   <p className="text-lg font-medium">
                     {getClassification(parseFloat(abrasionLoss))}
@@ -259,37 +259,37 @@ export function LosAngelesAbrasionTest({
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Method Summary
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium">Sample Weight:</span>
+                <span className="font-medium text-foreground">Sample Weight:</span>
                 <p className="text-muted-foreground">
                   {formData.sampleWeight} g
                 </p>
               </div>
               <div>
-                <span className="font-medium">Steel Spheres:</span>
+                <span className="font-medium text-foreground">Steel Spheres:</span>
                 <p className="text-muted-foreground">{formData.chargeNumber}</p>
               </div>
               <div>
-                <span className="font-medium">Revolutions:</span>
+                <span className="font-medium text-foreground">Revolutions:</span>
                 <p className="text-muted-foreground">{formData.revolutions}</p>
               </div>
               <div>
-                <span className="font-medium">Test Standard:</span>
+                <span className="font-medium text-foreground">Test Standard:</span>
                 <p className="text-muted-foreground">ASTM C131 / AASHTO T96</p>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Abrasion Loss Classification
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• ≤ 10%: Excellent - Very high abrasion resistance</li>
               <li>• 10-20%: Good - High abrasion resistance</li>
               <li>• 20-30%: Fair - Moderate abrasion resistance</li>
@@ -302,11 +302,11 @@ export function LosAngelesAbrasionTest({
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-            <h4 className="font-semibold text-purple-900 mb-2">
+          <div className="mt-4 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Procedure
             </h4>
-            <ul className="text-sm text-purple-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Sample size: 5000g for 37.5-25mm aggregates</li>
               <li>• Steel spheres: 12 spheres of 48mm diameter</li>
               <li>• Drum revolutions: 500 at 30-33 rpm</li>
@@ -315,13 +315,13 @@ export function LosAngelesAbrasionTest({
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
-            <h4 className="font-semibold text-red-900 mb-2">
+          <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Calculation Method
             </h4>
-            <div className="text-sm text-red-800">
+            <div className="text-sm text-muted-foreground">
               <p>
-                <strong>
+                <strong className="text-foreground">
                   Abrasion Loss (%) = [(Original Weight - Weight After Test) /
                   Original Weight] × 100
                 </strong>

@@ -242,25 +242,25 @@ export function WaterAbsorptionTest({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Sample ID
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Oven Dry Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Saturated Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Submerged Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Water Absorption (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -268,7 +268,7 @@ export function WaterAbsorptionTest({
               <tbody>
                 {formData.sampleData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.sampleId}
                         onChange={(e) =>
@@ -278,7 +278,7 @@ export function WaterAbsorptionTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.ovenDryWeight}
                         onChange={(e) =>
@@ -292,7 +292,7 @@ export function WaterAbsorptionTest({
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.saturatedWeight}
                         onChange={(e) =>
@@ -306,7 +306,7 @@ export function WaterAbsorptionTest({
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.submergedWeight}
                         onChange={(e) =>
@@ -320,14 +320,14 @@ export function WaterAbsorptionTest({
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.waterAbsorption}
                         readOnly
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -358,20 +358,20 @@ export function WaterAbsorptionTest({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">
                 Average Water Absorption
               </h4>
-              <p className="text-3xl font-mono text-blue-800">
+              <p className="text-3xl font-mono text-foreground">
                 {averageAbsorption}%
               </p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Average of all samples
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">Material Quality</h4>
-              <div className="text-green-800 mt-2">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">Material Quality</h4>
+              <div className="text-foreground mt-2">
                 {parseFloat(averageAbsorption) !== 0 && (
                   <p className="text-lg font-medium">
                     {getClassification(parseFloat(averageAbsorption))}
@@ -381,39 +381,39 @@ export function WaterAbsorptionTest({
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Method Summary
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium">Material Type:</span>
+                <span className="font-medium text-foreground">Material Type:</span>
                 <p className="text-muted-foreground">{formData.materialType}</p>
               </div>
               <div>
-                <span className="font-medium">Soaking Period:</span>
+                <span className="font-medium text-foreground">Soaking Period:</span>
                 <p className="text-muted-foreground">
                   {formData.soakingPeriod} hours
                 </p>
               </div>
               <div>
-                <span className="font-medium">Number of Samples:</span>
+                <span className="font-medium text-foreground">Number of Samples:</span>
                 <p className="text-muted-foreground">
                   {formData.sampleData.length}
                 </p>
               </div>
               <div>
-                <span className="font-medium">Test Standard:</span>
+                <span className="font-medium text-foreground">Test Standard:</span>
                 <p className="text-muted-foreground">ASTM C127 / BS 812</p>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Water Absorption Guidelines
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Normal weight aggregates: 0.5-2.0%</li>
               <li>• Lightweight aggregates: 5-25%</li>
               <li>
@@ -424,13 +424,13 @@ export function WaterAbsorptionTest({
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-            <h4 className="font-semibold text-purple-900 mb-2">
+          <div className="mt-4 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Calculation Method
             </h4>
-            <div className="text-sm text-purple-800">
+            <div className="text-sm text-muted-foreground">
               <p>
-                <strong>
+                <strong className="text-foreground">
                   Water Absorption (%) = [(Saturated Weight - Oven Dry Weight) /
                   Oven Dry Weight] × 100
                 </strong>

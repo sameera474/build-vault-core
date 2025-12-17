@@ -256,28 +256,28 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Sample ID
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Container Weight (kg)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Container + Sample (kg)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Sample Weight (kg)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Volume (L)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Bulk Density (kg/m³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -285,7 +285,7 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
               <tbody>
                 {formData.sampleData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.sampleId}
                         onChange={(e) =>
@@ -295,7 +295,7 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.containerWeight}
                         onChange={(e) =>
@@ -309,7 +309,7 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.containerSampleWeight}
                         onChange={(e) =>
@@ -323,14 +323,14 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.sampleWeight}
                         readOnly
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.containerVolume}
                         onChange={(e) =>
@@ -344,14 +344,14 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.bulkDensity}
                         readOnly
-                        className="w-24 bg-gray-50"
+                        className="w-24 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -382,18 +382,18 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">
                 Average Bulk Density
               </h4>
-              <p className="text-3xl font-mono text-blue-800">
+              <p className="text-3xl font-mono text-foreground">
                 {averageBulkDensity}
               </p>
-              <p className="text-sm text-blue-700 mt-1">kg/m³</p>
+              <p className="text-sm text-muted-foreground mt-1">kg/m³</p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">Quality Status</h4>
-              <div className="text-green-800 mt-2">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">Quality Status</h4>
+              <div className="text-foreground mt-2">
                 <p className="text-lg font-medium">
                   {parseFloat(averageBulkDensity) !== 0
                     ? bulkDensityStatus
@@ -401,17 +401,17 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
                 </p>
               </div>
             </div>
-            <div className="text-center p-6 bg-orange-50 border border-orange-200 rounded">
-              <h4 className="font-semibold text-orange-900">Test Standard</h4>
-              <p className="text-lg font-mono text-orange-800">
+            <div className="text-center p-6 bg-secondary border border-border rounded">
+              <h4 className="font-semibold text-foreground">Test Standard</h4>
+              <p className="text-lg font-mono text-foreground">
                 IS 2386 / ASTM C29
               </p>
-              <p className="text-sm text-orange-700 mt-1">Part 3</p>
+              <p className="text-sm text-muted-foreground mt-1">Part 3</p>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Method Summary
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -450,11 +450,11 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Bulk Density Specifications
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Coarse Aggregate: 1400-1800 kg/m³ (typical range)</li>
               <li>• Fine Aggregate: 1500-1900 kg/m³ (typical range)</li>
               <li>• Higher density indicates better packing and strength</li>
@@ -463,11 +463,11 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-            <h4 className="font-semibold text-purple-900 mb-2">
+          <div className="mt-4 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Procedure
             </h4>
-            <ul className="text-sm text-purple-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Clean and dry the container thoroughly</li>
               <li>• Weigh the empty container</li>
               <li>• Fill container with aggregate to overflowing</li>
@@ -478,11 +478,11 @@ export function BulkDensityTest({ data, onUpdate }: BulkDensityTestProps) {
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
-            <h4 className="font-semibold text-red-900 mb-2">
+          <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Quality Control Notes
             </h4>
-            <div className="text-sm text-red-800">
+            <div className="text-sm text-muted-foreground">
               <ul className="space-y-1">
                 <li>• Bulk density affects concrete mix design proportions</li>
                 <li>• Higher values indicate better aggregate quality</li>
