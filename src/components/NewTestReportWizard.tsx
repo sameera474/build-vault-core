@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { reportService } from "@/services/reportService";
+import { supabase } from "@/integrations/supabase/client";
 import { Step1General } from "./wizard/Step1General";
 import { Step2DataEntry } from "./wizard/Step2DataEntry";
 import { Step3Summary } from "./wizard/Step3Summary";
@@ -268,7 +269,14 @@ export function NewTestReportWizard({
   };
 
   const handleSaveDraft = async () => {
-    if (!reportId) return;
+    if (!reportId) {
+      toast({
+        title: "Cannot Save",
+        description: "Report has not been created yet. Please complete Step 1 first.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -289,16 +297,21 @@ export function NewTestReportWizard({
   };
 
   const handleSubmitForApproval = async () => {
-    if (!reportId) return;
+    if (!reportId) {
+      toast({
+        title: "Cannot Submit",
+        description: "Report has not been created yet. Please complete Step 1 first.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // The report is already submitted on creation, so we just close the wizard
-      // await reportService.submitForApproval(reportId);
+      await reportService.submitForApproval(reportId);
       toast({
-        title: "Report Created & Submitted",
-        description:
-          "Your test report has been created and submitted for approval.",
+        title: "Report Submitted",
+        description: "Your test report has been submitted for approval.",
       });
       if (onClose) {
         onClose();
@@ -313,6 +326,52 @@ export function NewTestReportWizard({
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!reportId) {
+      toast({
+        title: "Cannot Export",
+        description: "Report has not been created yet. Please complete Step 1 first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://scwhurqvgeskseugwcrx.supabase.co/functions/v1/export_report_pdf?reportId=${reportId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error('PDF export failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${wizardData.report_number || 'test-report'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "PDF Exported",
+        description: "Your test report has been exported successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export PDF. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -336,6 +395,7 @@ export function NewTestReportWizard({
             data={wizardData}
             onSaveDraft={handleSaveDraft}
             onSubmitForApproval={handleSubmitForApproval}
+            onExportPDF={handleExportPDF}
             isLoading={isLoading}
           />
         );

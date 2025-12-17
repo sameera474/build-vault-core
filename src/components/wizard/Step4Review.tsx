@@ -8,10 +8,11 @@ interface Step4ReviewProps {
   data: any;
   onSaveDraft: () => void;
   onSubmitForApproval: () => void;
+  onExportPDF: () => void;
   isLoading: boolean;
 }
 
-export function Step4Review({ data, onSaveDraft, onSubmitForApproval, isLoading }: Step4ReviewProps) {
+export function Step4Review({ data, onSaveDraft, onSubmitForApproval, onExportPDF, isLoading }: Step4ReviewProps) {
   const getComplianceBadge = () => {
     switch (data.compliance_status) {
       case 'PASS':
@@ -287,6 +288,7 @@ export function Step4Review({ data, onSaveDraft, onSubmitForApproval, isLoading 
         
         <Button
           variant="outline"
+          onClick={onExportPDF}
           disabled={isLoading}
           className="flex items-center gap-2"
         >
