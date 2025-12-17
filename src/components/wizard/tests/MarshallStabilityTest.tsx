@@ -299,31 +299,31 @@ export function MarshallStabilityTest({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Sample ID
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Stability (N)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Flow (mm)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Unit Weight (g/cm³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Air Voids (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     VFB (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     VFA (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -331,7 +331,7 @@ export function MarshallStabilityTest({
               <tbody>
                 {formData.sampleData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.sampleId}
                         onChange={(e) =>
@@ -341,7 +341,7 @@ export function MarshallStabilityTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.stability}
                         onChange={(e) =>
@@ -351,7 +351,7 @@ export function MarshallStabilityTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.flow}
                         onChange={(e) =>
@@ -361,7 +361,7 @@ export function MarshallStabilityTest({
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.unitWeight}
                         onChange={(e) =>
@@ -371,7 +371,7 @@ export function MarshallStabilityTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.airVoids}
                         onChange={(e) =>
@@ -381,7 +381,7 @@ export function MarshallStabilityTest({
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.vfb}
                         onChange={(e) =>
@@ -391,7 +391,7 @@ export function MarshallStabilityTest({
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.vfa}
                         onChange={(e) =>
@@ -401,7 +401,7 @@ export function MarshallStabilityTest({
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -432,35 +432,35 @@ export function MarshallStabilityTest({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">Average Stability</h4>
-              <p className="text-3xl font-mono text-blue-800">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">Average Stability</h4>
+              <p className="text-3xl font-mono text-foreground">
                 {averageStability} N
               </p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Load-bearing capacity
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">Average Flow</h4>
-              <p className="text-3xl font-mono text-green-800">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">Average Flow</h4>
+              <p className="text-3xl font-mono text-foreground">
                 {averageFlow} mm
               </p>
-              <p className="text-sm text-green-700 mt-1">Plastic deformation</p>
+              <p className="text-sm text-muted-foreground mt-1">Plastic deformation</p>
             </div>
-            <div className="text-center p-6 bg-orange-50 border border-orange-200 rounded">
-              <h4 className="font-semibold text-orange-900">
+            <div className="text-center p-6 bg-secondary border border-border rounded">
+              <h4 className="font-semibold text-foreground">
                 Average Air Voids
               </h4>
-              <p className="text-3xl font-mono text-orange-800">
+              <p className="text-3xl font-mono text-foreground">
                 {averageAirVoids}%
               </p>
-              <p className="text-sm text-orange-700 mt-1">Porosity of mix</p>
+              <p className="text-sm text-muted-foreground mt-1">Porosity of mix</p>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Marshall Mix Quality Assessment
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -499,11 +499,11 @@ export function MarshallStabilityTest({
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-muted/50 border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Marshall Criteria Guidelines
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>
                 • Stability: 3336-3560 N (light traffic), 5340-6670 N (heavy
                 traffic)
@@ -519,11 +519,11 @@ export function MarshallStabilityTest({
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-            <h4 className="font-semibold text-purple-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Procedure
             </h4>
-            <ul className="text-sm text-purple-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Sample preparation: 101.6mm diameter × 63.5mm height</li>
               <li>• Compaction: 75 blows per face at specified temperature</li>
               <li>• Conditioning: 30-60 minutes at 60°C in water bath</li>

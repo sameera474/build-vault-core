@@ -431,34 +431,34 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Trial
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Asphalt Content (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Bulk Density (kg/m³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Stability (N)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Flow (mm)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Air Voids (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     VFB (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     VFA (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -466,7 +466,7 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
               <tbody>
                 {formData.mixTrials.map((trial, index) => (
                   <tr key={trial.id}>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={trial.trialNumber}
                         onChange={(e) =>
@@ -476,7 +476,7 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
                         className="w-12"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={trial.asphaltContent}
                         onChange={(e) =>
@@ -490,7 +490,7 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={trial.bulkDensity}
                         onChange={(e) =>
@@ -500,7 +500,7 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={trial.stability}
                         onChange={(e) =>
@@ -510,7 +510,7 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={trial.flow}
                         onChange={(e) =>
@@ -520,7 +520,7 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={trial.voids}
                         onChange={(e) =>
@@ -530,21 +530,21 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={trial.vfb}
                         readOnly
-                        className="w-16 bg-gray-50"
+                        className="w-16 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={trial.vfa}
                         readOnly
-                        className="w-16 bg-gray-50"
+                        className="w-16 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -575,37 +575,37 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">
                 Optimal Asphalt Content
               </h4>
-              <p className="text-3xl font-mono text-blue-800">
+              <p className="text-3xl font-mono text-foreground">
                 {optimalMix ? `${optimalMix.asphaltContent}%` : "N/A"}
               </p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 From mix design trials
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">Design Stability</h4>
-              <p className="text-3xl font-mono text-green-800">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">Design Stability</h4>
+              <p className="text-3xl font-mono text-foreground">
                 {optimalMix ? `${optimalMix.stability} N` : "N/A"}
               </p>
-              <p className="text-sm text-green-700 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Marshall stability value
               </p>
             </div>
-            <div className="text-center p-6 bg-orange-50 border border-orange-200 rounded">
-              <h4 className="font-semibold text-orange-900">Design Status</h4>
-              <div className="text-orange-800 mt-2">
+            <div className="text-center p-6 bg-secondary border border-border rounded">
+              <h4 className="font-semibold text-foreground">Design Status</h4>
+              <div className="text-foreground mt-2">
                 <p className="text-lg font-medium">{mixDesignStatus}</p>
               </div>
             </div>
           </div>
 
           {optimalMix && (
-            <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-              <h4 className="font-semibold text-gray-900 mb-2">
+            <div className="mt-6 p-4 bg-muted border border-border rounded">
+              <h4 className="font-semibold text-foreground mb-2">
                 Optimal Mix Parameters (Trial {optimalMix.trialNumber})
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -653,11 +653,11 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
             </div>
           )}
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-muted/50 border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Marshall Design Criteria
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>
                 • Stability: ≥ 8000 N for wearing course, ≥ 6000 N for binder
                 course
@@ -670,11 +670,11 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-            <h4 className="font-semibold text-purple-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Mix Design Procedure
             </h4>
-            <ul className="text-sm text-purple-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Prepare aggregate blend meeting gradation requirements</li>
               <li>
                 • Select 5 asphalt contents varying by 0.5% around estimated
@@ -688,11 +688,11 @@ export function HotMixDesignTest({ data, onUpdate }: HotMixDesignTestProps) {
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
-            <h4 className="font-semibold text-red-900 mb-2">
+          <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Quality Control Considerations
             </h4>
-            <div className="text-sm text-red-800">
+            <div className="text-sm text-muted-foreground">
               <ul className="space-y-1">
                 <li>
                   • Aggregate quality and gradation consistency is critical

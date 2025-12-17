@@ -363,40 +363,40 @@ export function AsphaltCoreDensityTest({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-border">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 p-2 text-left">
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Core ID
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Location
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Chainage (km)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Diameter (mm)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Height (mm)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Weight (g)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Bulk Density (kg/m³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Theoretical Density (kg/m³)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Voids (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Compaction (%)
                   </th>
-                  <th className="border border-gray-300 p-2 text-left">
+                  <th className="border border-border p-2 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -404,7 +404,7 @@ export function AsphaltCoreDensityTest({
               <tbody>
                 {formData.coreData.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.coreId}
                         onChange={(e) =>
@@ -414,7 +414,7 @@ export function AsphaltCoreDensityTest({
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.location}
                         onChange={(e) =>
@@ -424,7 +424,7 @@ export function AsphaltCoreDensityTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.chainage}
                         onChange={(e) =>
@@ -434,7 +434,7 @@ export function AsphaltCoreDensityTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.diameter}
                         onChange={(e) =>
@@ -444,7 +444,7 @@ export function AsphaltCoreDensityTest({
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.height}
                         onChange={(e) =>
@@ -454,7 +454,7 @@ export function AsphaltCoreDensityTest({
                         className="w-16"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.weight}
                         onChange={(e) =>
@@ -464,14 +464,14 @@ export function AsphaltCoreDensityTest({
                         className="w-20"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.bulkDensity}
                         readOnly
-                        className="w-24 bg-gray-50"
+                        className="w-24 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.theoreticalDensity}
                         onChange={(e) =>
@@ -485,21 +485,21 @@ export function AsphaltCoreDensityTest({
                         className="w-24"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.voids}
                         readOnly
-                        className="w-16 bg-gray-50"
+                        className="w-16 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Input
                         value={item.compaction}
                         readOnly
-                        className="w-20 bg-gray-50"
+                        className="w-20 bg-muted"
                       />
                     </td>
-                    <td className="border border-gray-300 p-2">
+                    <td className="border border-border p-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -530,29 +530,29 @@ export function AsphaltCoreDensityTest({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-semibold text-blue-900">Average Density</h4>
-              <p className="text-3xl font-mono text-blue-800">
+            <div className="text-center p-6 bg-primary/10 border border-primary/20 rounded">
+              <h4 className="font-semibold text-foreground">Average Density</h4>
+              <p className="text-3xl font-mono text-foreground">
                 {averageDensity} kg/m³
               </p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Bulk density of cores
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-semibold text-green-900">
+            <div className="text-center p-6 bg-accent/20 border border-accent/30 rounded">
+              <h4 className="font-semibold text-foreground">
                 Average Compaction
               </h4>
-              <p className="text-3xl font-mono text-green-800">
+              <p className="text-3xl font-mono text-foreground">
                 {averageCompaction}%
               </p>
-              <p className="text-sm text-green-700 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Degree of compaction
               </p>
             </div>
-            <div className="text-center p-6 bg-orange-50 border border-orange-200 rounded">
-              <h4 className="font-semibold text-orange-900">Quality Status</h4>
-              <div className="text-orange-800 mt-2">
+            <div className="text-center p-6 bg-secondary border border-border rounded">
+              <h4 className="font-semibold text-foreground">Quality Status</h4>
+              <div className="text-foreground mt-2">
                 <p className="text-lg font-medium">
                   {parseFloat(averageCompaction) !== 0
                     ? getCompactionStatus(
@@ -565,8 +565,8 @@ export function AsphaltCoreDensityTest({
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <h4 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-6 p-4 bg-muted border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Method Summary
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -617,11 +617,11 @@ export function AsphaltCoreDensityTest({
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold text-yellow-900 mb-2">
+          <div className="mt-4 p-4 bg-muted/50 border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Compaction Requirements
             </h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>
                 • Dense Bituminous Macadam: ≥ 92% of theoretical maximum density
               </li>
@@ -634,11 +634,11 @@ export function AsphaltCoreDensityTest({
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-            <h4 className="font-semibold text-purple-900 mb-2">
+          <div className="mt-4 p-4 bg-secondary border border-border rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Test Procedure
             </h4>
-            <ul className="text-sm text-purple-800 space-y-1">
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Extract cores from completed pavement using core cutter</li>
               <li>• Measure core dimensions (diameter and height)</li>
               <li>• Weigh cores in air (bulk density)</li>
@@ -648,11 +648,11 @@ export function AsphaltCoreDensityTest({
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
-            <h4 className="font-semibold text-red-900 mb-2">
+          <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded">
+            <h4 className="font-semibold text-foreground mb-2">
               Quality Control Notes
             </h4>
-            <div className="text-sm text-red-800">
+            <div className="text-sm text-muted-foreground">
               <ul className="space-y-1">
                 <li>• Low compaction indicates poor construction quality</li>
                 <li>
