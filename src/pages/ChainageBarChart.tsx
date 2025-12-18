@@ -40,6 +40,8 @@ interface LayerData {
   report_id: string;
   chainage_from: number;
   chainage_to: number;
+  status: string;
+  compliance_status: string;
 }
 
 export default function ChainageBarChart() {
@@ -253,10 +255,11 @@ export default function ChainageBarChart() {
       const { data, error } = await supabase
         .from("test_reports")
         .select(
-          "id, chainage_from, chainage_to, material, custom_material, side, road_name"
+          "id, chainage_from, chainage_to, material, custom_material, side, road_name, status, compliance_status"
         )
         .eq("project_id", id)
         .eq("road_name", roadData.name)
+        .in("status", ["approved", "rejected"]) // Only show approved/rejected reports
         .order("chainage_from");
 
       if (error) throw error;
@@ -291,10 +294,12 @@ export default function ChainageBarChart() {
             report_id: report.id,
             chainage_from: from,
             chainage_to: to,
+            status: report.status || "draft",
+            compliance_status: report.compliance_status || "pending",
           };
         })
         .filter(
-          (p) => p.material && p.chainage_from > 0 && p.chainage_to > 0
+          (p) => p.material && p.chainage_from >= 0 && p.chainage_to > 0
         );
 
       setLayerData(layerPoints);
@@ -563,22 +568,27 @@ export default function ChainageBarChart() {
                       <div key={`lhs-${layer}`} className="flex items-center gap-2">
                         <div className="w-40 text-sm font-medium text-right">{layer}</div>
                         <div className="flex-1 h-8 bg-muted rounded relative overflow-hidden">
-                          {lhsData.map((item, idx) => (
-                            <div
-                              key={idx}
-                              className="absolute h-full group cursor-pointer hover:opacity-80 transition-opacity"
-                              style={{
-                                left: `${(item.chainage_from / maxChainage) * 100}%`,
-                                width: `${((item.chainage_to - item.chainage_from) / maxChainage) * 100}%`,
-                                backgroundColor: layerColors[layer] || "#6b7280",
-                              }}
-                              title={`${item.chainage} - ${item.material}`}
-                            >
-                              <div className="absolute inset-0 flex items-center justify-center text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                {item.chainage}
+                          {lhsData.map((item, idx) => {
+                            const isRejected = item.status === "rejected";
+                            const bgColor = isRejected ? "#ef4444" : (layerColors[layer] || "#6b7280");
+                            return (
+                              <div
+                                key={idx}
+                                className="absolute h-full group cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{
+                                  left: `${(item.chainage_from / maxChainage) * 100}%`,
+                                  width: `${((item.chainage_to - item.chainage_from) / maxChainage) * 100}%`,
+                                  backgroundColor: bgColor,
+                                  border: isRejected ? "2px solid #b91c1c" : "none",
+                                }}
+                                title={`${item.chainage} - ${item.material} (${isRejected ? 'REJECTED' : 'APPROVED'})`}
+                              >
+                                <div className="absolute inset-0 flex items-center justify-center text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {item.chainage}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -605,23 +615,28 @@ export default function ChainageBarChart() {
                       <div key={`rhs-${layer}`} className="flex items-center gap-2">
                         <div className="w-40 text-sm font-medium text-right">{layer}</div>
                         <div className="flex-1 h-8 bg-muted rounded relative overflow-hidden">
-                          {rhsData.map((item, idx) => (
-                            <div
-                              key={idx}
-                              className="absolute h-full group cursor-pointer hover:opacity-80 transition-opacity"
-                              style={{
-                                left: `${(item.chainage_from / maxChainage) * 100}%`,
-                                width: `${((item.chainage_to - item.chainage_from) / maxChainage) * 100}%`,
-                                backgroundColor: layerColors[layer] || "#6b7280",
-                                opacity: 0.7,
-                              }}
-                              title={`${item.chainage} - ${item.material}`}
-                            >
-                              <div className="absolute inset-0 flex items-center justify-center text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                {item.chainage}
+                          {rhsData.map((item, idx) => {
+                            const isRejected = item.status === "rejected";
+                            const bgColor = isRejected ? "#ef4444" : (layerColors[layer] || "#6b7280");
+                            return (
+                              <div
+                                key={idx}
+                                className="absolute h-full group cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{
+                                  left: `${(item.chainage_from / maxChainage) * 100}%`,
+                                  width: `${((item.chainage_to - item.chainage_from) / maxChainage) * 100}%`,
+                                  backgroundColor: bgColor,
+                                  opacity: 0.7,
+                                  border: isRejected ? "2px solid #b91c1c" : "none",
+                                }}
+                                title={`${item.chainage} - ${item.material} (${isRejected ? 'REJECTED' : 'APPROVED'})`}
+                              >
+                                <div className="absolute inset-0 flex items-center justify-center text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {item.chainage}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -708,7 +723,7 @@ export default function ChainageBarChart() {
           <CardTitle>Layer Colors</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
             {Object.keys(grouped).map((layer) => (
               <div key={layer} className="flex items-center gap-2">
                 <div
@@ -718,6 +733,16 @@ export default function ChainageBarChart() {
                 <span className="text-xs">{layer}</span>
               </div>
             ))}
+          </div>
+          <div className="border-t pt-3 flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-green-500"></div>
+              <span className="text-xs">Approved (Pass)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded border-2 border-red-700" style={{ backgroundColor: "#ef4444" }}></div>
+              <span className="text-xs">Rejected (Fail)</span>
+            </div>
           </div>
         </CardContent>
       </Card>
