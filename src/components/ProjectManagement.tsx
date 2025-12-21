@@ -603,13 +603,13 @@ export function ProjectManagement() {
               className="hover:shadow-md transition-shadow"
             >
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg line-clamp-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <CardTitle className="text-lg truncate" title={project.name}>
                       {project.name}
                     </CardTitle>
                     {isSuperAdmin && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground truncate">
                         {project.company_name}
                       </p>
                     )}
