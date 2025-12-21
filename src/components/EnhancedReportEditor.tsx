@@ -298,14 +298,20 @@ export function EnhancedReportEditor() {
   };
 
   const getPassFailBadge = () => {
-    if (passFailStatus === 'pass') {
+    // First check the stored compliance_status from the report
+    const storedStatus = report?.compliance_status?.toLowerCase();
+    const effectiveStatus = storedStatus === 'pass' || storedStatus === 'fail' 
+      ? storedStatus 
+      : passFailStatus;
+
+    if (effectiveStatus === 'pass') {
       return (
         <Badge variant="default" className="bg-green-500 hover:bg-green-600">
           <CheckCircle className="h-3 w-3 mr-1" />
           PASS
         </Badge>
       );
-    } else if (passFailStatus === 'fail') {
+    } else if (effectiveStatus === 'fail') {
       return (
         <Badge variant="destructive">
           <XCircle className="h-3 w-3 mr-1" />
@@ -320,6 +326,50 @@ export function EnhancedReportEditor() {
         </Badge>
       );
     }
+  };
+
+  const getComplianceExplanation = () => {
+    const storedStatus = report?.compliance_status?.toLowerCase();
+    const effectiveStatus = storedStatus === 'pass' || storedStatus === 'fail' 
+      ? storedStatus 
+      : passFailStatus;
+
+    if (effectiveStatus === 'pass') {
+      return 'Test results meet specification requirements';
+    } else if (effectiveStatus === 'fail') {
+      return 'Test results do not meet specification requirements';
+    } else {
+      return 'Awaiting test data entry or approval decision';
+    }
+  };
+
+  const getSummaryKPIs = () => {
+    const summary = report?.summary_json;
+    if (!summary || typeof summary !== 'object') return null;
+
+    const kpis: { label: string; value: string }[] = [];
+    
+    // Extract key values from summary_json
+    if (summary.degree_of_compaction) {
+      kpis.push({ label: 'Compaction', value: `${Number(summary.degree_of_compaction).toFixed(1)}%` });
+    }
+    if (summary.field_dry_density) {
+      kpis.push({ label: 'Field Density', value: `${Number(summary.field_dry_density).toFixed(3)} g/cm³` });
+    }
+    if (summary.max_dry_density) {
+      kpis.push({ label: 'Max Density', value: `${Number(summary.max_dry_density).toFixed(3)} g/cm³` });
+    }
+    if (summary.crushing_value) {
+      kpis.push({ label: 'Crushing Value', value: `${Number(summary.crushing_value).toFixed(1)}%` });
+    }
+    if (summary.impact_value) {
+      kpis.push({ label: 'Impact Value', value: `${Number(summary.impact_value).toFixed(1)}%` });
+    }
+    if (summary.cbr_value) {
+      kpis.push({ label: 'CBR', value: `${Number(summary.cbr_value).toFixed(1)}%` });
+    }
+
+    return kpis.length > 0 ? kpis : null;
   };
 
   const canEdit = () => {
@@ -541,12 +591,28 @@ export function EnhancedReportEditor() {
                 <div className="p-3 border rounded">
                   <span className="font-medium text-muted-foreground">Compliance Status:</span>
                   <div className="mt-1">{getPassFailBadge()}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{getComplianceExplanation()}</p>
                 </div>
                 <div className="p-3 border rounded">
                   <span className="font-medium text-muted-foreground">Created:</span>
                   <p>{new Date(report.created_at).toLocaleString()}</p>
                 </div>
               </div>
+
+              {/* Summary KPIs */}
+              {getSummaryKPIs() && (
+                <div className="mt-4">
+                  <h5 className="font-medium text-sm mb-2">Test Results Summary</h5>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {getSummaryKPIs()?.map((kpi, index) => (
+                      <div key={index} className="p-3 bg-muted/50 rounded-lg text-center">
+                        <p className="text-xs text-muted-foreground">{kpi.label}</p>
+                        <p className="text-lg font-semibold">{kpi.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
