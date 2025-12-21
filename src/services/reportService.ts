@@ -59,10 +59,46 @@ class ReportService {
     return profile;
   }
 
-  private async generateReportNumber(companyId: string): Promise<string> {
-    // Simple fallback report number generation
+  async generateReportNumber(
+    projectId: string,
+    docCode: string,
+    testDate: string
+  ): Promise<{ report_number: string; seq: number; yymmdd: string }> {
+    const profile = await this.getProfile();
+    
+    const { data, error } = await supabase.rpc('allocate_report_number', {
+      _company: profile.company_id,
+      _project: projectId,
+      _doc_code: docCode,
+      _date: testDate
+    });
+
+    if (error) {
+      console.error('Error allocating report number:', error);
+      // Fallback to simple format
+      const timestamp = Date.now().toString().slice(-6);
+      return {
+        report_number: `${docCode} TEMP${timestamp.slice(-4)}`,
+        seq: 0,
+        yymmdd: testDate.replace(/-/g, '').slice(2)
+      };
+    }
+
+    if (data && data.length > 0) {
+      return {
+        report_number: data[0].report_number,
+        seq: data[0].seq,
+        yymmdd: data[0].yymmdd
+      };
+    }
+
+    // Fallback
     const timestamp = Date.now().toString().slice(-6);
-    return `TR-${timestamp}`;
+    return {
+      report_number: `${docCode} TEMP${timestamp.slice(-4)}`,
+      seq: 0,
+      yymmdd: testDate.replace(/-/g, '').slice(2)
+    };
   }
 
   async fetchReports(filters?: {
@@ -131,14 +167,33 @@ class ReportService {
 
     if (!user) throw new Error('User not authenticated');
 
-    // Generate a unique report number
-    const reportNumber = await this.generateReportNumber(profile.company_id);
+    // Generate a unique report number using project, doc_code, and test_date
+    let reportNumber = reportData.report_number;
+    let seq: number | undefined;
+    let yymmdd: string | undefined;
+
+    if (reportData.project_id && reportData.doc_code && reportData.test_date) {
+      const numberData = await this.generateReportNumber(
+        reportData.project_id,
+        reportData.doc_code,
+        reportData.test_date
+      );
+      reportNumber = numberData.report_number;
+      seq = numberData.seq;
+      yymmdd = numberData.yymmdd;
+    } else {
+      // Fallback if missing required fields
+      const timestamp = Date.now().toString().slice(-6);
+      reportNumber = `TR-${timestamp}`;
+    }
 
     const newReport = {
       ...reportData,
       report_number: reportNumber,
+      seq,
+      yymmdd,
       company_id: profile.company_id,
-      created_by: user.id, // Ensure created_by is set for RLS
+      created_by: user.id,
       status: 'draft' as ReportStatusEnum,
     };
 
