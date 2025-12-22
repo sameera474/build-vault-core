@@ -207,29 +207,13 @@ export default function TestReports() {
     if (!profile?.user_id) return;
 
     try {
-      // For project managers, allow access to all company projects for report management
-      // For other roles, use the standard user_accessible_projects function
-      let query = supabase
-        .from("projects")
-        .select("id, name, description")
-        .order("name");
-
-      if (profile.tenant_role === "project_manager" && profile.company_id) {
-        // Project managers can see all projects in their company
-        query = query.eq("company_id", profile.company_id);
-      } else {
-        // For other roles, use the standard access control
-        const { data, error } = await supabase.rpc("user_accessible_projects");
-        if (error) {
-          console.error("Error fetching projects:", error);
-          return;
-        }
-        setProjects(data || []);
+      // Use the user_accessible_projects function which respects project_members assignments
+      // Admins see all company projects, other roles see only assigned projects
+      const { data, error } = await supabase.rpc("user_accessible_projects");
+      if (error) {
+        console.error("Error fetching projects:", error);
         return;
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
       setProjects(data || []);
     } catch (error) {
       console.error("Error fetching projects:", error);
