@@ -16,6 +16,8 @@ import {
   Send,
   ThumbsUp,
   ThumbsDown,
+  RotateCcw,
+  RefreshCw,
 } from "lucide-react";
 
 interface PassFailProps {
@@ -55,6 +57,7 @@ interface TestReportsListItemProps {
   onSubmitForApproval?: () => void;
   onApprove?: () => void;
   onReject?: () => void;
+  onRetest?: () => void;
   canApprove?: boolean;
 }
 
@@ -65,6 +68,7 @@ export function TestReportsListItem({
   onSubmitForApproval,
   onApprove,
   onReject,
+  onRetest,
   canApprove = false,
 }: TestReportsListItemProps) {
   const getPrimaryKpi = () => {
@@ -160,9 +164,17 @@ export function TestReportsListItem({
           </div>
         </div>
         <div className="text-right space-y-1">
-          <Badge variant="secondary">
-            {(r.status || "draft").toUpperCase()}
-          </Badge>
+          <div className="flex flex-wrap gap-1 justify-end">
+            {r.is_retest && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Retest
+              </Badge>
+            )}
+            <Badge variant="secondary">
+              {(r.status || "draft").toUpperCase()}
+            </Badge>
+          </div>
           <div>
             <PassFail status={r.compliance_status} />
           </div>
@@ -195,6 +207,12 @@ export function TestReportsListItem({
                   Reject
                 </DropdownMenuItem>
               )}
+              {r.status === "rejected" && onRetest && (
+                <DropdownMenuItem onClick={onRetest} className="text-blue-600">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Create Retest
+                </DropdownMenuItem>
+              )}
               {onDelete && (
                 <DropdownMenuItem
                   onClick={onDelete}
@@ -206,6 +224,18 @@ export function TestReportsListItem({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          {/* Prominent Retest Button for rejected reports */}
+          {r.status === "rejected" && onRetest && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onRetest}
+              className="mt-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              Retest
+            </Button>
+          )}
         </div>
       </div>
 

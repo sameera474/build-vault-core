@@ -66,6 +66,8 @@ interface TestReport {
   approved_at?: string;
   summary_json?: any;
   data_json?: any;
+  is_retest?: boolean;
+  original_report_id?: string;
   projects?: {
     name: string;
   };
@@ -306,6 +308,82 @@ export default function TestReports() {
     }
   };
 
+  const handleRetest = async (originalReport: TestReport) => {
+    try {
+      // Create a new report based on the rejected one, marked as a retest
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Get the profile for company_id
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!profileData?.company_id) throw new Error("Company not found");
+
+      // Generate a new report number using RPC
+      const { data: reportNumData, error: rpcError } = await supabase.rpc(
+        "allocate_report_number",
+        {
+          _company: profileData.company_id,
+          _date: new Date().toISOString().split("T")[0],
+          _doc_code: originalReport.test_type || "GEN",
+          _project: originalReport.project_id || "",
+        }
+      );
+
+      if (rpcError) throw rpcError;
+
+      const reportNumber = reportNumData?.[0]?.report_number || `RT-${Date.now()}`;
+
+      const { data: newReport, error } = await supabase
+        .from("test_reports")
+        .insert({
+          report_number: reportNumber,
+          project_id: originalReport.project_id,
+          company_id: profileData.company_id,
+          created_by: user.id,
+          material: originalReport.material as any,
+          custom_material: originalReport.custom_material,
+          road_name: originalReport.road_name,
+          chainage_from: originalReport.chainage_from,
+          chainage_to: originalReport.chainage_to,
+          side: originalReport.side as any,
+          laboratory_test_no: originalReport.laboratory_test_no,
+          covered_chainage: originalReport.covered_chainage,
+          road_offset: originalReport.road_offset,
+          test_type: originalReport.test_type,
+          test_date: new Date().toISOString().split("T")[0],
+          status: "draft",
+          is_retest: true,
+          original_report_id: originalReport.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Retest Created",
+        description: "A new retest report has been created. You can now enter the new test data.",
+      });
+
+      // Open the new report for editing
+      setEditingReportId(newReport.id);
+      setIsCreateDialogOpen(true);
+      fetchReports();
+    } catch (error) {
+      console.error("Error creating retest:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create retest report",
+        variant: "destructive",
+      });
+    }
+  };
+
   const [deleteReportId, setDeleteReportId] = useState<string | null>(null);
 
   const handleDelete = async (reportId: string) => {
@@ -443,7 +521,10 @@ export default function TestReports() {
         <>
           <Tabs defaultValue="reports" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="reports">Reports</TabsTrigger>
+              <TabsTrigger value="reports">All Reports</TabsTrigger>
+              <TabsTrigger value="rejected">
+                Rejected ({reports.filter(r => r.status === "rejected").length})
+              </TabsTrigger>
               <TabsTrigger value="flow">Process Flow</TabsTrigger>
             </TabsList>
 
@@ -708,6 +789,49 @@ export default function TestReports() {
                         onSubmitForApproval={() => handleSubmitForApproval(report.id)}
                         onApprove={() => handleApprove(report.id)}
                         onReject={() => handleReject(report.id)}
+                        onRetest={report.status === "rejected" ? () => handleRetest(report) : undefined}
+                        canApprove={permissions.canApproveReport}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Rejected Reports Tab */}
+            <TabsContent value="rejected">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <XCircle className="h-5 w-5 text-destructive" />
+                      Rejected Test Reports
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Reports that have been rejected and require retesting. Click "Retest" to create a new test based on a rejected report.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  {reports.filter(r => r.status === "rejected").length === 0 ? (
+                    <Card>
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                        <h3 className="text-lg font-semibold">No Rejected Reports</h3>
+                        <p className="text-muted-foreground mt-2">All your reports are in good standing.</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    reports.filter(r => r.status === "rejected").map((report) => (
+                      <TestReportsListItem
+                        key={report.id}
+                        r={report}
+                        onOpen={() => navigate(`/test-reports/${report.id}/edit`)}
+                        onDelete={() => handleDelete(report.id)}
+                        onRetest={() => handleRetest(report)}
                         canApprove={permissions.canApproveReport}
                       />
                     ))

@@ -896,10 +896,12 @@ export type Database = {
           gps_longitude: number | null
           graphs_json: Json | null
           id: string
+          is_retest: boolean | null
           laboratory_test_no: string | null
           material: Database["public"]["Enums"]["material_enum"] | null
           material_type: string | null
           notes: string | null
+          original_report_id: string | null
           project_id: string | null
           report_number: string
           results: Json | null
@@ -939,10 +941,12 @@ export type Database = {
           gps_longitude?: number | null
           graphs_json?: Json | null
           id?: string
+          is_retest?: boolean | null
           laboratory_test_no?: string | null
           material?: Database["public"]["Enums"]["material_enum"] | null
           material_type?: string | null
           notes?: string | null
+          original_report_id?: string | null
           project_id?: string | null
           report_number: string
           results?: Json | null
@@ -982,10 +986,12 @@ export type Database = {
           gps_longitude?: number | null
           graphs_json?: Json | null
           id?: string
+          is_retest?: boolean | null
           laboratory_test_no?: string | null
           material?: Database["public"]["Enums"]["material_enum"] | null
           material_type?: string | null
           notes?: string | null
+          original_report_id?: string | null
           project_id?: string | null
           report_number?: string
           results?: Json | null
@@ -1008,6 +1014,13 @@ export type Database = {
           yymmdd?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "test_reports_original_report_id_fkey"
+            columns: ["original_report_id"]
+            isOneToOne: false
+            referencedRelation: "test_reports"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "test_reports_project_id_fkey"
             columns: ["project_id"]
