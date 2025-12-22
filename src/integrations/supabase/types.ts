@@ -1157,6 +1157,14 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      can_user_access_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_user_access_report: {
+        Args: { _company_id: string; _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       create_new_project: {
         Args: {
           p_client_name: string
