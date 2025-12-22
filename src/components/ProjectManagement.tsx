@@ -161,10 +161,28 @@ export function ProjectManagement() {
         if (res.error) throw new Error(res.error);
         const projectsData = (res.projects as any[]) || [];
 
+        // Fetch report counts for each project
+        const projectIds = projectsData.map((p: any) => p.id);
+        let reportCounts: Record<string, number> = {};
+        
+        if (projectIds.length > 0) {
+          // Use edge function or direct query for super admin
+          const { data: reportsData } = await supabase
+            .from('test_reports')
+            .select('project_id')
+            .in('project_id', projectIds);
+          
+          if (reportsData) {
+            reportsData.forEach((r: any) => {
+              reportCounts[r.project_id] = (reportCounts[r.project_id] || 0) + 1;
+            });
+          }
+        }
+        
         const projectsWithCounts = projectsData.map((project: any) => ({
           ...project,
           company_name: (project as any).companies?.name || "Unknown Company",
-          _count: { test_reports: 0 },
+          _count: { test_reports: reportCounts[project.id] || 0 },
         }));
         setProjects(projectsWithCounts);
       } else {
@@ -187,10 +205,27 @@ export function ProjectManagement() {
         const { data: projectsData, error } = await query;
         if (error) throw error;
 
+        // Fetch report counts for each project
+        const projectIds = (projectsData || []).map((p: any) => p.id);
+        let reportCounts: Record<string, number> = {};
+        
+        if (projectIds.length > 0) {
+          const { data: reportsData } = await supabase
+            .from('test_reports')
+            .select('project_id')
+            .in('project_id', projectIds);
+          
+          if (reportsData) {
+            reportsData.forEach((r: any) => {
+              reportCounts[r.project_id] = (reportCounts[r.project_id] || 0) + 1;
+            });
+          }
+        }
+        
         const projectsWithCounts = (projectsData || []).map((project: any) => ({
           ...project,
           company_name: (project as any).companies?.name || "Unknown Company",
-          _count: { test_reports: 0 },
+          _count: { test_reports: reportCounts[project.id] || 0 },
         }));
         setProjects(projectsWithCounts);
       }
