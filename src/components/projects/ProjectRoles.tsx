@@ -104,8 +104,9 @@ export function ProjectRoles({ projectId }: ProjectRolesProps) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, name, tenant_role')
-        .eq('company_id', profile.company_id);
+        .select('user_id, name, tenant_role, is_super_admin')
+        .eq('company_id', profile.company_id)
+        .eq('is_super_admin', false); // Exclude super admins from team dropdown
 
       if (error) throw error;
       setTeamMembers((data || []).map(d => ({ ...d, role: d.tenant_role })) as TeamMember[]);
