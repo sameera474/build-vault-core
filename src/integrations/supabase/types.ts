@@ -78,68 +78,6 @@ export type Database = {
           },
         ]
       }
-      chainage_points: {
-        Row: {
-          chainage: number
-          company_id: string
-          compliance_status: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          project_id: string | null
-          specification_max: number | null
-          specification_min: number | null
-          technician_name: string | null
-          test_date: string
-          test_type: string
-          test_value: number
-          updated_at: string
-        }
-        Insert: {
-          chainage: number
-          company_id: string
-          compliance_status?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          project_id?: string | null
-          specification_max?: number | null
-          specification_min?: number | null
-          technician_name?: string | null
-          test_date: string
-          test_type: string
-          test_value: number
-          updated_at?: string
-        }
-        Update: {
-          chainage?: number
-          company_id?: string
-          compliance_status?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          project_id?: string | null
-          specification_max?: number | null
-          specification_min?: number | null
-          technician_name?: string | null
-          test_date?: string
-          test_type?: string
-          test_value?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chainage_points_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       companies: {
         Row: {
           address: string | null
@@ -422,48 +360,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      profiles_backup: {
-        Row: {
-          avatar_url: string | null
-          company_id: string | null
-          created_at: string | null
-          department: string | null
-          email: string | null
-          is_super_admin: boolean | null
-          name: string | null
-          old_role: string | null
-          phone: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          company_id?: string | null
-          created_at?: string | null
-          department?: string | null
-          email?: string | null
-          is_super_admin?: boolean | null
-          name?: string | null
-          old_role?: string | null
-          phone?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          company_id?: string | null
-          created_at?: string | null
-          department?: string | null
-          email?: string | null
-          is_super_admin?: boolean | null
-          name?: string | null
-          old_role?: string | null
-          phone?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
       }
       project_members: {
         Row: {
