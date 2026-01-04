@@ -1045,6 +1045,51 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_limited: {
+        Row: {
+          avatar_url: string | null
+          company_id: string | null
+          created_at: string | null
+          department: string | null
+          name: string | null
+          tenant_role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          department?: string | null
+          name?: string | null
+          tenant_role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          department?: string | null
+          name?: string | null
+          tenant_role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_for_registration"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       allocate_report_number: {
