@@ -355,10 +355,10 @@ export default function MonthlySummaries() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center print:hidden">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center print:hidden">
         <div>
-          <h1 className="text-3xl font-bold">Monthly Summaries</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Monthly Summaries</h1>
+          <p className="text-sm text-muted-foreground">
             Generate and view monthly test report summaries by test type
           </p>
         </div>
@@ -376,7 +376,7 @@ export default function MonthlySummaries() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
             <div>
               <label className="text-sm font-medium mb-2 block">Project</label>
               <Select

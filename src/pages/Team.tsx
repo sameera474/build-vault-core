@@ -77,8 +77,8 @@ export default function Team() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Team Management</h1>
+        <p className="text-sm text-muted-foreground">
           Ownership & Roles (Multi-tenant) - Manage your team members, roles,
           and project assignments
         </p>

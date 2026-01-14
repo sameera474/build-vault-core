@@ -149,13 +149,13 @@ export function TestReportsListItem({
   const isDraft = (r.status || "draft") === "draft";
 
   return (
-    <div className="border rounded-lg p-4 hover:bg-muted/40 transition-colors">
-      <div className="flex items-start justify-between">
+    <div className="border rounded-lg p-3 sm:p-4 hover:bg-muted/40 transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="flex-1 cursor-pointer" onClick={onOpen}>
-          <div className="text-sm font-mono font-semibold">
+          <div className="text-xs sm:text-sm font-mono font-semibold">
             {r.report_number || r.id}
           </div>
-          <div className="text-lg font-semibold leading-tight">
+          <div className="text-base sm:text-lg font-semibold leading-tight">
             {r.project?.name || r.project_name || "—"}
           </div>
           <div className="text-xs text-muted-foreground">
@@ -163,7 +163,7 @@ export function TestReportsListItem({
             {r.chainage_from || "—"} - {r.chainage_to || "—"}
           </div>
         </div>
-        <div className="text-right space-y-1">
+        <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1 sm:text-right">
           <div className="flex flex-wrap gap-1 justify-end">
             {r.is_retest && (
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -239,7 +239,7 @@ export function TestReportsListItem({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3 text-sm">
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-2 mt-3 text-xs sm:text-sm">
         <div>
           <span className="text-muted-foreground">Material:</span>{" "}
           {r.material || "—"}

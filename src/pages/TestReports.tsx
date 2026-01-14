@@ -459,9 +459,9 @@ export default function TestReports() {
     <div className="space-y-6">
       <TrialBanner />
       
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">Test Reports</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Test Reports</h1>
         </div>
         <div className="flex gap-2">
           {projects.length === 0 &&
@@ -469,7 +469,7 @@ export default function TestReports() {
             ["super_admin", "admin", "project_manager"].includes(
               profile?.tenant_role || ""
             )) ? (
-            <Button onClick={() => navigate("/projects")}>
+            <Button onClick={() => navigate("/projects")} className="w-full sm:w-auto">
               <FolderPlus className="h-4 w-4 mr-2" />
               Create Project First
             </Button>
@@ -478,6 +478,7 @@ export default function TestReports() {
               profile?.tenant_role || ""
             ) ? (
             <Button 
+              className="w-full sm:w-auto"
               onClick={() => {
                 if (!canCreateReport) {
                   showLimitError();
@@ -520,12 +521,12 @@ export default function TestReports() {
       ) : (
         <>
           <Tabs defaultValue="reports" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="reports">All Reports</TabsTrigger>
-              <TabsTrigger value="rejected">
+            <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="reports" className="flex-1 min-w-[100px]">All Reports</TabsTrigger>
+              <TabsTrigger value="rejected" className="flex-1 min-w-[100px]">
                 Rejected ({reports.filter(r => r.status === "rejected").length})
               </TabsTrigger>
-              <TabsTrigger value="flow">Process Flow</TabsTrigger>
+              <TabsTrigger value="flow" className="flex-1 min-w-[100px]">Process Flow</TabsTrigger>
             </TabsList>
 
             <TabsContent value="flow">
@@ -568,7 +569,7 @@ export default function TestReports() {
                         Clear Filters
                       </Button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                       <div>
                         <Label htmlFor="search">Search</Label>
                         <div className="relative">
