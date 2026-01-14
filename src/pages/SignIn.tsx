@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { HardHat, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { signIn, getUserProfile } from '@/lib/auth';
 import { z } from 'zod';
 import { getRoleRedirect } from '@/lib/rbac';
+import { useAuth } from '@/contexts/AuthContext';
 
 const signInSchema = z.object({
   email: z.string().trim().email('Invalid email address'),
@@ -16,6 +17,7 @@ const signInSchema = z.object({
 });
 
 export default function SignIn() {
+  const { user, profile, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -27,6 +29,38 @@ export default function SignIn() {
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/dashboard';
+
+  // Redirect already authenticated users away from sign-in page
+  useEffect(() => {
+    if (!loading && user) {
+      // Determine where to redirect based on profile
+      let redirectPath = '/dashboard';
+      if (profile?.is_super_admin) {
+        redirectPath = '/super-admin';
+      } else if (profile?.tenant_role) {
+        redirectPath = getRoleRedirect(profile.tenant_role);
+      }
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, profile, loading, navigate]);
+
+  // Show loading while checking auth state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/20">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Don't render the form if user is authenticated (will redirect)
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/20">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
