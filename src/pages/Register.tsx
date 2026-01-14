@@ -11,6 +11,8 @@ import { Building2, User, Mail, Lock, Phone, Briefcase, MapPin, HardHat } from '
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import { useAuth } from '@/contexts/AuthContext';
+import { getRoleRedirect } from '@/lib/rbac';
 
 interface Company {
   id: string;
@@ -50,6 +52,7 @@ const registerSchema = z.object({
 });
 
 export default function Register() {
+  const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -71,6 +74,19 @@ export default function Register() {
     newCompanyWebsite: '',
     newCompanyCity: '',
   });
+
+  // Redirect already authenticated users away from register page
+  useEffect(() => {
+    if (!authLoading && user) {
+      let redirectPath = '/dashboard';
+      if (profile?.is_super_admin) {
+        redirectPath = '/super-admin';
+      } else if (profile?.tenant_role) {
+        redirectPath = getRoleRedirect(profile.tenant_role);
+      }
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, profile, authLoading, navigate]);
 
   useEffect(() => {
     fetchCompanies();
@@ -170,6 +186,24 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  // Show loading while checking auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Don't render the form if user is authenticated (will redirect)
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
