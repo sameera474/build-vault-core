@@ -250,10 +250,10 @@ export default function Profile() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 px-0 sm:px-4">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Profile Settings</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Profile Settings</h1>
+        <p className="text-sm text-muted-foreground mt-2">
           Manage your personal information and preferences
         </p>
       </div>
@@ -266,7 +266,7 @@ export default function Profile() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
             <Avatar className="h-24 w-24">
               <AvatarImage src={avatarUrl} alt={profile?.name || 'User'} />
               <AvatarFallback className="text-2xl">

@@ -458,16 +458,16 @@ export function ProjectManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Projects</h2>
+          <p className="text-sm text-muted-foreground">
             Manage your construction projects and track testing progress
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
           {isSuperAdmin && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
               <Label htmlFor="company-filter" className="text-sm font-medium">
                 Company:
               </Label>
@@ -475,7 +475,7 @@ export function ProjectManagement() {
                 value={selectedCompany}
                 onValueChange={setSelectedCompany}
               >
-                <SelectTrigger className="w-64">
+                <SelectTrigger className="w-full sm:w-48 lg:w-64">
                   <SelectValue placeholder="Select company" />
                 </SelectTrigger>
                 <SelectContent>
@@ -492,7 +492,7 @@ export function ProjectManagement() {
           {(isSuperAdmin ||
             profile?.tenant_role === "admin" ||
             profile?.tenant_role === "project_manager") && (
-            <Button onClick={() => navigate("/projects/new")}>
+            <Button onClick={() => navigate("/projects/new")} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               New Project
             </Button>
@@ -519,7 +519,7 @@ export function ProjectManagement() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="col-span-2">
                 <Label htmlFor="name">Project Name</Label>
                 <Input
@@ -714,10 +714,11 @@ export function ProjectManagement() {
                 </div>
 
                 {/* Always-visible actions for clarity */}
-                <div className="flex flex-wrap gap-2 pt-2">
+                <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap">
                   <Button
                     size="sm"
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => navigate(`/projects/${project.id}`)}
                   >
                     <Edit className="h-4 w-4 mr-2" />
@@ -726,6 +727,7 @@ export function ProjectManagement() {
                   <Button
                     size="sm"
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => navigate(`/barchart/${project.id}`)}
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
@@ -734,6 +736,7 @@ export function ProjectManagement() {
                   <Button
                     size="sm"
                     variant="destructive"
+                    className="w-full sm:w-auto"
                     onClick={() => handleDelete(project.id)}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />

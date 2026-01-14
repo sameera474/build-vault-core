@@ -130,7 +130,7 @@ const ReportsList: React.FC<ReportsListProps> = ({ reports, title }) => {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Advanced Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
           <div>
             <Label htmlFor="search">Search</Label>
             <div className="relative">
@@ -416,12 +416,12 @@ export default function Approvals() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Approval Workflows</h1>
-        <p className="text-muted-foreground">Review and approve test reports</p>
+        <h1 className="text-2xl sm:text-3xl font-bold">Approval Workflows</h1>
+        <p className="text-sm text-muted-foreground">Review and approve test reports</p>
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -480,12 +480,12 @@ export default function Approvals() {
       </div>
 
       <Tabs defaultValue="workflow" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="workflow">Approval Workflow</TabsTrigger>
-          <TabsTrigger value="pending">Pending Reports</TabsTrigger>
-          <TabsTrigger value="approved">Approved Reports</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected Reports</TabsTrigger>
-          <TabsTrigger value="history">Recent Activity</TabsTrigger>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="workflow" className="flex-1 min-w-[100px]">Approval Workflow</TabsTrigger>
+          <TabsTrigger value="pending" className="flex-1 min-w-[100px]">Pending Reports</TabsTrigger>
+          <TabsTrigger value="approved" className="flex-1 min-w-[100px]">Approved Reports</TabsTrigger>
+          <TabsTrigger value="rejected" className="flex-1 min-w-[100px]">Rejected Reports</TabsTrigger>
+          <TabsTrigger value="history" className="flex-1 min-w-[100px]">Recent Activity</TabsTrigger>
         </TabsList>
 
         <TabsContent value="workflow">
