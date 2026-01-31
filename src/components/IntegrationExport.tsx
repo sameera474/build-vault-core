@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Mail, FileText, Share, Printer, Zap, Link as LinkIcon, Calendar, Filter, FileSpreadsheet, Database, Cloud, CheckCircle2 } from 'lucide-react';
+import { Download, Mail, FileText, Share, Printer, Zap, Link as LinkIcon, Calendar, Filter, FileSpreadsheet, Database, Cloud, CheckCircle2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ReportFileBrowser } from '@/components/export/ReportFileBrowser';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -100,6 +101,7 @@ export function IntegrationExport() {
   const [shareableLink, setShareableLink] = useState('');
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedExports, setSelectedExports] = useState<string[]>(['reports']);
+  const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
   const { profile } = useAuth();
   const { toast } = useToast();
 
@@ -633,6 +635,99 @@ export function IntegrationExport() {
     }
   };
 
+  const handleExportSelected = async () => {
+    if (selectedReportIds.length === 0) {
+      toast({
+        title: "No reports selected",
+        description: "Please select at least one report to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExporting(true);
+    
+    try {
+      // Fetch only selected reports
+      const { data: reports, error } = await supabase
+        .from('test_reports')
+        .select(`
+          *,
+          projects(name, client_name, contractor_name, consultant_name)
+        `)
+        .in('id', selectedReportIds)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!reports || reports.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "Could not fetch selected reports",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const data = { reports, projects: [] };
+
+      let downloadUrl: string;
+      let filename: string;
+      const dateStr = format(new Date(), 'yyyy-MM-dd');
+
+      switch (exportOptions.format) {
+        case 'pdf':
+          const pdf = await exportToPDF(data);
+          const pdfBlob = pdf.output('blob');
+          downloadUrl = URL.createObjectURL(pdfBlob);
+          filename = `test-reports-selected-${dateStr}.pdf`;
+          break;
+
+        case 'excel':
+          const excelBlob = exportToExcel(data);
+          downloadUrl = URL.createObjectURL(excelBlob);
+          filename = `test-reports-selected-${dateStr}.xlsx`;
+          break;
+
+        case 'csv':
+          const csvBlob = exportToCSV(data);
+          downloadUrl = URL.createObjectURL(csvBlob);
+          filename = `test-reports-selected-${dateStr}.csv`;
+          break;
+
+        case 'json':
+          const jsonBlob = exportToJSON(data);
+          downloadUrl = URL.createObjectURL(jsonBlob);
+          filename = `test-reports-selected-${dateStr}.json`;
+          break;
+
+        default:
+          throw new Error('Unsupported export format');
+      }
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+
+      toast({
+        title: "Export successful",
+        description: `${reports.length} reports exported as ${exportOptions.format.toUpperCase()}`,
+      });
+
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export failed",
+        description: error.message || "Failed to export selected reports",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!emailOptions.recipients.trim()) {
       toast({
@@ -793,13 +888,137 @@ export function IntegrationExport() {
         </p>
       </div>
 
-      <Tabs defaultValue="export" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+      <Tabs defaultValue="browse" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5">
+          <TabsTrigger value="browse">Browse</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
           <TabsTrigger value="email">Email</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="api">API</TabsTrigger>
+          <TabsTrigger value="integrations" className="hidden md:flex">Integrations</TabsTrigger>
+          <TabsTrigger value="api" className="hidden md:flex">API</TabsTrigger>
         </TabsList>
+
+        {/* Browse Tab - ACC-like File Browser */}
+        <TabsContent value="browse" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5" />
+                  Browse Test Reports
+                </CardTitle>
+                <CardDescription>
+                  Navigate and select reports by project and road location
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ReportFileBrowser
+                  selectedReports={selectedReportIds}
+                  onSelectionChange={setSelectedReportIds}
+                  maxHeight="450px"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Export Selected
+                </CardTitle>
+                <CardDescription>
+                  Export your selected reports
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-muted/50 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-primary">{selectedReportIds.length}</p>
+                  <p className="text-sm text-muted-foreground">Reports selected</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Export Format</Label>
+                  <Select 
+                    value={exportOptions.format} 
+                    onValueChange={(value: any) => setExportOptions(prev => ({ ...prev, format: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pdf">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-red-500" />
+                          PDF Report
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="excel">
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                          Excel Spreadsheet
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="csv">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-blue-500" />
+                          CSV File
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="json">
+                        <div className="flex items-center gap-2">
+                          <Database className="h-4 w-4 text-orange-500" />
+                          JSON Data
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  onClick={handleExportSelected}
+                  disabled={isExporting || selectedReportIds.length === 0}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isExporting ? (
+                    'Exporting...'
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Selected ({selectedReportIds.length})
+                    </>
+                  )}
+                </Button>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={handlePrint}
+                    disabled={selectedReportIds.length === 0}
+                  >
+                    <Printer className="h-4 w-4 mr-1" />
+                    Print
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => {
+                      if (selectedReportIds.length > 0) {
+                        setIsEmailDialogOpen(true);
+                      }
+                    }}
+                    disabled={selectedReportIds.length === 0}
+                  >
+                    <Mail className="h-4 w-4 mr-1" />
+                    Email
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* Export Tab */}
         <TabsContent value="export" className="space-y-6">
