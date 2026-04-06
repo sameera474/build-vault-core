@@ -29,7 +29,7 @@ export function EnhancedReportEditor() {
   const [computedCompliance, setComputedCompliance] = useState<'pass' | 'fail' | 'pending'>('pending');
   const [summaryData, setSummaryData] = useState<any>({});
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (id) {
