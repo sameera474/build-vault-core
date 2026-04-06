@@ -11,22 +11,60 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+    // Authenticate the caller
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+
+    const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await callerClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const callerId = claimsData.claims.sub;
+
+    // Verify caller is super admin
+    const supabaseAdmin = createClient(
+      supabaseUrl,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
+    );
 
-    console.log('Fetching companies...')
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('user_id', callerId)
+      .single();
 
-    const { data, error } = await supabase
+    if (!callerProfile?.is_super_admin) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: only super admins can list all companies' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('companies')
       .select('*')
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching companies:', error)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch companies', details: error.message }),
+        JSON.stringify({ error: 'Failed to fetch companies' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -38,7 +76,7 @@ Deno.serve(async (req) => {
   } catch (error: any) {
     console.error('Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: String(error?.message || error) }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
