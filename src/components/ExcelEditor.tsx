@@ -308,8 +308,9 @@ export const ExcelEditor: React.FC<ExcelEditorProps> = ({ reportId, templateId, 
         return parseFloat(cellValue).toString() || '0';
       });
       
-      // Evaluate simple math expressions
-      return eval(expression);
+      // Evaluate simple math expressions safely
+      if (!/^[\d\s+\-*/().]+$/.test(expression)) return 0;
+      return new Function(`"use strict"; return (${expression})`)();
     } catch (error) {
       return 0;
     }

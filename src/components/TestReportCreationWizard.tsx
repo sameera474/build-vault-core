@@ -258,7 +258,7 @@ export function TestReportCreationWizard({ open, onClose, onSuccess }: TestRepor
         
         // Evaluate simple mathematical expressions
         if (/^[\d\s+\-*/().]+$/.test(expression)) {
-          results[key] = eval(expression);
+          results[key] = new Function(`"use strict"; return (${expression})`)();
         }
       } catch (error) {
         console.error(`Error calculating ${key}:`, error);

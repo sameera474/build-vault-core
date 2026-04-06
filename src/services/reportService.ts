@@ -273,7 +273,7 @@ class ReportService {
   }
 
   // Auto-save functionality
-  private autoSaveTimeouts = new Map<string, NodeJS.Timeout>();
+  private autoSaveTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   scheduleAutoSave(reportId: string, data: any, delay = 10000) {
     // Clear existing timeout

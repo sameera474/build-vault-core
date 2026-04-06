@@ -14,8 +14,46 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    // Authenticate the caller
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await callerClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const callerId = claimsData.claims.sub;
+
+    // Verify caller is super admin
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('user_id', callerId)
+      .single();
+
+    if (!callerProfile?.is_super_admin) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: only super admins can create demo users' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { email, password, name, role, tenant_role, company_name } = await req.json();
 
@@ -50,7 +88,6 @@ serve(async (req) => {
 
     if (existingCompany) {
       companyId = existingCompany.id;
-      console.log('Using existing company:', companyId);
     } else {
       const { data: newCompany, error: companyError } = await supabaseAdmin
         .from('companies')
@@ -69,7 +106,6 @@ serve(async (req) => {
       }
 
       companyId = newCompany.id;
-      console.log('Created new company:', companyId);
     }
 
     // Create auth user with confirmed email
@@ -77,18 +113,13 @@ serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: {
-        name,
-        role,
-      },
+      user_metadata: { name, role },
     });
 
     if (authError) {
       console.error('Error creating auth user:', authError);
       throw authError;
     }
-
-    console.log('Created auth user:', authData.user.id);
 
     // Create or update profile
     const { error: profileError } = await supabaseAdmin
@@ -97,11 +128,9 @@ serve(async (req) => {
         user_id: authData.user.id,
         company_id: companyId,
         name,
-        role: role,
         tenant_role: tenant_role,
         email,
-        is_active: true,
-        is_demo_user: true,
+        is_super_admin: false,
       });
 
     if (profileError) {
@@ -109,22 +138,16 @@ serve(async (req) => {
       throw profileError;
     }
 
-    console.log('Created profile for user:', authData.user.id);
-
-    // Insert role into user_roles table for RBAC system
+    // Insert role into user_roles table
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({
         user_id: authData.user.id,
-        role: role, // This should match the app_role enum values
+        role: role,
       });
 
     if (roleError) {
       console.error('Error creating user role:', roleError);
-      // Don't throw - continue even if role insert fails
-      console.log('Continuing despite role error...');
-    } else {
-      console.log('Created role entry for user:', authData.user.id, 'with role:', role);
     }
 
     return new Response(
@@ -139,7 +162,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Error in create-demo-user:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'An error occurred while creating the user' }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
